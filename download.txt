@@ -1,0 +1,3 @@
+To use this software you will need to download the following packages:
+
+- Maxflow/MinCut-code by Vladimir Kolmogorov
