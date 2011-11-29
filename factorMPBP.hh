@@ -13,7 +13,7 @@
 
 class FactorNode;
 
-/*abstract*/ class VariableNode {
+class VariableNode {
 public:
   
   VariableNode(const Math1D::Vector<float>& cost);
