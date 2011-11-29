@@ -63,6 +63,15 @@ DAG::DAG(uint nNodes, uint nEdges) : nUsedNodes_(0), nUsedEdges_(0) {
 
 DAG::~DAG() {
 
+  for (uint e=0; e < nUsedEdges_; e++) {
+    if (edge_[e] != 0)
+      delete edge_[e];
+  }
+
+  for (uint n=0; n < nUsedNodes_; n++) {
+    if (node_[n] != 0)
+      delete node_[n];
+  }
 }
 
 uint DAG::add_node(double forward_potential) {
