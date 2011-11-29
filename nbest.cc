@@ -117,7 +117,7 @@ void DAG::nbest(uint N, uint start_node, uint end_node,
 
   double last_found = -1e300;
 
-  while (node_[start_node]->nVisits_ < N) {
+  while (!queue.empty() && node_[start_node]->nVisits_ < N) {
 
     //std::cerr << "next iter" << std::endl;
 
@@ -133,6 +133,8 @@ void DAG::nbest(uint N, uint start_node, uint end_node,
 
     if (cur_node == node_[start_node]) {
       //new sequence found -> backtrace
+
+      //std::cerr << "new sequence found" << std::endl;
 
       assert(cur_score >= last_found - 0.01);
 
