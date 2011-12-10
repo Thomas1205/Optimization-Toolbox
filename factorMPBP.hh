@@ -285,7 +285,7 @@ public:
 
   //all variables must be binary
   BILPConstraintFactorNode(const Storage1D<VariableNode*>& participating_vars,
-			   const Storage1D<bool>& positive, int rhs_lower = 0, int rhs_upper = 0);
+                           const Storage1D<bool>& positive, int rhs_lower = 0, int rhs_upper = 0);
 
   virtual void compute_messages();
 
@@ -334,7 +334,7 @@ public:
 
   //return factor number
   uint add_generic_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
-				       const Storage1D<Math3D::Tensor<float> >& cost, bool ref=false);
+                                       const Storage1D<Math3D::Tensor<float> >& cost, bool ref=false);
 
 
   //all participating variables must be binary
@@ -345,7 +345,7 @@ public:
 
   //all participating variables must be binary
   uint add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive, 
-			     int rhs_lower = 0, int rhs_upper = 0);
+                             int rhs_lower = 0, int rhs_upper = 0);
 
   //NOTE: after calling this routine, owned factors can no longer be created
   uint pass_in_factor_node(FactorNode* factor);

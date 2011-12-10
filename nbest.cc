@@ -104,7 +104,7 @@ DAGNode* DAG::node(uint num) {
 
 //note: this assumes that accurate forward potentials have been set
 void DAG::nbest(uint N, uint start_node, uint end_node,
-		std::vector<Storage1D<uint> >& sequence, std::vector<double>* score) {
+                std::vector<Storage1D<uint> >& sequence, std::vector<double>* score) {
 
   std::cerr << "A" << std::endl;
 
@@ -153,38 +153,38 @@ void DAG::nbest(uint N, uint start_node, uint end_node,
 
       while (cur_state->prev_ != 0) {
 
-	const Storage1D<uint>& out = cur_state->output_;
+        const Storage1D<uint>& out = cur_state->output_;
 
-	if (out.size() != 0) { 
-	  for (uint j=0; j < out.size(); j++)
-	    cur_sequence.push_back(out[j]);
-	}
+        if (out.size() != 0) { 
+          for (uint j=0; j < out.size(); j++)
+            cur_sequence.push_back(out[j]);
+        }
 
-	cur_state = cur_state->prev_;
+        cur_state = cur_state->prev_;
       }
 
       //reverse sequence
       sequence.push_back(Storage1D<uint>(cur_sequence.size()));
       for (uint k=0; k < cur_sequence.size(); k++)
-	sequence.back()[k] = cur_sequence[k];
+        sequence.back()[k] = cur_sequence[k];
 
       if (score != 0)
-	score->push_back(cur_score);
+        score->push_back(cur_score);
 
       if (cur_node->nVisits_ >= N)
-	break;
+        break;
     }
 
     if (cur_node->nVisits_ <= N) {
       for (uint k=0; k < cur_node->incoming_edge_.size(); k++) {
 	
-	DAGNode* from = cur_node->incoming_edge_[k]->from_;
-	double edge_weight = cur_node->incoming_edge_[k]->weight_;
+        DAGNode* from = cur_node->incoming_edge_[k]->from_;
+        double edge_weight = cur_node->incoming_edge_[k]->weight_;
 	
-	states.push_back( new NBestState(from,cur_score + edge_weight, cur_state, 
-					 cur_node->incoming_edge_[k]->output_) );
+        states.push_back( new NBestState(from,cur_score + edge_weight, cur_state, 
+                                         cur_node->incoming_edge_[k]->output_) );
 	
-	queue.push(QueueEntry(states.back()));
+        queue.push(QueueEntry(states.back()));
       }
     }
   }

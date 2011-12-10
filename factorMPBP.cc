@@ -107,18 +107,18 @@ void VariableNode::compute_messages() {
 
       for (uint j=0; j < neighboring_factor_.size(); j++) {
 
-	//std::cerr << "j: " << j << std::endl;
+        //std::cerr << "j: " << j << std::endl;
 
-	if (j != i) {
-	  cur_cost += factor_message[j][l];
+        if (j != i) {
+          cur_cost += factor_message[j][l];
 	  
-	  if (isnan(factor_message[j][l])) {
-	    std::cerr << "j: " << j << ", l: " << l << std::endl;
-	  }
+          if (isnan(factor_message[j][l])) {
+            std::cerr << "j: " << j << ", l: " << l << std::endl;
+          }
 
-	  assert(!isnan(factor_message[j][l]));
-	  assert(factor_message[j][l] >= -1e-3);
-	}
+          assert(!isnan(factor_message[j][l]));
+          assert(factor_message[j][l] >= -1e-3);
+        }
       }
 
       assert(!isnan(cur_cost));
@@ -126,7 +126,7 @@ void VariableNode::compute_messages() {
       message_matrix_(l,i) = cur_cost;
 
       if (cur_cost < min_message) {
-	min_message = cur_cost;
+        min_message = cur_cost;
       }
     }
 
@@ -135,8 +135,8 @@ void VariableNode::compute_messages() {
 
       if (isinf(message_matrix_(l,i))) {
 	
-	std::cerr << "min_message: " << min_message << std::endl;
-	std::cerr << "cost: " << cost_ << std::endl;
+        std::cerr << "min_message: " << min_message << std::endl;
+        std::cerr << "cost: " << cost_ << std::endl;
       }
 
       assert(!isinf(message_matrix_(l,i)));
@@ -172,7 +172,7 @@ const Storage1D<VariableNode*>& FactorNode::participating_nodes() const {
 /***********************************/
 
 GenericFactorNode::GenericFactorNode(const Storage1D<VariableNode*>& participating_vars, 
-				     const VarDimStorage<float>& cost) :
+                                     const VarDimStorage<float>& cost) :
   FactorNode(participating_vars), cost_(cost) {
 
   const uint size = participating_var_.size();
@@ -209,7 +209,7 @@ GenericFactorNode::GenericFactorNode(const Storage1D<VariableNode*>& participati
     for (uint k=0; k < size; k++) {
 
       if (cost < message_[k][labeling[k]])
-	message_[k][labeling[k]] = cost;
+        message_[k][labeling[k]] = cost;
     }
 
     //increase labeling
@@ -218,7 +218,7 @@ GenericFactorNode::GenericFactorNode(const Storage1D<VariableNode*>& participati
 
       labeling[l] = (labeling[l] + 1) % message_[l].size(); //could be more efficient
       if (labeling[l] != 0)
-	break;
+        break;
     }
 
     if (l == size) //all zero after increase => cycle completed
@@ -231,7 +231,7 @@ GenericFactorNode::GenericFactorNode(const Storage1D<VariableNode*>& participati
     for (uint l=0; l < message_[k].size(); l++) {
       message_[k][l] -= var_message[k][l];
       if (message_[k][l] < min_msg)
-	min_msg = message_[k][l];
+        min_msg = message_[k][l];
     }
     for (uint l=0; l < message_[k].size(); l++) {
       message_[k][l] -= min_msg;
@@ -322,7 +322,7 @@ void BinaryFactorNodeBase::compute_messages(const Math2D::Matrix<float>& cost) {
       
       double hyp_cost = cost(l,k) + var_message[1][k];
       if (hyp_cost < min_cost)
-	min_cost = hyp_cost;
+        min_cost = hyp_cost;
     }
 
     message1_[l] = min_cost;
@@ -340,7 +340,7 @@ void BinaryFactorNodeBase::compute_messages(const Math2D::Matrix<float>& cost) {
 
       double hyp_cost = cost(l,k) + var_message[0][l];
       if (hyp_cost < min_cost)
-	min_cost = hyp_cost;
+        min_cost = hyp_cost;
     }
 
     message2_[k] = min_cost;
@@ -428,7 +428,7 @@ PottsFactorNode::PottsFactorNode(const Storage1D<VariableNode*>& participating_v
     double cur_min = 1e300;
     for (uint l=0; l < participating_var_[k]->nLabels(); l++) {
       if (var_message[k][l] < cur_min)
-	cur_min = var_message[k][l];
+        cur_min = var_message[k][l];
     }
 
     msg_min[k] = cur_min;
@@ -508,9 +508,9 @@ void TernaryFactorNodeBase::compute_messages(const Math3D::Tensor<float>& cost) 
 
       for (uint m=0; m < nLabels3; m++) {
     
-	double hyp_cost = cost(l,k,m) + var_message[1][k] + var_message[2][m];
-	if (hyp_cost < min_cost)
-	  min_cost = hyp_cost;
+        double hyp_cost = cost(l,k,m) + var_message[1][k] + var_message[2][m];
+        if (hyp_cost < min_cost)
+          min_cost = hyp_cost;
       }
     }
 
@@ -532,9 +532,9 @@ void TernaryFactorNodeBase::compute_messages(const Math3D::Tensor<float>& cost) 
 
       for (uint m=0; m < nLabels3; m++) {
 
-	double hyp_cost = cost(l,k,m) + var_message[0][l] + var_message[2][m];
-	if (hyp_cost < min_cost)
-	  min_cost = hyp_cost;
+        double hyp_cost = cost(l,k,m) + var_message[0][l] + var_message[2][m];
+        if (hyp_cost < min_cost)
+          min_cost = hyp_cost;
       }
     }
 
@@ -554,9 +554,9 @@ void TernaryFactorNodeBase::compute_messages(const Math3D::Tensor<float>& cost) 
 
       for (uint k=0; k < nLabels2; k++) {
 
-	double hyp_cost = cost(l,k,m) + var_message[0][l] + var_message[1][k];
-	if (hyp_cost < min_cost)
-	  min_cost = hyp_cost;
+        double hyp_cost = cost(l,k,m) + var_message[0][l] + var_message[1][k];
+        if (hyp_cost < min_cost)
+          min_cost = hyp_cost;
       }
     }
 
@@ -575,7 +575,7 @@ void TernaryFactorNodeBase::compute_messages(const Math3D::Tensor<float>& cost) 
 /***********************************/
 
 TernaryFactorNode::TernaryFactorNode(const Storage1D<VariableNode*>& participating_vars, 
-				     const Math3D::Tensor<float>& cost) : 
+                                     const Math3D::Tensor<float>& cost) : 
   TernaryFactorNodeBase(participating_vars), cost_(cost) {
 
   assert(participating_var_[0]->nLabels() == cost.xDim());
@@ -600,7 +600,7 @@ TernaryFactorNode::TernaryFactorNode(const Storage1D<VariableNode*>& participati
 /***********************************/
 
 TernaryRefFactorNode::TernaryRefFactorNode(const Storage1D<VariableNode*>& participating_vars, 
-				     const Math3D::Tensor<float>& cost) : 
+                                           const Math3D::Tensor<float>& cost) : 
   TernaryFactorNodeBase(participating_vars), cost_(cost) {
 
   assert(participating_var_[0]->nLabels() == cost.xDim());
@@ -651,13 +651,13 @@ void FourthOrderFactorNodeBase::compute_messages(const Storage1D<Math3D::Tensor<
 
       for (uint l3 = 0; l3 < nLabels3; l3++) {
 
-	for (uint l4 = 0; l4 < nLabels4; l4++) {
+        for (uint l4 = 0; l4 < nLabels4; l4++) {
 
-	  double hyp =  cost[l1](l2,l3,l4) + var_message[1][l2] + var_message[2][l3] + var_message[3][l4];
+          double hyp =  cost[l1](l2,l3,l4) + var_message[1][l2] + var_message[2][l3] + var_message[3][l4];
 
-	  if (hyp < min_cost)
-	    min_cost = hyp;
-	}
+          if (hyp < min_cost)
+            min_cost = hyp;
+        }
       }
     }
 
@@ -676,13 +676,13 @@ void FourthOrderFactorNodeBase::compute_messages(const Storage1D<Math3D::Tensor<
 
       for (uint l3 = 0; l3 < nLabels3; l3++) {
 
-	for (uint l4 = 0; l4 < nLabels4; l4++) {
+        for (uint l4 = 0; l4 < nLabels4; l4++) {
 
-	  double hyp =  cost[l1](l2,l3,l4) + var_message[0][l1] + var_message[2][l3] + var_message[3][l4];
+          double hyp =  cost[l1](l2,l3,l4) + var_message[0][l1] + var_message[2][l3] + var_message[3][l4];
 
-	  if (hyp < min_cost)
-	    min_cost = hyp;
-	}
+          if (hyp < min_cost)
+            min_cost = hyp;
+        }
       }
     }
 
@@ -702,13 +702,13 @@ void FourthOrderFactorNodeBase::compute_messages(const Storage1D<Math3D::Tensor<
 
       for (uint l2 = 0; l2 < nLabels2; l2++) {
 
-	for (uint l4 = 0; l4 < nLabels4; l4++) {
+        for (uint l4 = 0; l4 < nLabels4; l4++) {
 
-	  double hyp =  cost[l1](l2,l3,l4) + var_message[0][l1] + var_message[1][l2] + var_message[3][l4];
+          double hyp =  cost[l1](l2,l3,l4) + var_message[0][l1] + var_message[1][l2] + var_message[3][l4];
 
-	  if (hyp < min_cost)
-	    min_cost = hyp;
-	}
+          if (hyp < min_cost)
+            min_cost = hyp;
+        }
       }
     }
 
@@ -728,13 +728,13 @@ void FourthOrderFactorNodeBase::compute_messages(const Storage1D<Math3D::Tensor<
 
       for (uint l2 = 0; l2 < nLabels2; l2++) {
 
-	for (uint l3 = 0; l3 < nLabels3; l3++) {
+        for (uint l3 = 0; l3 < nLabels3; l3++) {
 
-	  double hyp =  cost[l1](l2,l3,l4) + var_message[0][l1] + var_message[1][l2] + var_message[2][l3];
+          double hyp =  cost[l1](l2,l3,l4) + var_message[0][l1] + var_message[1][l2] + var_message[2][l3];
 
-	  if (hyp < min_cost)
-	    min_cost = hyp;
-	}
+          if (hyp < min_cost)
+            min_cost = hyp;
+        }
       }
     }
 
@@ -773,7 +773,7 @@ void FourthOrderFactorNodeBase::compute_messages(const Storage1D<Math3D::Tensor<
 /***********************************/
 
 FourthOrderFactorNode::FourthOrderFactorNode(const Storage1D<VariableNode*>& participating_vars, 
-					     const Storage1D<Math3D::Tensor<float> >& cost) :
+                                             const Storage1D<Math3D::Tensor<float> >& cost) :
   FourthOrderFactorNodeBase(participating_vars), cost_(cost) {
 
   message1_.resize(cost.size());
@@ -802,7 +802,7 @@ FourthOrderFactorNode::FourthOrderFactorNode(const Storage1D<VariableNode*>& par
 /***********************************/
 
 FourthOrderRefFactorNode::FourthOrderRefFactorNode(const Storage1D<VariableNode*>& participating_vars, 
-						   const Storage1D<Math3D::Tensor<float> >& cost) :
+                                                   const Storage1D<Math3D::Tensor<float> >& cost) :
   FourthOrderFactorNodeBase(participating_vars), cost_(cost) {
 }
 
@@ -861,8 +861,8 @@ OneOfNFactorNode::OneOfNFactorNode(const Storage1D<VariableNode*>& participating
     for (uint k=1; k < participating_var_.size(); k++) {
 
       if (one_beliefs[k] < best_belief) {
-	best_belief = one_beliefs[k];
-	arg_best = k;
+        best_belief = one_beliefs[k];
+        arg_best = k;
       }
     }
     
@@ -948,14 +948,14 @@ OneOfNFactorNode::OneOfNFactorNode(const Storage1D<VariableNode*>& participating
       message_matrix_(1,k) -= message_matrix_(0,k);
       message_matrix_(0,k) = 0.0;
     }
- }
+  }
 }
 
 
 /***********************************/
 
 CardinalityFactorNode::CardinalityFactorNode(const Storage1D<VariableNode*>& participating_vars, 
-					     const Math1D::Vector<float>& card_cost) :
+                                             const Math1D::Vector<float>& card_cost) :
   FactorNode(participating_vars), card_cost_(card_cost), message_matrix_(2,participating_vars.size(),0.0) {
 
   for (uint v=0; v < participating_vars.size(); v++) {
@@ -1085,19 +1085,19 @@ CardinalityFactorNode::CardinalityFactorNode(const Storage1D<VariableNode*>& par
 
       double hyp = card_cost_[l];
       if (cur_order > l)
-	hyp += cum_sum[l-1];
+        hyp += cum_sum[l-1];
       else {
-	hyp += cum_sum[l] - cur_rel_msg;
+        hyp += cum_sum[l] - cur_rel_msg;
       }
 
       if (hyp < best0) {
-	best0 = hyp;
-	arg_best0 = l;
+        best0 = hyp;
+        arg_best0 = l;
       }
     }
     if ( ! (fabs(best0-val0) < 1e-2)) {
       std::cerr << "best0: " << best0 << ", msg0: " << val0 << ", arg best: "  << arg_best0 
-		<< ", order: " << cur_order << ", factor size: " << size << std::endl;
+                << ", order: " << cur_order << ", factor size: " << size << std::endl;
 
       std::cerr << "cum_best value: " << cum_best[cur_order-1] << std::endl;
 
@@ -1116,22 +1116,22 @@ CardinalityFactorNode::CardinalityFactorNode(const Storage1D<VariableNode*>& par
 
       double hyp = card_cost_[l];
       if (cur_order <= l)
-	hyp += cum_sum[l-1] - cur_rel_msg;
+        hyp += cum_sum[l-1] - cur_rel_msg;
       else {
-	if (l >= 2)
-	  hyp += cum_sum[l-2];
+        if (l >= 2)
+          hyp += cum_sum[l-2];
       }
 
       if (hyp < best1) {
-	best1 = hyp;
-	arg_best1 = l;
+        best1 = hyp;
+        arg_best1 = l;
       }
     }
     
     if ( ! (fabs(best1-val1) < 1e-2)) {
 
       std::cerr << "best1: " << best1 << ", msg1: " << val1 << ", arg_best1: " << arg_best1 
-		<< ", factor size: " << size << std::endl;
+                << ", factor size: " << size << std::endl;
       std::cerr << "rev_cum_best: " << rev_cum_best[cur_order] << std::endl;
       std::cerr << "cum_best_m1 value: " << cum_best_m1[cur_order-1] << std::endl;
 
@@ -1158,7 +1158,7 @@ CardinalityFactorNode::CardinalityFactorNode(const Storage1D<VariableNode*>& par
 /***********************************/
 
 BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*>& participating_vars,
-						   const Storage1D<bool>& positive, int rhs_lower, int rhs_upper) :
+                                                   const Storage1D<bool>& positive, int rhs_lower, int rhs_upper) :
   FactorNode(participating_vars), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper), positive_(positive),
   message_matrix_(2,participating_vars.size(),0.0) {
 
@@ -1239,21 +1239,21 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
 
       for (int l=0; l < 2; l++) {
 	
-	double best_prev = 1e75;
+        double best_prev = 1e75;
 	
-	int move = l;
-	if (positive_[v]) //since we are tracing backward here
-	  move *= -1;
+        int move = l;
+        if (positive_[v]) //since we are tracing backward here
+          move *= -1;
 
-	int dest = sum + move;
-	if (dest >= 0 && dest < (int) range) {
+        int dest = sum + move;
+        if (dest >= 0 && dest < (int) range) {
 
-	  double hyp = forward_light(dest,v-1);
-	  if (hyp < best_prev)
-	    best_prev = hyp;
-	}
+          double hyp = forward_light(dest,v-1);
+          if (hyp < best_prev)
+            best_prev = hyp;
+        }
 
-	forward(sum,l,v) = best_prev + var_message[v][l];
+        forward(sum,l,v) = best_prev + var_message[v][l];
       }
       forward_light(sum,v) = std::min(forward(sum,0,v),forward(sum,1,v));
     }
@@ -1280,22 +1280,22 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
 
       for (int l=0; l < 2; l++) {
 	
-	double best_prev = 1e75;
+        double best_prev = 1e75;
 	
-	int move = l;
-	if (positive_[v]) //since we are tracing backward here
-	  move *= -1;
+        int move = l;
+        if (positive_[v]) //since we are tracing backward here
+          move *= -1;
 
-	int dest = sum + move;
-	if (dest >= 0 && dest < (int) range) {
-	  double hyp = backward_light(dest,v+1);
-	  if (hyp < best_prev)
-	    best_prev = hyp;
-	}
+        int dest = sum + move;
+        if (dest >= 0 && dest < (int) range) {
+          double hyp = backward_light(dest,v+1);
+          if (hyp < best_prev)
+            best_prev = hyp;
+        }
 
-	double hyp = best_prev + var_message[v][l];
-	if (hyp < best_light)
-	  best_light = hyp;
+        double hyp = best_prev + var_message[v][l];
+        if (hyp < best_light)
+          best_light = hyp;
       }
       backward_light(sum,v) = best_light; 
     }
@@ -1313,30 +1313,30 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
 
       for (int s=0; s < (int) range; s++) {
 
-	double hyp = forward(s,l,k);
+        double hyp = forward(s,l,k);
 		
-	double best_bwd = 1e300;
-	if (k+1 < positive_.size()) {
-	  for (int r=rhs_lower_; r <= rhs_upper_; r++) {
-	    int other = r + zero_offset - (s - zero_offset);
+        double best_bwd = 1e300;
+        if (k+1 < positive_.size()) {
+          for (int r=rhs_lower_; r <= rhs_upper_; r++) {
+            int other = r + zero_offset - (s - zero_offset);
 
-	    if (other >= 0 && other < (int) range) {
-	      //double cur = std::min(backward(other,0,k+1), backward(other,1,k+1));
-	      double cur = backward_light(other,k+1);
-	      if (cur < best_bwd)
-		best_bwd = cur;
-	    }
-	  }
-	}
-	else {
-	  if (s >= rhs_lower_ + int(zero_offset) && s <= rhs_upper_ + int(zero_offset))
-	    best_bwd = 0.0;
-	}
+            if (other >= 0 && other < (int) range) {
+              //double cur = std::min(backward(other,0,k+1), backward(other,1,k+1));
+              double cur = backward_light(other,k+1);
+              if (cur < best_bwd)
+                best_bwd = cur;
+            }
+          }
+        }
+        else {
+          if (s >= rhs_lower_ + int(zero_offset) && s <= rhs_upper_ + int(zero_offset))
+            best_bwd = 0.0;
+        }
 
-	hyp += best_bwd;
+        hyp += best_bwd;
 
-	if (hyp < min_msg)
-	  min_msg = hyp;
+        if (hyp < min_msg)
+          min_msg = hyp;
       }
 
       assert(!isnan(min_msg));
@@ -1344,10 +1344,10 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
 	
       message_matrix_(l,k) = min_msg -  var_message[k][l];
       if (message_matrix_(l,k) < sub)
-	sub = message_matrix_(l,k);
+        sub = message_matrix_(l,k);
 
       if (isnan(message_matrix_(l,k))) {
-	std::cerr << "nan = " << min_msg << " - " <<  var_message[k][l] << std::endl;
+        std::cerr << "nan = " << min_msg << " - " <<  var_message[k][l] << std::endl;
       }
 
       assert(!isnan(message_matrix_(l,k)) );
@@ -1378,9 +1378,9 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
     
     for (uint k=0; k < positive_.size(); k++) {
       if (positive_[k])
-	nPositive++;
+        nPositive++;
       else
-	nNegative++;
+        nNegative++;
     }
 
     uint range = positive_.size() + 1;
@@ -1411,31 +1411,31 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
       
       for (int sum=0; sum < (int) range; sum++) {
 	
-	for (int l=0; l < 2; l++) {
+        for (int l=0; l < 2; l++) {
 	  
-	  double best_prev = 1e300;
-	  uint arg_best = MAX_UINT;
+          double best_prev = 1e300;
+          uint arg_best = MAX_UINT;
 	
-	  int move = l;
-	  if (positive_[v]) //since we are tracing backward here
-	    move *= -1;
+          int move = l;
+          if (positive_[v]) //since we are tracing backward here
+            move *= -1;
 	  
-	  int dest = sum + move;
-	  if (dest >= 0 && dest < (int) range) {
-	    for (int l_prev = 0; l_prev < 2; l_prev ++) {
-	      double hyp = forward(dest,l_prev,v-1);
-	      if (hyp < best_prev) {
-		best_prev = hyp;
-		arg_best = l_prev;
-	      }
-	    }
-	  }
+          int dest = sum + move;
+          if (dest >= 0 && dest < (int) range) {
+            for (int l_prev = 0; l_prev < 2; l_prev ++) {
+              double hyp = forward(dest,l_prev,v-1);
+              if (hyp < best_prev) {
+                best_prev = hyp;
+                arg_best = l_prev;
+              }
+            }
+          }
 	  
-	  //assert(arg_best != MAX_UINT);
+          //assert(arg_best != MAX_UINT);
 
-	  forward(sum,l,v) = best_prev + beliefs(v,l);
-	  trace(sum,l,v) = arg_best;
-	}
+          forward(sum,l,v) = best_prev + beliefs(v,l);
+          trace(sum,l,v) = arg_best;
+        }
       }
     }
 
@@ -1449,15 +1449,15 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
     for (int r = rhs_lower_; r <= rhs_upper_; r++) {
       for (uint l=0; l < 2; l++) {
 	
-	double hyp = forward(r+zero_offset, l, participating_var_.size()-1);
+        double hyp = forward(r+zero_offset, l, participating_var_.size()-1);
 	
-	assert(!isnan(hyp));
+        assert(!isnan(hyp));
 	
-	if (hyp < total_best) {
-	  total_best = hyp;
-	  label = l;
-	  sum = r;
-	}
+        if (hyp < total_best) {
+          total_best = hyp;
+          label = l;
+          sum = r;
+        }
       }
     }
   
@@ -1473,9 +1473,9 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
       label = trace(sum + zero_offset,label,v+1);
       
       if (positive_[v+1])
-	sum -= old_label;
+        sum -= old_label;
       else
-	sum += old_label;
+        sum += old_label;
 
       labels[v] = label;
     }
@@ -1675,7 +1675,7 @@ uint FactorMPBP::add_generic_ternary_factor(uint var1, uint var2, uint var3, con
 }
 
 uint FactorMPBP::add_generic_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
-						 const Storage1D<Math3D::Tensor<float> >& cost, bool ref) {
+                                                 const Storage1D<Math3D::Tensor<float> >& cost, bool ref) {
 
   assert(var1 < var_.size());
   assert(var2 < var_.size());
@@ -1732,7 +1732,7 @@ uint FactorMPBP::add_cardinality_factor(const Math1D::Vector<uint>& var, const M
 }
 
 uint FactorMPBP::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive, 
-				       int rhs_lower, int rhs_upper) {
+                                       int rhs_lower, int rhs_upper) {
 
   assert(var.size() == positive.size());
 
@@ -1822,8 +1822,8 @@ void FactorMPBP::process_labeling() {
 
     if (changed) {
       for (uint i=0; i < nodes.size(); i++) {
-	labeling_[num[nodes[i]]] = sub_labeling[i];
-	label[nodes[i]] = sub_labeling[i];
+        labeling_[num[nodes[i]]] = sub_labeling[i];
+        label[nodes[i]] = sub_labeling[i];
       }    
     }
   }
@@ -1854,16 +1854,16 @@ void FactorMPBP::icm(uint nIter) {
 
       for (uint f=0; f < factors.size(); f++) {
 
-	const Storage1D<VariableNode*>& factor_var = factors[f]->participating_nodes();
+        const Storage1D<VariableNode*>& factor_var = factors[f]->participating_nodes();
 
-	sublabeling[f].resize(factor_var.size());
+        sublabeling[f].resize(factor_var.size());
 
-	for (uint k=0; k < factor_var.size(); k++) {
+        for (uint k=0; k < factor_var.size(); k++) {
 
-	  sublabeling[f][k] = label[factor_var[k]];
-	  if (factor_var[k] == var_[v])
-	    var_index[f] = k;
-	}
+          sublabeling[f][k] = label[factor_var[k]];
+          if (factor_var[k] == var_[v])
+            var_index[f] = k;
+        }
       }
 
       /****** now search for the conditional mode *****/
@@ -1872,16 +1872,16 @@ void FactorMPBP::icm(uint nIter) {
 
       for (uint l=0; l < var_[v]->nLabels(); l++) {
 
-	double hyp = var_[v]->cost(l);
-	for (uint f=0; f < factors.size(); f++) {
-	  sublabeling[f][var_index[f]] = l;
-	  hyp += factors[f]->cost(sublabeling[f]);
-	}
+        double hyp = var_[v]->cost(l);
+        for (uint f=0; f < factors.size(); f++) {
+          sublabeling[f][var_index[f]] = l;
+          hyp += factors[f]->cost(sublabeling[f]);
+        }
 
-	if (hyp < mode_val) {
-	  mode_val = hyp;
-	  mode = l;
-	}
+        if (hyp < mode_val) {
+          mode_val = hyp;
+          mode = l;
+        }
       }
 
       labeling_[v] = mode;
@@ -1934,11 +1934,11 @@ void FactorMPBP::mpbp(uint nIter) {
       double min_cost = 1e300;
       uint arg_min = MAX_UINT;
       for (uint k=0; k < belief.size(); k++) {
-	if (belief[k] < min_cost) {
+        if (belief[k] < min_cost) {
 	  
-	  min_cost = belief[k];
-	  arg_min = k;
-	}
+          min_cost = belief[k];
+          arg_min = k;
+        }
       }
 
       //std::cerr << "min-marginal cost: " << min_cost << ", arg_min: " << arg_min << std::endl;
