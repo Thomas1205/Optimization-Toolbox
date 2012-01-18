@@ -52,6 +52,10 @@ const Storage1D<FactorNode*>& VariableNode::neighboring_factor() const {
   return neighboring_factor_;
 }
 
+// ExplicitVarNode::ExplicitVarNode(const Math1D::Vector<float>& cost) :  
+//   VariableNode(cost.size()), cost_(cost) {
+// }
+
 /*virtual*/ void VariableNode::compute_beliefs(Math1D::Vector<double>& beliefs) {
 
   Storage1D<const double*> factor_message(neighboring_factor_.size());
@@ -78,6 +82,8 @@ const Storage1D<FactorNode*>& VariableNode::neighboring_factor() const {
 }
 
 void VariableNode::compute_messages() {
+
+  //std::cerr << "var: compute message" << std::endl;
 
   uint nLabels = cost_.size();
 
@@ -108,6 +114,9 @@ void VariableNode::compute_messages() {
       for (uint j=0; j < neighboring_factor_.size(); j++) {
 
         //std::cerr << "j: " << j << std::endl;
+
+        //std::cerr << "cast to TernaryNode: " << dynamic_cast<TernaryFactorNodeBase*>(neighboring_factor_[j]) << std::endl;
+        //std::cerr << "cast to FourthOrder Node: " << dynamic_cast<FourthOrderFactorNodeBase*>(neighboring_factor_[j]) << std::endl;
 
         if (j != i) {
           cur_cost += factor_message[j][l];
@@ -456,6 +465,92 @@ PottsFactorNode::PottsFactorNode(const Storage1D<VariableNode*>& participating_v
 }
 
 
+
+/***********************************/
+
+// BinaryFactorNodeMemSave::BinaryFactorNodeMemSave(const Storage1D<VariableNode*>& participating_vars, 
+// 						 const Math2D::Matrix<float>& cost) :
+//   FactorNode(participating_vars), cost_(cost) {
+
+//   if (participating_var_[1]->nLabels() != participating_var_[0]->nLabels()) {
+
+//     INTERNAL_ERROR << " attempt to create a mem-saving binary factor with heterogenous numbers of labels" 
+// 		   << std::endl;
+//     exit(1);
+//   }
+// }
+
+// /*virtual*/ void BinaryFactorNodeMemSave::compute_messages() {
+
+//   uint nLabels1 = participating_var_[0]->nLabels();
+//   uint nLabels2 = participating_var_[1]->nLabels();  
+
+//   assert(nLabels1 == nLabels2); //otherwise the messages cannot be switched
+
+//   Math1D::Vector<double> save_m1(nLabels1);
+//   Math1D::Vector<double> save_m2(nLabels2);
+
+//   double* m1 = participating_var_[1]->get_message(this);
+//   double* m2 = participating_var_[0]->get_message(this);
+
+//   for (uint k=0; k < nLabels1; k++)
+//     save_m1[k] = m1[k];
+
+//   for (uint k=0; k < nLabels2; k++)
+//     save_m2[k] = m2[k];
+
+
+//   //Message 1
+//   for (uint l=0; l < nLabels1; l++) {
+
+//     double min_cost = 1e300;
+
+//     for (uint k=0; k < nLabels2; k++) {
+      
+//       double hyp_cost = cost_(l,k) + save_m1[k];
+//       if (hyp_cost < min_cost)
+// 	min_cost = hyp_cost;
+//     }
+
+//     m1[l] = min_cost;
+//   }
+
+//   //Message 2
+//   for (uint k=0; k < nLabels2; k++) {
+
+//     double min_cost = 1e300;
+
+//     for (uint l=0; l < nLabels1; l++) {
+      
+//       double hyp_cost = cost_(l,k) + save_m2[l];
+//       if (hyp_cost < min_cost)
+// 	min_cost = hyp_cost;
+//     }
+
+//     m2[k] = min_cost;
+//   }
+// }
+
+// /*virtual*/ double* BinaryFactorNodeMemSave::get_message(VariableNode* node) {
+
+//   if (node == participating_var_[0])
+//     return participating_var_[1]->get_message(this);
+//   else
+//     return participating_var_[0]->get_message(this);
+// }
+
+// /*virtual*/ double BinaryFactorNodeMemSave::cost(const Math1D::Vector<uint>& labels) {
+
+//   TODO("cost");
+// }
+
+// /*virtual*/ void BinaryFactorNodeMemSave::init_messages() {
+
+//   //currently assuming that the variable nodes are also initialized
+// }
+
+
+
 /***********************************/
 
 TernaryFactorNodeBase::TernaryFactorNodeBase(const Storage1D<VariableNode*>& participating_vars) :
@@ -570,6 +665,8 @@ void TernaryFactorNodeBase::compute_messages(const Math3D::Tensor<float>& cost) 
   //std::cerr << "cm end" << std::endl;
 
 }
+
+
 
 
 /***********************************/

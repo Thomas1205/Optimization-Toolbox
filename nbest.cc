@@ -74,6 +74,23 @@ DAG::~DAG() {
   }
 }
 
+void DAG::clear() {
+
+  for (uint e=0; e < nUsedEdges_; e++) {
+    if (edge_[e] != 0)
+      delete edge_[e];
+  }
+
+  for (uint n=0; n < nUsedNodes_; n++) {
+    if (node_[n] != 0)
+      delete node_[n];
+  }
+
+  nUsedNodes_ = 0;
+  nUsedEdges_ = 0;
+}
+
+
 uint DAG::add_node(double forward_potential) {
 
   if (nUsedNodes_ == node_.size()) {
@@ -102,16 +119,17 @@ DAGNode* DAG::node(uint num) {
   return node_[num];
 }
 
+
 //note: this assumes that accurate forward potentials have been set
 void DAG::nbest(uint N, uint start_node, uint end_node,
                 std::vector<Storage1D<uint> >& sequence, std::vector<double>* score) {
 
-  std::cerr << "A" << std::endl;
+  //std::cerr << "A" << std::endl;
 
   for (uint k=0; k < nUsedNodes_; k++)
     node_[k]->nVisits_ = 0;
 
-  std::cerr << "B" << std::endl;
+  //std::cerr << "B" << std::endl;
 
   std::vector<NBestState* > states;
 

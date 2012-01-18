@@ -44,6 +44,23 @@ protected:
 };
 
 
+/*** variable node that has unary cost stored explicitly ***/
+// class ExplicitVarNode : public VariableNode {
+// public:
+  
+//   ExplicitVarNode(const Math1D::Vector<float>& cost);
+  
+//   virtual void compute_messages();
+  
+//   virtual double cost(uint label) const;
+  
+//   virtual void compute_beliefs(Math1D::Vector<double>& beliefs);
+
+// protected:
+//   Math1D::Vector<float> cost_;
+// };
+
+
 /*abstract*/ class FactorNode {
 public:
   
@@ -143,6 +160,32 @@ public:
 protected:
   float lambda_;
 };
+
+
+//THIS IS NOT AS EASY AS IT APPEARS: 
+// when you use a message originally to send information _to_ a factor, then to send information _from_
+// a factor, things get inconsistent (the role of the labels changes, messages are not always used as they should)
+
+//If you want fix this, make sure that var. nodes never update the messages to mem.saving binary factors
+// and that mem.saving binary factors take into account all messages arriving at the respective var. nodes
+
+// class BinaryFactorNodeMemSave : public FactorNode {
+// public:
+
+//   BinaryFactorNodeMemSave(const Storage1D<VariableNode*>& participating_vars, const Math2D::Matrix<float>& cost);
+
+//   virtual void compute_messages();
+
+//   virtual double* get_message(VariableNode* node);
+
+//   virtual double cost(const Math1D::Vector<uint>& labels);
+
+//   virtual void init_messages();
+
+// protected:
+//   Math2D::Matrix<float> cost_;
+// };
+
 
 /*abstract*/ class TernaryFactorNodeBase : public FactorNode {
 public: 

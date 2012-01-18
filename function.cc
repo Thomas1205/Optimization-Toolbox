@@ -56,12 +56,12 @@ void ExplicitBinFunction::read(std::string filename) {
     int arg = 0;
     for (int i=0; i < order_; i++) {
       if (i != 0)
-        base *= 2;
+	base *= 2;
 
       if (bit_pattern[i] == '1')
-        arg += base;
+	arg += base;
       else
-        assert(bit_pattern[i] == '0');
+	assert(bit_pattern[i] == '0');
     }
     value_[arg] = val;	
   }
@@ -92,8 +92,8 @@ double ExplicitBinFunction::multilinear_coefficient(std::vector<size_t> one_bits
 
     for (int i=0; i < clique_order; i++) {
       if (clique_arg & (1 << i)) {
-        sign *= -1;
-        arg += 1 << one_bits[i];
+	sign *= -1;
+	arg += 1 << one_bits[i];
       }
     }
 
@@ -113,8 +113,8 @@ double ExplicitBinFunction::multilinear_coefficient(std::vector<size_t> one_bits
 
       std::vector<size_t> v;
       for (int i = 0; i < order_; i++) {
-        if (arg & (1 << i))
-          v.push_back(i);
+	if (arg & (1 << i))
+	  v.push_back(i);
       }
       result -= multilinear_coefficient(v);
     }

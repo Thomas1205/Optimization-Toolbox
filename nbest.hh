@@ -45,6 +45,8 @@ public:
 
   DAGNode* node(uint num);
 
+  void clear();
+
   //note: this assumes that accurate forward potentials have been set
   void nbest(uint n, uint start_node, uint end_node,
              std::vector<Storage1D<uint> >& sequence, std::vector<double>* score);
