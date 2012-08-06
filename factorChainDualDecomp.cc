@@ -1791,10 +1791,10 @@ double FactorChainDualDecomposition::optimize(uint nIter, double start_step_size
 
   // double denom = 0.0;
   
-  // for (uint f=0; f < nUsedFactors_; f++) {
-  //   factor_label[f].resize(factor_[f]->involved_vars().size());
+  for (uint f=0; f < nUsedFactors_; f++) {
+    factor_label[f].resize(factor_[f]->involved_vars().size());
   //   denom += factor_[f]->involved_vars().size();
-  // }
+  }
 
   std::map<ChainDDVar*,uint> var_num;
   for (uint v=0; v < nUsedVars_; v++)

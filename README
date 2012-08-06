@@ -1,0 +1,27 @@
+The optimization toolbox is primarily a library, i.e. it does not provide
+executable programs (although in the future there will be sample programs).
+
+At the moment, it covers three areas:
+
+1. MESSAGE PASSING for solving discrete labeling problems: here you can choose
+between belief propagation and various methods to solve linear programming
+relaxations. For the latter, you can choose between relaxations with singleton
+separators (TRWS, MPLP, MSD, Subgradient methods) and with pairwise separators
+(TRWS, MPLP, Sugradient methods).   
+ The classes provide various forms of higher order terms, including some 
+efficiently handable terms of very high order (1-of-N, cardinality, integer
+linear constraints).
+ These classes were developed by the author, but in frequent correspondence
+with Vladimir Kolmogorov. 
+
+2. SUBMODULAR FUNCTIONS: here there is code to check a function for
+submodularity and to convert a submodular function into a form that can be
+optimized via graph mincut. The latter relies on code from Vladimir
+Kolmogorov, which you will have to download.
+
+3. NBEST SEARCH in graphs. This is particularly useful for Natural Language
+Processing.
+
+
+A sample Makefile has been provided. It compiles all source files that do NOT
+depend on thirdparty code into a library. 
