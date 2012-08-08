@@ -7,7 +7,7 @@ At the moment, it covers three areas:
 between belief propagation and various methods to solve linear programming
 relaxations. For the latter, you can choose between relaxations with singleton
 separators (TRWS, MPLP, MSD, Subgradient methods) and with pairwise separators
-(TRWS, MPLP, Sugradient methods).   
+(TRWS, MSD, Subgradient methods).   
  The classes provide various forms of higher order terms, including some 
 efficiently handable terms of very high order (1-of-N, cardinality, integer
 linear constraints).
