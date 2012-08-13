@@ -11,7 +11,7 @@
 
 class ChainDDFactor;
 
-/*** class for variables ***/
+//variable class
 class ChainDDVar {
 public:
 
@@ -40,7 +40,7 @@ protected:
   Storage1D<ChainDDFactor*> neighboring_factor_; 
 };
 
-/*** abstract base class for factors ***/
+//abstract base class for a factor
 /* abstract */ class ChainDDFactor {
 public:
 
@@ -86,7 +86,7 @@ protected:
 
 /***************************************/
 
-/*** binary factor ***/
+// binary factor
 class BinaryChainDDFactor: public ChainDDFactor {
 public:
   
@@ -102,7 +102,7 @@ protected:
   Math2D::Matrix<float> cost_;
 };
 
-/*** base class for ternary factors, don't instantiate ***/
+// abstract base class for a ternary factor
 class TernaryChainDDFactorBase : public ChainDDFactor {
 public:
 
@@ -113,7 +113,7 @@ public:
                          Math1D::Vector<double>& forward, Math2D::Matrix<uint>& trace);
 };
 
-/*** ternary factor where the cost are stored ***/
+// ternary factor with costs stored explicitly
 class TernaryChainDDFactor: public TernaryChainDDFactorBase {
 public:
   
@@ -129,7 +129,8 @@ protected:
   Math3D::Tensor<float> cost_;
 };
 
-/*** ternary factor where only a reference to the cost is stored (saves memory if you have many similar factors) ***/
+
+// ternary factor storing only a reference to the cost (saves memory if you have many similar factors)
 class TernaryChainDDRefFactor: public TernaryChainDDFactorBase {
 public:
   
@@ -145,7 +146,7 @@ protected:
   const Math3D::Tensor<float>& cost_;
 };
 
-/*** ternary factor where the cost are based on second differences ***/
+// ternary factor with cost based on second order differences
 class SecondDiffChainDDFactor : public ChainDDFactor {
 public:
 
@@ -158,10 +159,10 @@ public:
   virtual double cost(const Math1D::Vector<uint>& labeling);
 
 protected:
-  float lambda_;
+  const float lambda_;
 };
 
-/*** 4th order factor ***/
+// fourth order factor
 class FourthOrderChainDDFactor : public ChainDDFactor {
 public:
   
@@ -175,10 +176,10 @@ public:
   virtual double cost(const Math1D::Vector<uint>& labeling);
 
 protected:
-  Storage1D<Math3D::Tensor<float> > cost_;
+  const Storage1D<Math3D::Tensor<float> > cost_;
 };
 
-/*** 1-of-N constraint, a special case of a cardinality potential ***/
+//1-of-N constraints (a special case of cardinality potentials), all variables must be binary
 class OneOfNChainDDFactor : public ChainDDFactor {
 public:
 
@@ -191,7 +192,7 @@ public:
   virtual double cost(const Math1D::Vector<uint>& labeling);
 };
 
-/*** cardinality factor ***/
+//cardinality factor, all variables must be binary 
 class CardinalityChainDDFactor : public ChainDDFactor {
 public:
 
@@ -204,10 +205,10 @@ public:
   virtual double cost(const Math1D::Vector<uint>& labeling);
 
 protected:
-  Math1D::Vector<float> cost_;
+  const Math1D::Vector<float> cost_;
 };
 
-/*** binary integer linear constraint ***/
+//integer linear constraint factor for binary variables
 class BILPChainDDFactor : public ChainDDFactor {
 public:
 
@@ -222,7 +223,7 @@ public:
 
 protected:
 
-  Storage1D<bool> positive_;
+  const Storage1D<bool> positive_;
   short rhs_lower_;
   short rhs_upper_;
 
@@ -234,11 +235,11 @@ protected:
 
 /***************************************/
 
-/*** this is the main class ***/
+// this is the main class
 class FactorChainDualDecomposition {
 public:
 
-  /*** at the moment you need to provide upper bounds on the number of variables and factors you want to add ***/
+  /*** you can provide upper bounds on the number of variables and factors you want to add ***/
   FactorChainDualDecomposition(uint nVars, uint nFactors);
 
   ~FactorChainDualDecomposition();
@@ -254,10 +255,13 @@ public:
   void add_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
                                const Storage1D<Math3D::Tensor<float> >& cost);
 
+  // all variables must be binary
   void add_one_of_n_factor(const Math1D::Vector<uint>& var);
 
+  // all variables must be binary
   void add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost);
 
+  // all variables must be binary
   void add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,
                              int rhs_lower = 0, int rhs_upper = 0);
 
@@ -267,6 +271,8 @@ public:
   const Math1D::Vector<uint>& labeling();
 
 protected:
+
+  void add_factor(ChainDDFactor* fac);
 
   void set_up_chains();
 

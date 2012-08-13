@@ -200,7 +200,9 @@ const Storage1D<SepChainDDPairSeparator*>& SepChainDDFactor::involved_separators
 
 BinarySepChainDDFactor::BinarySepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars,
                                                const Math2D::Matrix<float>& cost) :
-  SepChainDDFactor(involved_vars,Storage1D<SepChainDDPairSeparator*>()), cost_(cost) {}
+  SepChainDDFactor(involved_vars,Storage1D<SepChainDDPairSeparator*>()), cost_(cost) {
+  assert(involved_vars.size() == 2);
+}
 
 /*virtual */
 double BinarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
@@ -320,7 +322,9 @@ double BinarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* /*
 TernarySepChainDDFactor::TernarySepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars, 
                                                  Storage1D<SepChainDDPairSeparator*>& separators,
                                                  const Math3D::Tensor<float>& cost) :
-  SepChainDDFactor(involved_vars,separators), cost_(cost) {}
+  SepChainDDFactor(involved_vars,separators), cost_(cost) {
+  assert(involved_vars.size() == 3);
+}
 
 
 /*virtual*/ 
@@ -335,6 +339,8 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
   const uint nLabels3 = involved_var_[2]->nLabels();
+
+  const uint nSeps = involved_separator_.size();
 
   uint var_idx = 0;
 
@@ -365,7 +371,7 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
   }
 
   Storage1D<Math2D::Matrix<double> > pair_param = dual_pair_var_;
-  for (uint s=0; s < involved_separator_.size(); s++) {
+  for (uint s=0; s < nSeps; s++) {
 
     if (involved_separator_[s] == incoming_sep) {
       pair_param[s] -= prev_pair_forward; 
@@ -386,11 +392,14 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
       uint best3 = 0;
 
       for (uint l2=0; l2 < nLabels2; l2++) {
+
+        const double w2 = param[1][l2];
+
         for (uint l3=0; l3 < nLabels3; l3++) {
       
-          double hyp = cost_(l1,l2,l3) - param[1][l2] - param[2][l3];
+          double hyp = cost_(l1,l2,l3) - w2 - param[2][l3];
 
-          for (uint s=0; s < involved_separator_.size(); s++)
+          for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
           
           if (hyp < best) {
@@ -419,11 +428,14 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
       uint best3 = 0;
 
       for (uint l1=0; l1 < nLabels1; l1++) {
+
+        const double w1 = param[0][l1];
+
         for (uint l3=0; l3 < nLabels3; l3++) {
 
-          double hyp = cost_(l1,l2,l3) - param[0][l1] - param[2][l3];
+          double hyp = cost_(l1,l2,l3) - w1 - param[2][l3];
 
-          for (uint s=0; s < involved_separator_.size(); s++)
+          for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
           
           if (hyp < best) {
@@ -454,11 +466,13 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
 
       for (uint l1=0; l1 < nLabels1; l1++) {
 
+        const double w1 = param[0][l1];
+
         for (uint l2=0; l2 < nLabels2; l2++) {
 
-          double hyp = cost_(l1,l2,l3) - param[0][l1] - param[1][l2];
+          double hyp = cost_(l1,l2,l3) - w1 - param[1][l2];
 
-          for (uint s=0; s < involved_separator_.size(); s++)
+          for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
           
           if (hyp < best) {
@@ -493,6 +507,8 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
   const uint nLabels2 = involved_var_[1]->nLabels();
   const uint nLabels3 = involved_var_[2]->nLabels();
 
+  const uint nSeps = involved_separator_.size();
+
   uint pair_idx = 0;
 
   Storage1D<Math1D::Vector<double> > param = dual_var_;
@@ -517,7 +533,7 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
   }
 
   Storage1D<Math2D::Matrix<double> > pair_param = dual_pair_var_;
-  for (uint s=0; s < involved_separator_.size(); s++) {
+  for (uint s=0; s < nSeps; s++) {
 
     if (involved_separator_[s] == incoming_sep) {
       pair_param[s] -= prev_pair_forward; 
@@ -550,7 +566,7 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
 
             double hyp = cost_(l1,l2,l3) - param[2][l3];
             
-            for (uint s=0; s < involved_separator_.size(); s++)
+            for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,pair_param);
 
             if (hyp < best) {
@@ -584,7 +600,7 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
 
             double hyp = cost_(l1,l2,l3) - param[1][l2];
             
-            for (uint s=0; s < involved_separator_.size(); s++)
+            for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,pair_param);
 
             if (hyp < best) {
@@ -618,7 +634,7 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
           
           double hyp = cost_(l1,l2,l3) - param[0][l1];
           
-          for (uint s=0; s < involved_separator_.size(); s++)
+          for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
 
           if (hyp < best) {
@@ -638,7 +654,7 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
   return 0.0; //presently not subtracting an offset
 }
 
-double TernarySepChainDDFactor::eval_pair(uint s, uint x, uint y, uint z, const Storage1D< Math2D::Matrix<double> >& pair_param) {
+double TernarySepChainDDFactor::eval_pair(uint s, uint x, uint y, uint z, const Storage1D< Math2D::Matrix<double> >& pair_param) const {
 
   SepChainDDVar* v1 = involved_separator_[s]->var1();
   SepChainDDVar* v2 = involved_separator_[s]->var2();
@@ -668,7 +684,9 @@ double TernarySepChainDDFactor::eval_pair(uint s, uint x, uint y, uint z, const 
 FourthOrderSepChainDDFactor::FourthOrderSepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars, 
                                                          Storage1D<SepChainDDPairSeparator*>& separators,
                                                          const Storage1D<Math3D::Tensor<float> >& cost) 
-  : SepChainDDFactor(involved_vars,separators), cost_(cost) {}
+  : SepChainDDFactor(involved_vars,separators), cost_(cost) {
+  assert(involved_vars.size() == 4);
+}
 
 /*virtual */
 double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
@@ -678,14 +696,14 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
                                                     Math1D::Vector<double>& forward, 
                                                     Math2D::Matrix<uint>& trace) {
 
-  //std::cerr << "compute var-forward" << std::endl;
-
   assert(incoming_var != outgoing_var);
 
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
   const uint nLabels3 = involved_var_[2]->nLabels();
   const uint nLabels4 = involved_var_[3]->nLabels();
+
+  const uint nSeps = involved_separator_.size();
 
   uint var_idx = 0;
 
@@ -716,7 +734,7 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
   }
 
   Storage1D<Math2D::Matrix<double> > pair_param = dual_pair_var_;
-  for (uint s=0; s < involved_separator_.size(); s++) {
+  for (uint s=0; s < nSeps; s++) {
 
     if (involved_separator_[s] == incoming_sep) {
       pair_param[s] -= prev_pair_forward; 
@@ -737,13 +755,21 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
       uint best3 = 0;
       uint best4 = 0;
 
+      const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
       for (uint l2=0; l2 < nLabels2; l2++) {
+
+        const double w2 = param[1][l2];
+        
         for (uint l3=0; l3 < nLabels3; l3++) {
+
+          const double w3 = w2 + param[2][l3];
+
           for (uint l4=0; l4 < nLabels4; l4++) {
           
-            double hyp = cost_[l1](l2,l3,l4) - param[1][l2] - param[2][l3] - param[3][l4];
+            double hyp = cur_cost(l2,l3,l4) - w3 - param[3][l4];
 
-            for (uint s=0; s < involved_separator_.size(); s++)
+            for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
           
             if (hyp < best) {
@@ -776,12 +802,20 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
       uint best4 = 0;
 
       for (uint l1=0; l1 < nLabels1; l1++) {
+
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
+        const double w1 = param[0][l1];
+
         for (uint l3=0; l3 < nLabels3; l3++) {
+
+          const double w3 = w1 + param[2][l3];
+
           for (uint l4=0; l4 < nLabels4; l4++) {
 
-            double hyp = cost_[l1](l2,l3,l4) - param[0][l1] - param[2][l3] - param[3][l4];
+            double hyp = cur_cost(l2,l3,l4) - w3 - param[3][l4];
 
-            for (uint s=0; s < involved_separator_.size(); s++)
+            for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
             
             if (hyp < best) {
@@ -815,12 +849,19 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
 
       for (uint l1=0; l1 < nLabels1; l1++) {
 
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
+        const double w1 = param[0][l1];
+
         for (uint l2=0; l2 < nLabels2; l2++) {
+
+          const double w2 = w1 + param[1][l2];
+
           for (uint l4=0; l4 < nLabels4; l4++) {
 
-            double hyp = cost_[l1](l2,l3,l4) - param[0][l1] - param[1][l2] - param[3][l4];
+            double hyp = cur_cost(l2,l3,l4) - w2 - param[3][l4];
 
-            for (uint s=0; s < involved_separator_.size(); s++)
+            for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
             
             if (hyp < best) {
@@ -854,12 +895,19 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
 
       for (uint l1=0; l1 < nLabels1; l1++) {
 
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
+        const double w1 = param[0][l1];
+
         for (uint l2=0; l2 < nLabels2; l2++) {
+
+          const double w2 = w1 + param[1][l2];
+
           for (uint l3=0; l3 < nLabels3; l3++) {
 
-            double hyp = cost_[l1](l2,l3,l4) - param[0][l1] - param[1][l2] - param[2][l3];
+            double hyp = cur_cost(l2,l3,l4) - w2 - param[2][l3];
 
-            for (uint s=0; s < involved_separator_.size(); s++)
+            for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
             
             if (hyp < best) {
@@ -898,6 +946,8 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
   const uint nLabels3 = involved_var_[2]->nLabels();
   const uint nLabels4 = involved_var_[3]->nLabels();
 
+  const uint nSeps = involved_separator_.size();
+
   uint pair_idx = 0;
 
   Storage1D<Math1D::Vector<double> > param = dual_var_;
@@ -922,7 +972,7 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
   }
 
   Storage1D<Math2D::Matrix<double> > pair_param = dual_pair_var_;
-  for (uint s=0; s < involved_separator_.size(); s++) {
+  for (uint s=0; s < nSeps; s++) {
 
     if (involved_separator_[s] == incoming_sep) {
       pair_param[s] -= prev_pair_forward; 
@@ -947,6 +997,8 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
 
       for (uint l1=0; l1 < nLabels1; l1++) {
 
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
         for (uint l2=0; l2 < nLabels2; l2++) {
 
           double best = 1e300;
@@ -954,11 +1006,14 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
           uint arg_best4 = 0;
           
           for (uint l3 = 0; l3 < nLabels3; l3++) {
+
+            const double w3 = param[2][l3];
+
             for (uint l4 = 0; l4 < nLabels4; l4++) {
 
-              double hyp = cost_[l1](l2,l3,l4) - param[2][l3] - param[3][l4];
+              double hyp = cur_cost(l2,l3,l4) - w3 - param[3][l4];
             
-              for (uint s=0; s < involved_separator_.size(); s++)
+              for (uint s=0; s < nSeps; s++)
                 hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
               
               if (hyp < best) {
@@ -985,6 +1040,8 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
 
       for (uint l1=0; l1 < nLabels1; l1++) {
 
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
         for (uint l3 = 0; l3 < nLabels3; l3++) {
 
           double best = 1e300;
@@ -992,11 +1049,14 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
           uint arg_best4 = 0;
           
           for (uint l2 = 0; l2 < nLabels2; l2++) {
+
+            const double w2 = param[1][l2];
+
             for (uint l4 = 0; l4 < nLabels4; l4++) {
 
-              double hyp = cost_[l1](l2,l3,l4) - param[1][l2] - param[3][l4];
+              double hyp = cur_cost(l2,l3,l4) - w2 - param[3][l4];
               
-              for (uint s=0; s < involved_separator_.size(); s++)
+              for (uint s=0; s < nSeps; s++)
                 hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
               
               if (hyp < best) {
@@ -1025,6 +1085,8 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
 
       for (uint l1=0; l1 < nLabels1; l1++) {
 
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
         for (uint l4 = 0; l4 < nLabels4; l4++) {
 
           double best = 1e300;
@@ -1032,11 +1094,14 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
           uint arg_best3 = 0;
 
           for (uint l2 = 0; l2 < nLabels2; l2++) {
+
+            const double w2 = param[1][l2];
+
             for (uint l3 = 0; l3 < nLabels3; l3++) {
 
-              double hyp = cost_[l1](l2,l3,l4) - param[1][l2] - param[2][l3];
+              double hyp = cur_cost(l2,l3,l4) - w2 - param[2][l3];
               
-              for (uint s=0; s < involved_separator_.size(); s++)
+              for (uint s=0; s < nSeps; s++)
                 hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
               
               if (hyp < best) {
@@ -1073,11 +1138,15 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
           
           for (uint l1 = 0; l1 < nLabels1; l1++) {
             
+            const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
+            const double w1 = param[0][l1];
+
             for (uint l4 = 0; l4 < nLabels4; l4++) {
               
-              double hyp = cost_[l1](l2,l3,l4) - param[0][l1] - param[3][l4];
+              double hyp = cur_cost(l2,l3,l4) - w1 - param[3][l4];
               
-              for (uint s=0; s < involved_separator_.size(); s++)
+              for (uint s=0; s < nSeps; s++)
                 hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
               
               if (hyp < best) {
@@ -1113,11 +1182,15 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
 
           for (uint l1 = 0; l1 < nLabels1; l1++) {
             
+            const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
+            const double w1 = param[0][l1];
+
             for (uint l3 = 0; l3 < nLabels3; l3++) {
               
-              double hyp = cost_[l1](l2,l3,l4) - param[0][l1] - param[2][l3];
+              double hyp = cur_cost(l2,l3,l4) - w1 - param[2][l3];
               
-              for (uint s=0; s < involved_separator_.size(); s++)
+              for (uint s=0; s < nSeps; s++)
                 hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
               
               if (hyp < best) {
@@ -1155,11 +1228,15 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
         
         for (uint l1 = 0; l1 < nLabels1; l1++) {
             
+          const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
+          const double w1 = param[0][l1];
+
           for (uint l2 = 0; l2 < nLabels2; l2++) {
               
-            double hyp = cost_[l1](l2,l3,l4) - param[0][l1] - param[1][l2];
+            double hyp = cur_cost(l2,l3,l4) - w1 - param[1][l2];
               
-            for (uint s=0; s < involved_separator_.size(); s++)
+            for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
             
             if (hyp < best) {
@@ -1183,7 +1260,7 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
 }
 
 double FourthOrderSepChainDDFactor::eval_pair(uint s, uint x, uint y, uint z, uint w, 
-                                              const Storage1D< Math2D::Matrix<double> >& pair_param) {
+                                              const Storage1D< Math2D::Matrix<double> >& pair_param) const {
 
   SepChainDDVar* v1 = involved_separator_[s]->var1();
   SepChainDDVar* v2 = involved_separator_[s]->var2();
@@ -1212,7 +1289,6 @@ double FourthOrderSepChainDDFactor::eval_pair(uint s, uint x, uint y, uint z, ui
   }
   
   return pair_param[s](a,b);
-
 }
 
 
@@ -1238,6 +1314,11 @@ SeparatorChainDualDecomposition::~SeparatorChainDualDecomposition() {
 
 uint SeparatorChainDualDecomposition::add_var(const Math1D::Vector<float>& cost) {
 
+  assert(!optimize_called_);
+
+  if (nUsedVars_ == var_.size())
+    var_.resize(uint(1.2*nUsedVars_)+4);
+
   assert(nUsedVars_ < var_.size());
   var_[nUsedVars_] = new SepChainDDVar(cost);
 
@@ -1246,6 +1327,11 @@ uint SeparatorChainDualDecomposition::add_var(const Math1D::Vector<float>& cost)
 }
 
 uint SeparatorChainDualDecomposition::add_pair_separator(uint var1, uint var2) {
+
+  assert(!optimize_called_);
+
+  if (nUsedSeparators_ == separator_.size())
+    separator_.resize(uint(1.2*nUsedSeparators_)+4);
 
   assert(nUsedSeparators_ < separator_.size());
 
@@ -1257,16 +1343,24 @@ uint SeparatorChainDualDecomposition::add_pair_separator(uint var1, uint var2) {
   return nUsedSeparators_-1;
 }
 
-void SeparatorChainDualDecomposition::add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost) {
+void SeparatorChainDualDecomposition::add_factor(SepChainDDFactor* fac) {
 
-  assert(nUsedFactors_ < factor_.size());
+  assert(!optimize_called_);
+  
+  if (nUsedFactors_ == factor_.size())
+    factor_.resize(uint(1.2*nUsedFactors_)+4);
+
+  factor_[nUsedFactors_] = fac;
+  nUsedFactors_++;
+}
+
+void SeparatorChainDualDecomposition::add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost) {
 
   Storage1D<SepChainDDVar*> vars(2);
   vars[0] = var_[var1];
   vars[1] = var_[var2];
 
-  factor_[nUsedFactors_] = new BinarySepChainDDFactor(vars,cost);
-  nUsedFactors_++;
+  add_factor(new BinarySepChainDDFactor(vars,cost));
 }
 
 void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint v3, 
@@ -1277,6 +1371,8 @@ void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint 
 
 #if 1
   if (v1 > v2) {
+
+    //std::cerr << "v1-v2 1." << std::endl;
 
     if (var_[v1]->nLabels() != var_[v2]->nLabels())
       TODO("non-standard variable order with heterogeneous number of labels");
@@ -1291,6 +1387,7 @@ void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint 
   }
   if (v2 > v3) {
 
+    //std::cerr << "v2-v3" << std::endl;
 
     if (var_[v2]->nLabels() != var_[v3]->nLabels())
       TODO("non-standard variable order with heterogeneous number of labels");
@@ -1303,6 +1400,8 @@ void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint 
     std::swap(v2,v3);
   }
   if (v1 > v2) {
+
+    //std::cerr << "v1-v2 2." << std::endl;
 
     if (var_[v1]->nLabels() != var_[v2]->nLabels())
       TODO("non-standard variable order with heterogeneous number of labels");
@@ -1319,7 +1418,6 @@ void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint 
   assert(v2 < v3);
 #endif
 
-  assert(nUsedFactors_ < factor_.size());
 
   Storage1D<SepChainDDVar*> vars(3);
   vars[0] = var_[v1];
@@ -1330,8 +1428,7 @@ void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint 
   for (uint s=0; s < separators.size(); s++)
     seps[s] = separator_[separators[s]];
 
-  factor_[nUsedFactors_] = new TernarySepChainDDFactor(vars,seps,cost_copy);
-  nUsedFactors_++;
+  add_factor(new TernarySepChainDDFactor(vars,seps,cost_copy));
 }
 
 void SeparatorChainDualDecomposition::add_fourth_order_factor(uint v1, uint v2, uint v3, uint v4, 
@@ -1396,8 +1493,6 @@ void SeparatorChainDualDecomposition::add_fourth_order_factor(uint v1, uint v2, 
   assert(v3 < v4);
 #endif
 
-  assert(nUsedFactors_ < factor_.size());
-
   Storage1D<SepChainDDVar*> vars(4);
   vars[0] = var_[v1];
   vars[1] = var_[v2];
@@ -1408,8 +1503,7 @@ void SeparatorChainDualDecomposition::add_fourth_order_factor(uint v1, uint v2, 
   for (uint s=0; s < separators.size(); s++)
     seps[s] = separator_[separators[s]];
 
-  factor_[nUsedFactors_] = new FourthOrderSepChainDDFactor(vars,seps,cost_copy);
-  nUsedFactors_++;
+  add_factor(new FourthOrderSepChainDDFactor(vars,seps,cost_copy));
 }
 
 const Math1D::Vector<uint>& SeparatorChainDualDecomposition::labeling() {
@@ -1426,8 +1520,6 @@ void SeparatorChainDualDecomposition::set_up_chains() {
   for (uint pass=0; pass < 2; pass++) {
 
     for (uint f=0; f < nUsedFactors_; f++) {
-      
-      //std::cerr << "factor #" << f << "/" << nUsedFactors_ << std::endl;
       
       if (factor_[f]->prev_var() == 0 && factor_[f]->prev_sep() == 0
           && factor_[f]->next_var() == 0 && factor_[f]->next_sep() == 0) {
@@ -1801,8 +1893,6 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
 
     for (uint f=0; f < nUsedFactors_; f++) {
 
-      //std::cerr << "f: " << f << std::endl;
-
       if (factor_[f]->prev_var() == 0 && factor_[f]->prev_sep() == 0) {
 
         SepChainDDFactor* cur_factor = factor_[f];
@@ -1859,8 +1949,6 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
         
         NamedStorage1D<Math2D::Matrix<uint> > var_trace(chain_length,MAKENAME(var_trace));
         NamedStorage1D<Math3D::Tensor<uint> > pair_trace(chain_length,MAKENAME(pair_trace));
-
-        //std::cerr << "computing forward, chain length: " << chain_length << std::endl;
         
         //compute forward
         if (out_var[0] != 0)

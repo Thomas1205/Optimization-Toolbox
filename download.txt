@@ -1,3 +1,3 @@
 To use this software you will need to download the following packages:
 
-- Maxflow/MinCut-code by Vladimir Kolmogorov
+- Maxflow/MinCut-code by Vladimir Kolmogorov (required for submodular_energy_minimization.*)

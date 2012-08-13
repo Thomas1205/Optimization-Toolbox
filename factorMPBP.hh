@@ -44,23 +44,6 @@ protected:
 };
 
 
-/*** variable node that has unary cost stored explicitly ***/
-// class ExplicitVarNode : public VariableNode {
-// public:
-  
-//   ExplicitVarNode(const Math1D::Vector<float>& cost);
-  
-//   virtual void compute_messages();
-  
-//   virtual double cost(uint label) const;
-  
-//   virtual void compute_beliefs(Math1D::Vector<double>& beliefs);
-
-// protected:
-//   Math1D::Vector<float> cost_;
-// };
-
-
 /*abstract*/ class FactorNode {
 public:
   

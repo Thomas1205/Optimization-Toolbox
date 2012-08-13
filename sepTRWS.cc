@@ -1,11 +1,14 @@
 /***** written by Thomas Schoenemann as an employee of the University of Pisa, Italy, December 2011 *****/
-/****        and as an employee of the University of Düsseldorf, Germany, January - August 2012 *******/
+/****        and as an employee of the University of Düsseldorf, Germany, January 2012 *******/
 
 
 #include "sepTRWS.hh"
 
-#include <set>
 #include <map>
+
+//DEBUG
+#include "stl_out.hh"
+//END_DEBUG
 
 AllInclusiveSepCumTRWSSepChainLink::AllInclusiveSepCumTRWSSepChainLink() : sep_(0), left_fac_(0), right_fac_(0) {}
 
@@ -89,8 +92,6 @@ double AllInclusiveSepCumTRWSVariable::reparameterize_forward() {
 
   for (uint c = 0; c < chain_link_.size(); c++) {
 
-    //std::cerr << "c:" << c << std::endl;
-
     AllInclusiveSepCumTRWSVarChainLink* cur_chain_link = chain_link_[c];
 
     AllInclusiveSepCumTRWSFactor* fac = cur_chain_link->involved_factor_[0];
@@ -121,6 +122,8 @@ double AllInclusiveSepCumTRWSVariable::reparameterize_forward() {
 
     if (fac->max_rank() == rank_ && fac->end_separator() == 0) {
 
+      //CAREFUL here: this depends heavily on whether pair-seps are precomputed
+      // (we need to make sure that a chain/factor end is not counted twice)
       offs += temp;
     }
   }
@@ -164,6 +167,8 @@ double AllInclusiveSepCumTRWSVariable::reparameterize_backward() {
 
       if (fac->min_rank() == rank_ && fac->start_separator() == 0) {
 
+        //CAREFUL here: this depends heavily on whether pair-seps are precomputed
+        // (we need to make sure that a chain/factor end is not counted twice)
         offs += temp;
       }
     }
@@ -174,9 +179,12 @@ double AllInclusiveSepCumTRWSVariable::reparameterize_backward() {
 
 double AllInclusiveSepCumTRWSVariable::average(uint& arg_min) {
 
-  for (uint l=0; l < cost_.size(); l++)
+  const uint nLabels = cost_.size();
+
+  for (uint l=0; l < nLabels; l++)
     cum_cost_[l] = cost_[l];
 
+  //NOTE: I think we could also loop over the adjacent factors here
   for (uint c = 0; c < chain_link_.size(); c++) {
 
     for (uint f=0; f < chain_link_[c]->involved_factor_.size(); f++) {
@@ -185,7 +193,7 @@ double AllInclusiveSepCumTRWSVariable::average(uint& arg_min) {
   }
 
   double offs = 1e300;
-  for (uint l=0; l < cum_cost_.size(); l++) {
+  for (uint l=0; l < nLabels; l++) {
     if (cum_cost_[l] < offs) {
 
       offs = cum_cost_[l];
@@ -194,7 +202,7 @@ double AllInclusiveSepCumTRWSVariable::average(uint& arg_min) {
   }
 
 
-  for (uint l=0; l < cost_.size(); l++)
+  for (uint l=0; l < nLabels; l++)
     cum_cost_[l] = (cum_cost_[l] - offs) / chain_link_.size();
 
   return offs;
@@ -209,8 +217,6 @@ void AllInclusiveSepCumTRWSVariable::set_up_chains() {
 
   //check if the assumptions of the current implementation are satisfied
   for (uint f=0; f < adjacent_factor_.size(); f++) {
-
-    //std::cerr << "f: " << f << std::endl;
     
     AllInclusiveSepCumTRWSFactor* cur_fac = adjacent_factor_[f];
     AllInclusiveSepCumTRWSPairSeparator* start_sep = cur_fac->start_separator();
@@ -437,7 +443,9 @@ double AllInclusiveSepCumTRWSPairSeparator::reparameterize_forward() {
 
   double offs = 0.0;
 
-  for (uint c=0; c < chain_link_.size(); c++) {
+  const uint nChains = chain_link_.size();
+
+  for (uint c=0; c < nChains; c++) {
 
     AllInclusiveSepCumTRWSFactor* fac = chain_link_[c]->left_fac_;
 
@@ -461,7 +469,9 @@ double AllInclusiveSepCumTRWSPairSeparator::reparameterize_backward() {
 
   double offs = 0.0;
 
-  for (uint c=0; c < chain_link_.size(); c++) {
+  const uint nChains = chain_link_.size();
+
+  for (uint c=0; c < nChains; c++) {
 
     AllInclusiveSepCumTRWSFactor* fac = (chain_link_[c]->right_fac_ != 0) ? chain_link_[c]->right_fac_ : chain_link_[c]->left_fac_;
 
@@ -484,7 +494,9 @@ double AllInclusiveSepCumTRWSPairSeparator::average() {
 
   pair_parameters_.set_constant(0.0);
 
-  for (uint c=0; c < chain_link_.size(); c++) {
+  const uint nChains = chain_link_.size();
+
+  for (uint c=0; c < nChains; c++) {
   
     pair_parameters_ += chain_link_[c]->left_fac_->pair_reparameterization(this);
     if (chain_link_[c]->right_fac_ != 0)
@@ -495,8 +507,11 @@ double AllInclusiveSepCumTRWSPairSeparator::average() {
 
   double inv_nChains = 1.0 / chain_link_.size();
 
-  for (uint l1=0; l1 < pair_parameters_.xDim(); l1++)
-    for (uint l2=0; l2 < pair_parameters_.yDim(); l2++)
+  const uint xDim = pair_parameters_.xDim();
+  const uint yDim = pair_parameters_.yDim();
+
+  for (uint l1=0; l1 < xDim; l1++)
+    for (uint l2=0; l2 < yDim; l2++)
       pair_parameters_(l1,l2) = (pair_parameters_(l1,l2) - offs) * inv_nChains;
 
   return offs;
@@ -607,6 +622,8 @@ AllInclusiveSepCumTRWSFactor::AllInclusiveSepCumTRWSFactor(const Storage1D<AllIn
 						      Math1D::Vector<double>& /*forward*/)
 {
 
+  //this routine is only needed for debugging and independent computations of the current bound
+  // => we add an idle standard implementation
   assert(false);
   return 0.0;
 }
@@ -620,6 +637,8 @@ double AllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRW
 						     Math2D::Matrix<double>& /*forward*/)
 {
 
+  //this routine is only needed for debugging and independent computations of the current bound
+  // => we add an idle standard implementation
   assert(false);
   return 0.0;
 }
@@ -860,7 +879,10 @@ const AllInclusiveSepCumTRWSPairSeparator* AllInclusiveSepCumTRWSFactor::valid_s
 
 BinaryAllInclusiveSepCumTRWSFactor::BinaryAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
                                                                        const Math2D::Matrix<float>& cost) :
-  AllInclusiveSepCumTRWSFactor(vars,Storage1D<AllInclusiveSepCumTRWSPairSeparator*>()), cost_(cost) {}
+  AllInclusiveSepCumTRWSFactor(vars,Storage1D<AllInclusiveSepCumTRWSPairSeparator*>()), cost_(cost) {
+
+  assert(vars.size() == 2);
+}
   
 /*virtual*/ 
 double BinaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var) {
@@ -871,7 +893,7 @@ double BinaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInc
   const uint nLabels2 = involved_var_[1]->nLabels();
 
   Storage1D<Math1D::Vector<double> > param = var_reparameterization_;
-  for (uint v=0; v < involved_var_.size(); v++)
+  for (uint v=0; v < 2; v++)
     param[v] -= involved_var_[v]->cost();
 
   //this routine also updates reparameterization_
@@ -903,7 +925,7 @@ double BinaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInc
 
     idx = 1;
 
-    for (uint l2 = 0; l2 < nLabels1; l2++) {
+    for (uint l2 = 0; l2 < nLabels2; l2++) {
       
       double best = 1e300;
       
@@ -939,6 +961,31 @@ double BinaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllIn
   assert(false);
   return 0.0;
 }
+
+/*virtual*/ 
+double BinaryAllInclusiveSepCumTRWSFactor::best_value() {
+
+  const uint nLabels1 = involved_var_[0]->nLabels();
+  const uint nLabels2 = involved_var_[1]->nLabels();
+
+  double min_val = 1e300;
+
+  for (uint l1 = 0; l1 < nLabels1; l1++) {
+    
+    for (uint l2 = 0; l2 < nLabels2; l2++) {
+	
+      double hyp = cost_(l1,l2);
+      hyp += involved_var_[0]->cost()[l1] - var_reparameterization_[0][l1];
+      hyp += involved_var_[1]->cost()[l2] - var_reparameterization_[1][l2];
+      
+      if (hyp < min_val)
+        min_val = hyp;
+    }
+  }
+
+  return min_val;
+}
+
 
 /*virtual*/ 
 double BinaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* /*incoming_sep*/, 
@@ -1004,7 +1051,7 @@ double BinaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSep
     }    
   }
 
-  double offs = forward.min();
+  const double offs = forward.min();
   for (uint k=0; k < forward.size(); k++)
     forward[k] -= offs;
 
@@ -1017,7 +1064,10 @@ double BinaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSep
 TernaryAllInclusiveSepCumTRWSFactor::TernaryAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
 									 const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators,
 									 const Math3D::Tensor<float>& cost) :
-  AllInclusiveSepCumTRWSFactor(vars,separators), cost_(cost) {}
+  AllInclusiveSepCumTRWSFactor(vars,separators), cost_(cost) {
+
+  assert(vars.size() == 3);
+}
   
 /*virtual*/ 
 double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var) {
@@ -1089,6 +1139,8 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllIn
     const uint nLabels2 = involved_var_[1]->nLabels();
     const uint nLabels3 = involved_var_[2]->nLabels();
     
+    const uint nSeps = adjacent_separator_.size();
+
     Storage1D<Math1D::Vector<double> > param = var_reparameterization_;
     for (uint v=0; v < involved_var_.size(); v++) {
       param[v] -= involved_var_[v]->cost();
@@ -1113,7 +1165,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllIn
 	    double hyp = cost_(l1,l2,l3) - w2;
 	    hyp -= param[2][l3];
 	    
-	    for (uint s=0; s < adjacent_separator_.size(); s++)
+	    for (uint s=0; s < nSeps; s++)
 	      hyp += eval_pair(s,l1,l2,l3);
 	  
 	    if (hyp < best)
@@ -1143,7 +1195,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllIn
 	    double hyp = cost_(l1,l2,l3) - w1;
 	    hyp -= param[2][l3];
 
-	    for (uint s=0; s < adjacent_separator_.size(); s++)
+	    for (uint s=0; s < nSeps; s++)
 	      hyp += eval_pair(s,l1,l2,l3);
 	    
 	    if (hyp < best)
@@ -1174,7 +1226,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllIn
 	    double hyp = cost_(l1,l2,l3) - w1;
 	    hyp -= param[1][l2];
 	    
-	    for (uint s=0; s < adjacent_separator_.size(); s++)
+	    for (uint s=0; s < nSeps; s++)
 	      hyp += eval_pair(s,l1,l2,l3);
 	    
 	    if (hyp < best)
@@ -1216,10 +1268,12 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllI
       param[v] -= involved_var_[v]->cost();
   }
 
+  const uint nSeps = adjacent_separator_.size();
+
   uint s=0;
   while(adjacent_separator_[s] != pair) {
     s++;
-    assert (s < adjacent_separator_.size());
+    assert (s < nSeps);
   }
 
   Math2D::Matrix<double>& repar = pair_reparameterization_[s];
@@ -1242,7 +1296,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllI
 
             hyp -= param[2][l3]; 
 
-            for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+            for (uint ss=0; ss < nSeps; ss++) {
 
               if (ss != s)
                 hyp += eval_pair(ss,l1,l2,l3);
@@ -1272,7 +1326,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllI
 
             hyp -= param[1][l2]; 
 
-            for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+            for (uint ss=0; ss < nSeps; ss++) {
 
               if (ss != s)
                 hyp += eval_pair(ss,l1,l2,l3);
@@ -1303,7 +1357,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllI
 	  
           hyp -= param[0][l1]; 
 	  
-          for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+          for (uint ss=0; ss < nSeps; ss++) {
 	    
             if (ss != s)
               hyp += eval_pair(ss,l1,l2,l3);
@@ -1326,6 +1380,39 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllI
 
   return offs;
 }
+
+/*virtual*/ 
+double TernaryAllInclusiveSepCumTRWSFactor::best_value() {
+
+  const uint nLabels1 = involved_var_[0]->nLabels();
+  const uint nLabels2 = involved_var_[1]->nLabels();
+  const uint nLabels3 = involved_var_[2]->nLabels();
+
+  double min_val = 1e300;
+
+  for (uint l1 = 0; l1 < nLabels1; l1++) {
+    
+    for (uint l2 = 0; l2 < nLabels2; l2++) {
+	
+      for (uint l3 = 0; l3 < nLabels3; l3++) {
+
+        double hyp = cost_(l1,l2,l3);
+        hyp += involved_var_[0]->cost()[l1] - var_reparameterization_[0][l1];
+        hyp += involved_var_[1]->cost()[l2] - var_reparameterization_[1][l2];
+        hyp += involved_var_[2]->cost()[l3] - var_reparameterization_[2][l3];
+
+        for (uint s=0; s < adjacent_separator_.size(); s++)
+          hyp += eval_pair(s,l1,l2,l3);
+
+        if (hyp < min_val)
+          min_val = hyp;
+      }
+    }
+  }
+
+  return min_val;
+}
+
 
 /*virtual*/ 
 double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, 
@@ -1356,6 +1443,8 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
       pair_param[s] -= prev_pair_forward;
   }
 
+  const uint nSeps = adjacent_separator_.size();
+
   if (outgoing_var == involved_var_[0]) {
     
     forward.resize(nLabels1);
@@ -1373,7 +1462,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
           double hyp = cost_(l1,l2,l3) - w2;
           hyp -= param[2][l3];
 
-          for (uint s=0; s < adjacent_separator_.size(); s++)
+          for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
 	  
           if (hyp < best)
@@ -1388,7 +1477,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
 
     forward.resize(nLabels2);
 
-    for (uint l2 = 0; l2 < nLabels1; l2++) {
+    for (uint l2 = 0; l2 < nLabels2; l2++) {
       
       double best = 1e300;
       
@@ -1401,7 +1490,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
           double hyp = cost_(l1,l2,l3) - w1;
           hyp -= param[2][l3];
 
-          for (uint s=0; s < adjacent_separator_.size(); s++)
+          for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
 	  
           if (hyp < best)
@@ -1430,7 +1519,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
           double hyp = cost_(l1,l2,l3) - w1;
           hyp -= param[1][l2];
 
-          for (uint s=0; s < adjacent_separator_.size(); s++)
+          for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
 	  
           if (hyp < best)
@@ -1480,10 +1569,12 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
       pair_param[s] -= prev_pair_forward;
   }
 
+  const uint nSeps = adjacent_separator_.size();
+
   uint s=0;
   while(adjacent_separator_[s] != outgoing_sep) {
     s++;
-    assert (s < adjacent_separator_.size());
+    assert (s < nSeps);
   }
 
   if (outgoing_sep->var1() == involved_var_[0]) {
@@ -1503,7 +1594,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
 
             hyp -= param[2][l3]; 
 
-            for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+            for (uint ss=0; ss < nSeps; ss++) {
 
               hyp -= eval_pair(ss,l1,l2,l3,pair_param);
             }
@@ -1531,7 +1622,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
 
             hyp -= param[1][l2]; 
 
-            for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+            for (uint ss=0; ss < nSeps; ss++) {
 
               hyp -= eval_pair(ss,l1,l2,l3,pair_param);
             }
@@ -1560,7 +1651,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
 	  
           hyp -= param[0][l1]; 
 	  
-          for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+          for (uint ss=0; ss < nSeps; ss++) {
 	    
             hyp -= eval_pair(ss,l1,l2,l3,pair_param);
           }
@@ -1633,7 +1724,10 @@ double TernaryAllInclusiveSepCumTRWSFactor::eval_pair(uint pair_num, uint x, uin
 FourthOrderAllInclusiveSepCumTRWSFactor::FourthOrderAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
                                                                                  const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators,
                                                                                  const Storage1D<Math3D::Tensor<float> >& cost) :
-  AllInclusiveSepCumTRWSFactor(vars,separators), cost_(cost) {}
+  AllInclusiveSepCumTRWSFactor(vars,separators), cost_(cost) {
+
+  assert(vars.size() == 4);
+}
 
 
 /*virtual*/ 
@@ -1707,6 +1801,8 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
     const uint nLabels3 = involved_var_[2]->nLabels();
     const uint nLabels4 = involved_var_[3]->nLabels();
     
+    const uint nSeps = adjacent_separator_.size();
+
     Storage1D<Math1D::Vector<double> > param = var_reparameterization_;
     for (uint v=0; v < involved_var_.size(); v++) {
       param[v] -= involved_var_[v]->cost();
@@ -1721,6 +1817,8 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 	
 	double best = 1e300;
+
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
 	
 	for (uint l2 = 0; l2 < nLabels2; l2++) {
 	  
@@ -1732,10 +1830,10 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
 
             for (uint l4 = 0; l4 < nLabels4; l4++) {
 	  
-              double hyp = cost_[l1](l2,l3,l4) - w3;
+              double hyp = cur_cost(l2,l3,l4) - w3;
               hyp -= param[3][l4];
               
-              for (uint s=0; s < adjacent_separator_.size(); s++)
+              for (uint s=0; s < nSeps; s++)
                 hyp += eval_pair(s,l1,l2,l3,l4);
               
               if (hyp < best)
@@ -1753,13 +1851,15 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
 
       Math1D::Vector<double>& repar = var_reparameterization_[1];
 
-      for (uint l2 = 0; l2 < nLabels1; l2++) {
+      for (uint l2 = 0; l2 < nLabels2; l2++) {
       
 	double best = 1e300;
 	
 	for (uint l1 = 0; l1 < nLabels1; l1++) {
 	
 	  const double w1 = param[0][l1];
+
+          const Math3D::Tensor<float>& cur_cost = cost_[l1];
 	
 	  for (uint l3 = 0; l3 < nLabels3; l3++) {
 
@@ -1767,10 +1867,10 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
 
             for (uint l4 = 0; l4 < nLabels4; l4++) {
 	  
-              double hyp = cost_[l1](l2,l3,l4) - w3;
+              double hyp = cur_cost(l2,l3,l4) - w3;
               hyp -= param[3][l4];
               
-              for (uint s=0; s < adjacent_separator_.size(); s++)
+              for (uint s=0; s < nSeps; s++)
                 hyp += eval_pair(s,l1,l2,l3,l4);
               
               if (hyp < best)
@@ -1796,16 +1896,18 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
 	  
 	  const double w1 = param[0][l1];
 	
+          const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
 	  for (uint l2 = 0; l2 < nLabels2; l2++) {
 
             const double w2 = w1 + param[1][l2];
 
             for (uint l4 = 0; l4 < nLabels4; l4++) {
 	  
-              double hyp = cost_[l1](l2,l3,l4) - w2;
+              double hyp = cur_cost(l2,l3,l4) - w2;
               hyp -= param[3][l4];
               
-              for (uint s=0; s < adjacent_separator_.size(); s++)
+              for (uint s=0; s < nSeps; s++)
                 hyp += eval_pair(s,l1,l2,l3,l4);
               
               if (hyp < best)
@@ -1832,13 +1934,15 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
 	  
 	  const double w1 = param[0][l1];
 	
+          const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
 	  for (uint l2 = 0; l2 < nLabels2; l2++) {
 
             const double w2 = w1 + param[1][l2];
 
             for (uint l3 = 0; l3 < nLabels3; l3++) {
 
-              double hyp = cost_[l1](l2,l3,l4) - w2;
+              double hyp = cur_cost(l2,l3,l4) - w2;
               hyp -= param[2][l3];
               
               for (uint s=0; s < adjacent_separator_.size(); s++)
@@ -1887,10 +1991,12 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
       param[v] -= involved_var_[v]->cost();
   }
 
+  const uint nSeps = adjacent_separator_.size();
+
   uint s=0;
   while(adjacent_separator_[s] != pair) {
     s++;
-    assert (s < adjacent_separator_.size());
+    assert (s < nSeps);
   }
 
   Math2D::Matrix<double>& repar = pair_reparameterization_[s];
@@ -1918,7 +2024,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
               double hyp = cost_[l1](l2,l3,l4) - w3;
               hyp -= param[3][l4]; 
               
-              for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
                 
                 if (ss != s)
                   hyp += eval_pair(ss,l1,l2,l3,l4);
@@ -1954,7 +2060,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
               double hyp = cost_[l1](l2,l3,l4) - w2;
               hyp -= param[3][l4]; 
               
-              for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
                 
                 if (ss != s)
                   hyp += eval_pair(ss,l1,l2,l3,l4);
@@ -1992,7 +2098,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
               double hyp = cost_[l1](l2,l3,l4) - w2;
               hyp -= param[2][l3]; 
               
-              for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
                 
                 if (ss != s)
                   hyp += eval_pair(ss,l1,l2,l3,l4);
@@ -2031,7 +2137,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
               double hyp = cost_[l1](l2,l3,l4) - w1;
               hyp -= param[3][l4]; 
               
-              for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
                 
                 if (ss != s)
                   hyp += eval_pair(ss,l1,l2,l3,l4);
@@ -2069,7 +2175,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
               double hyp = cost_[l1](l2,l3,l4) - w1;
               hyp -= param[2][l3]; 
               
-              for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
                 
                 if (ss != s)
                   hyp += eval_pair(ss,l1,l2,l3,l4);
@@ -2108,7 +2214,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
             double hyp = cost_[l1](l2,l3,l4) - w1;
             hyp -= param[1][l2]; 
               
-            for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+            for (uint ss=0; ss < nSeps; ss++) {
               
               if (ss != s)
                 hyp += eval_pair(ss,l1,l2,l3,l4);
@@ -2135,6 +2241,45 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
 }
 
 /*virtual*/ 
+double FourthOrderAllInclusiveSepCumTRWSFactor::best_value() {
+
+  const uint nLabels1 = involved_var_[0]->nLabels();
+  const uint nLabels2 = involved_var_[1]->nLabels();
+  const uint nLabels3 = involved_var_[2]->nLabels();
+  const uint nLabels4 = involved_var_[2]->nLabels();
+
+  double min_val = 1e300;
+
+  const uint nSeps = adjacent_separator_.size();
+
+  for (uint l1 = 0; l1 < nLabels1; l1++) {
+    
+    for (uint l2 = 0; l2 < nLabels2; l2++) {
+	
+      for (uint l3 = 0; l3 < nLabels3; l3++) {
+
+        for (uint l4 = 0; l4 < nLabels4; l4++) {
+
+          double hyp = cost_[l1](l2,l3,l4);
+          hyp += involved_var_[0]->cost()[l1] - var_reparameterization_[0][l1];
+          hyp += involved_var_[1]->cost()[l2] - var_reparameterization_[1][l2];
+          hyp += involved_var_[2]->cost()[l3] - var_reparameterization_[2][l3];
+          hyp += involved_var_[3]->cost()[l4] - var_reparameterization_[3][l4];
+
+          for (uint s=0; s < nSeps; s++)
+            hyp += eval_pair(s,l1,l2,l3,l4);
+  
+          if (hyp < min_val)
+            min_val = hyp;
+        }
+      }
+    }
+  }
+
+  return min_val;
+}
+
+/*virtual*/ 
 double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, 
                                                                 const AllInclusiveSepCumTRWSVariable* incoming_var, 
                                                                 const AllInclusiveSepCumTRWSVariable* outgoing_var,
@@ -2156,6 +2301,8 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
       param[v] -= prev_var_forward;
   }
 
+  const uint nSeps = adjacent_separator_.size();
+
   Storage1D<Math2D::Matrix<double> > pair_param = pair_reparameterization_;
   for (uint s=0; s < pair_param.size(); s++) {
     
@@ -2165,7 +2312,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
   }
 
   if (outgoing_var == involved_var_[0]) {
-    
+
     forward.resize(nLabels1);
 
     for (uint l1 = 0; l1 < nLabels1; l1++) {
@@ -2184,7 +2331,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
             hyp -= param[2][l3];
             hyp -= param[3][l4];
             
-            for (uint s=0; s < adjacent_separator_.size(); s++)
+            for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
             
             if (hyp < best)
@@ -2200,7 +2347,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
 
     forward.resize(nLabels2);
 
-    for (uint l2 = 0; l2 < nLabels1; l2++) {
+    for (uint l2 = 0; l2 < nLabels2; l2++) {
       
       double best = 1e300;
       
@@ -2216,7 +2363,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
             hyp -= param[2][l3];
             hyp -= param[3][l4];
             
-            for (uint s=0; s < adjacent_separator_.size(); s++)
+            for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
             
             if (hyp < best)
@@ -2248,7 +2395,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
             hyp -= param[1][l2];
             hyp -= param[3][l4];
 
-            for (uint s=0; s < adjacent_separator_.size(); s++)
+            for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
 	  
             if (hyp < best)
@@ -2280,7 +2427,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
             hyp -= param[1][l2];
             hyp -= param[2][l3];
 
-            for (uint s=0; s < adjacent_separator_.size(); s++)
+            for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
 	  
             if (hyp < best)
@@ -2322,6 +2469,8 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
       param[v] -= prev_var_forward;
   }
 
+  const uint nSeps = adjacent_separator_.size();
+
   Storage1D<Math2D::Matrix<double> > pair_param = pair_reparameterization_;
   for (uint s=0; s < pair_param.size(); s++) {
 
@@ -2334,7 +2483,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
   uint s=0;
   while(adjacent_separator_[s] != outgoing_sep) {
     s++;
-    assert (s < adjacent_separator_.size());
+    assert (s < nSeps);
   }
 
 
@@ -2357,7 +2506,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
               hyp -= param[2][l3]; 
               hyp -= param[3][l4]; 
               
-              for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
                 
                 hyp -= eval_pair(ss,l1,l2,l3,l4,pair_param);
               }
@@ -2388,7 +2537,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
               hyp -= param[1][l2]; 
               hyp -= param[3][l4]; 
               
-              for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
                 
                 hyp -= eval_pair(ss,l1,l2,l3,l4,pair_param);
               }
@@ -2421,7 +2570,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
               hyp -= param[1][l2]; 
               hyp -= param[2][l3]; 
               
-              for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
                 
                 hyp -= eval_pair(ss,l1,l2,l3,l4,pair_param);
               }
@@ -2455,7 +2604,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
               hyp -= param[0][l1]; 
               hyp -= param[3][l4]; 
               
-              for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
                 
                 hyp -= eval_pair(ss,l1,l2,l3,l4,pair_param);
               }
@@ -2488,7 +2637,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
               hyp -= param[0][l1]; 
               hyp -= param[2][l3]; 
               
-              for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
                 
                 hyp -= eval_pair(ss,l1,l2,l3,l4,pair_param);
               }
@@ -2522,7 +2671,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
             hyp -= param[0][l1]; 
             hyp -= param[1][l2]; 
               
-            for (uint ss=0; ss < adjacent_separator_.size(); ss++) {
+            for (uint ss=0; ss < nSeps; ss++) {
               
               hyp -= eval_pair(ss,l1,l2,l3,l4,pair_param);
             }
@@ -2627,6 +2776,12 @@ AllInclusiveSepCumTRWS::~AllInclusiveSepCumTRWS() {
 }
 
 uint AllInclusiveSepCumTRWS::add_var(const Math1D::Vector<float>& cost) {
+
+  assert(!optimize_called_);
+
+  if (nUsedVars_ == var_.size())
+    var_.resize(uint(1.2*nUsedVars_)+4);
+
   assert(nUsedVars_ < var_.size());
 
   var_[nUsedVars_] = new AllInclusiveSepCumTRWSVariable(cost,nUsedVars_);
@@ -2636,6 +2791,11 @@ uint AllInclusiveSepCumTRWS::add_var(const Math1D::Vector<float>& cost) {
 }
 
 uint AllInclusiveSepCumTRWS::add_pair_separator(uint var1, uint var2) {
+
+  assert(!optimize_called_);
+
+  if (nUsedSeparators_ == separator_.size())
+    separator_.resize(uint(1.2*nUsedSeparators_)+4);
 
   assert(nUsedSeparators_ < separator_.size());
 
@@ -2647,6 +2807,17 @@ uint AllInclusiveSepCumTRWS::add_pair_separator(uint var1, uint var2) {
   return nUsedSeparators_-1;
 }
 
+void AllInclusiveSepCumTRWS::add_factor(AllInclusiveSepCumTRWSFactor* fac) {
+
+  assert(!optimize_called_);
+
+  if (nUsedFactors_ == factor_.size())
+    factor_.resize(uint(1.2*nUsedFactors_)+4);
+
+  factor_[nUsedFactors_] = fac;
+  nUsedFactors_++;
+}
+
 void AllInclusiveSepCumTRWS::add_binary_factor(uint v1, uint v2, const Math2D::Matrix<float>& cost)
 {
 
@@ -2654,8 +2825,7 @@ void AllInclusiveSepCumTRWS::add_binary_factor(uint v1, uint v2, const Math2D::M
   vars[0] = var_[v1];
   vars[1] = var_[v2];
 
-  factor_[nUsedFactors_] = new BinaryAllInclusiveSepCumTRWSFactor(vars,cost);
-  nUsedFactors_++;
+  add_factor(new BinaryAllInclusiveSepCumTRWSFactor(vars,cost));
 }
 
 void AllInclusiveSepCumTRWS::add_ternary_factor(uint v1, uint v2, uint v3, const Storage1D<uint>& separators,
@@ -2723,8 +2893,8 @@ void AllInclusiveSepCumTRWS::add_ternary_factor(uint v1, uint v2, uint v3, const
   for (uint s=0; s < separators.size(); s++)
     seps[s] = separator_[separators[s]];
 
-  factor_[nUsedFactors_] = new TernaryAllInclusiveSepCumTRWSFactor(vars,seps,cost_copy);
-  nUsedFactors_++;
+
+  add_factor(new TernaryAllInclusiveSepCumTRWSFactor(vars,seps,cost_copy));
 }
 
 void AllInclusiveSepCumTRWS::add_fourth_order_factor(uint v1, uint v2, uint v3, uint v4, const Storage1D<uint>& separators,
@@ -2800,9 +2970,8 @@ void AllInclusiveSepCumTRWS::add_fourth_order_factor(uint v1, uint v2, uint v3, 
   Storage1D<AllInclusiveSepCumTRWSPairSeparator*> seps(separators.size());
   for (uint s=0; s < separators.size(); s++)
     seps[s] = separator_[separators[s]];
-  
-  factor_[nUsedFactors_] = new FourthOrderAllInclusiveSepCumTRWSFactor(vars,seps,cost_copy);
-  nUsedFactors_++;
+
+  add_factor(new FourthOrderAllInclusiveSepCumTRWSFactor(vars,seps,cost_copy));
 }
 
 double AllInclusiveSepCumTRWS::optimize(uint nIter)
@@ -2819,8 +2988,6 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter)
 
     uint next_sep_rank = 0;
     
-    std::cerr << "A" << std::endl;
-    
     for (uint v=0; v < nUsedVars_; v++) {
       
       const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& adj_sep = var_[v]->adjacent_separators();
@@ -2835,22 +3002,14 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter)
       }
     }
     
-    std::cerr << "B" << std::endl;
-    
     for (uint f=0; f < nUsedFactors_; f++)
       factor_[f]->compute_rank_range();
-    
-    std::cerr << "C" << std::endl;
     
     for (uint s=0; s < nUsedSeparators_; s++) {
       separator_[s]->set_up_chains();
     }
     
-    std::cerr << "D" << std::endl;
-    
     for (uint v=0; v < nUsedVars_; v++) {
-      //std::cerr << "v: " << v << std::endl;
-      
       var_[v]->set_up_chains();
     }
     
@@ -2863,7 +3022,6 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter)
   }
 
   uint arg_min;
-  //double temp;
   
   std::cerr << "starting main loop of memory-efficient scheme" << std::endl;
 
@@ -2890,20 +3048,12 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter)
     std::cerr << "predicted message effort: " << message_effort << std::endl;
   }
 
-
   for (uint iter=1; iter <= nIter; iter++) {
 
     /*** forward ***/
 
-    //DEBUG
-    // double single_share = 0.0;
-    // double fwd_av_share = 0.0;
-    //END_DEBUG
-    
     double fwd_bound = 0.0;
     for (uint v=0; v < nUsedVars_; v++) {
-
-      //std::cerr << "v: " << v << std::endl;
 
       //average the separators
       const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& adj_sep = var_[v]->adjacent_separators();
@@ -2916,41 +3066,21 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter)
 
 	  double temp = adj_sep[s]->average();
 	  fwd_bound += temp;
-	  //fwd_av_share += temp;
 	}
       }
 
-
-      //std::cerr << "now averaging var" << std::endl;
-
       //now average the var
       double temp = var_[v]->reparameterize_forward();
-      //single_share += temp;
       fwd_bound += temp;
-
-      //std::cerr << "xx" << std::endl;
 
       temp = var_[v]->average(arg_min);
       fwd_bound += temp;
-      //fwd_av_share += temp;
       labeling_[v] = arg_min;
     }
 
     std::cerr << "iteration " << iter << ", forward bound: " << fwd_bound << std::endl;
-    //std::cerr << "single share: " << single_share << ", av share: " << fwd_av_share << std::endl;
-    //double indep_bound = fwd_av_share + cur_bound();
-    //std::cerr << "independent bound: " << indep_bound << std::endl;
 
     /*** backward ***/
-
-    //TEMP
-    // for (uint f=0; f < nUsedFactors_; f++)
-    //   factor_[f]->valid_sep_ = 255;
-    //END_TEMP
-
-    //DEBUG
-    //double bwd_av_share = 0.0;
-    //END_DEBUG
 
     double bwd_bound = 0.0;
     for (int v=nUsedVars_-1; v >= 0; v--) {
@@ -2961,7 +3091,6 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter)
 
       double temp = var_[v]->average(arg_min);
       bwd_bound += temp;
-      //bwd_av_share += temp;
       labeling_[v] = arg_min;
 
       //now average the pair separators
@@ -2975,17 +3104,12 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter)
 
 	  double temp = adj_sep[s]->average();
 	  bwd_bound += temp;
-	  //bwd_av_share += temp;
 	}
       }
-
     }
 
 
     std::cerr << "iteration " << iter << ", backward bound: " << bwd_bound << std::endl;
-
-    //double bwd_indep_bound = bwd_av_share + cur_bound(true);
-    //std::cerr << "independent bound: " << bwd_indep_bound << std::endl;
 
     bound = bwd_bound;
   }
@@ -3066,17 +3190,41 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 	Math2D::Matrix<double> pair_backward1;
 	Math2D::Matrix<double> pair_backward2;
 
+	//double prev_bwd = 0.0;
+
 	if (chain_length > 1) {
 	  if (out_var[chain_length-2] != 0) {
 	    double offs = chain.back()->compute_forward(0,out_var.back(),out_var[chain_length-2],pair_backward2,backward2,backward1);
 	    bound += offs;
+
+	    //DEBUG
+	    // double computed = backward1.min() + offs - prev_bwd;
+	    // if (fabs(computed-chain.back()->stored_forward_) > 0.01) {
+	      
+	    //   std::cerr << "stored: " << chain.back()->stored_forward_ << ", computed: " << computed << std::endl;
+	      
+	    // }
+ 	    // assert(fabs(offs-chain.back()->stored_forward_) <= 0.01);
+	    // prev_bwd = backward1.min();
+	    //END_DEBUG
 	  }
 	  else {
 	    double offs = chain.back()->compute_forward(0,out_var.back(),out_sep[chain_length-2],pair_backward2,backward2,pair_backward1);
 	    bound += offs;
 
 	    assert(offs == 0.0);
-          }
+
+	    //DEBUG
+	    // double computed = pair_backward1.min() + offs - prev_bwd;
+	    // if (fabs(computed-chain.back()->stored_forward_) > 0.01) {
+	      
+	    //   std::cerr << "stored: " << chain.back()->stored_forward_ << ", computed: " << computed << std::endl;
+	    //   std::cerr << "backward: " << pair_backward1 << std::endl;
+	    // }
+	    // assert(fabs(computed-chain.back()->stored_forward_) <= 0.01);
+	    // prev_bwd = pair_backward1.min(); 
+	    //END_DEBUG	    
+	  }
 	}
 	else {
 	  backward1.resize(out_var[0]->nLabels(),0.0);
@@ -3089,12 +3237,12 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
         
 	  Math2D::Matrix<double>& last_pair_backward = (((int(chain_length)-1-k) % 2) == 1) ? pair_backward1 : pair_backward2;
 	  Math2D::Matrix<double>& new_pair_backward = (((int(chain_length)-1-k) % 2) == 0) ? pair_backward1 : pair_backward2;
-
+	
 	  if (k == 0) {
 
 	    double offs = chain[0]->compute_forward(out_sep[k],out_var[k],in_var,last_pair_backward,last_backward,new_backward);
 	    bound += offs;
-	  }
+          }
 	  else {
 
 	    if (out_var[k-1] != 0) {
@@ -3104,7 +3252,7 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 	    else {
 	      double offs = chain[k]->compute_forward(out_sep[k],out_var[k],out_sep[k-1],last_pair_backward,last_backward,new_pair_backward);
 	      bound += offs;
-	    }
+            }
 	  }
 	}
 	
@@ -3117,7 +3265,6 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
       }
       else {
 
-
 	Math1D::NamedVector<double> forward1(MAKENAME(forward1));
 	Math1D::NamedVector<double> forward2(in_var->nLabels(),0.0,MAKENAME(forward2));
 	
@@ -3128,7 +3275,7 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 	if (out_var[0] != 0) {
 	  double offs = chain[0]->compute_forward(0,in_var,out_var[0],pair_forward2,forward2,forward1);
 	  bound += offs;
-        }
+	}
 	else {
 	  bound += chain[0]->compute_forward(0,in_var,out_sep[0],pair_forward2,forward2,pair_forward1);
 	}
@@ -3149,7 +3296,7 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 	  else {
 	    bound += chain[k]->compute_forward(out_sep[k-1],out_var[k-1],out_sep[k],
 					       last_pair_forward,last_forward,new_pair_forward);
-	  }
+          }
 	}
 
 	Math1D::Vector<double>& new_forward = (((chain_length-1) % 2) == 0) ? forward1 : forward2;
@@ -3165,5 +3312,9 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 
   return bound;
 }
+
+
+
+/************************************************************************************************************/
 
 

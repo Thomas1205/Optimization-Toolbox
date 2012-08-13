@@ -7,7 +7,7 @@
 #include "stl_out.hh"
 
 
-CumTRWSVar::CumTRWSVar(const Math1D::Vector<float>& cost, uint rank) : cost_(cost), rank_(rank) {
+CumTRWSVar::CumTRWSVar(const Math1D::Vector<float>& cost, uint rank) : cost_(cost), rank_(rank), nChains_(1) {
   cum_cost_.resize(cost.size());
   for (uint k=0; k < cum_cost_.size(); k++) {
     //convert float->double
@@ -16,7 +16,14 @@ CumTRWSVar::CumTRWSVar(const Math1D::Vector<float>& cost, uint rank) : cost_(cos
 }
 
 void CumTRWSVar::add_cost(const Math1D::Vector<float>& add_cost) {
-  cost_ += add_cost;
+
+  if (add_cost.size() != cost_.size()) {
+    INTERNAL_ERROR << "cannot add cost due to incompatible vector sizes: " << cost_.size() << " and " << add_cost.size() << std::endl;
+    exit(1);
+  }
+
+  for (uint i=0; i < cost_.size(); i++)
+    cost_[i] += add_cost[i] / float(nChains_);
 }
 
 void CumTRWSVar::set_up_chains() {
@@ -58,22 +65,25 @@ void CumTRWSVar::add_factor(CumTRWSFactor* factor) {
 
 double CumTRWSVar::average(uint& arg_min) {
 
-  for (uint l=0; l < cost_.size(); l++)
-    cum_cost_[l] = cost_[l];
+  const uint nLabels = cost_.size();
+  const uint nFactors = adjacent_factor_.size();
 
-  for (uint k=0; k < adjacent_factor_.size(); k++)
+  for (uint l=0; l < nLabels; l++)
+    cum_cost_[l] = cost_[l]; //convert float -> double
+
+  for (uint k=0; k < nFactors; k++)
     cum_cost_ += adjacent_factor_[k]->reparameterization(this);
 
   double offs = 1e300;
 
-  for (uint l=0; l < cost_.size(); l++) {
+  for (uint l=0; l < nLabels; l++) {
     if (cum_cost_[l] < offs) {
       offs = cum_cost_[l];
       arg_min = l;
     }
   }
 
-  for (uint l=0; l < cost_.size(); l++) {
+  for (uint l=0; l < nLabels; l++) {
     cum_cost_[l] -= offs;
   }
 
@@ -136,7 +146,7 @@ void CumTRWSFactor::compute_rank_range() {
   min_rank_ = MAX_UINT;
   max_rank_ = 0;
 
-  uint nVars = involved_var_.size();
+  const uint nVars = involved_var_.size();
 
   for (uint v=0; v < nVars; v++) {
 
@@ -167,10 +177,11 @@ const Math1D::Vector<double>& CumTRWSFactor::reparameterization(const CumTRWSVar
 BinaryCumTRWSFactor::BinaryCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars,
                                          const Math2D::Matrix<float>& cost) : 
   CumTRWSFactor(involved_vars), cost_(cost) {
+  assert(involved_vars.size() == 2);
 }
 
 /*virtual*/ double BinaryCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
-
+  
   double offs = 0.0;
 
   const uint nLabels1 = involved_var_[0]->nLabels();
@@ -236,7 +247,9 @@ BinaryCumTRWSFactor::BinaryCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_
 /********************/
 
 TernaryCumTRWSFactorBase::TernaryCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars) :
-  CumTRWSFactor(involved_vars) {}
+  CumTRWSFactor(involved_vars) {
+  assert(involved_vars.size() == 3);
+}
   
 double TernaryCumTRWSFactorBase::compute_reparameterization(CumTRWSVar* var, const Math3D::Tensor<float>& cost) {
 
@@ -265,7 +278,7 @@ double TernaryCumTRWSFactorBase::compute_reparameterization(CumTRWSVar* var, con
 
       for (uint l2 = 0; l2 < nLabels2; l2++) {
 
-        double w2 = param[1][l2];
+        const double w2 = param[1][l2];
 	
         for (uint l3 = 0; l3 < nLabels3; l3++) {
 	  
@@ -291,7 +304,7 @@ double TernaryCumTRWSFactorBase::compute_reparameterization(CumTRWSVar* var, con
       
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 
-        double w1 = param[0][l1];
+        const double w1 = param[0][l1];
 	
         for (uint l3 = 0; l3 < nLabels3; l3++) {
 	  
@@ -318,7 +331,7 @@ double TernaryCumTRWSFactorBase::compute_reparameterization(CumTRWSVar* var, con
       
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 
-        double w1 = param[0][l1];
+        const double w1 = param[0][l1];
 	
         for (uint l2 = 0; l2 < nLabels2; l2++) {
 	  
@@ -396,16 +409,16 @@ SecondDiffCumTRWSFactor::SecondDiffCumTRWSFactor(const Storage1D<CumTRWSVar*>& i
 
       for (int l2 = std::max(0,l1-1); l2 <= std::min<int>(nLabels2-1,l1+1); l2++) {
 
-        double w2 = param[1][l2];
+        const double w2 = param[1][l2];
 
-        int part = - 2*l2 + l1;
+        const int part = - 2*l2 + l1;
 
         for (int l3 = std::max(0,l2-1); l3 <= std::min<int>(nLabels3-1,l2+1); l3++) {
 	
           assert(abs(l2-l1) <= 1);
           assert(abs(l3-l2) <= 1);
 
-          int so_diff = l3 + part; //- 2*l2 + l1;
+          const int so_diff = l3 + part; //- 2*l2 + l1;
 	  
           double hyp = 1e300;
 
@@ -438,16 +451,16 @@ SecondDiffCumTRWSFactor::SecondDiffCumTRWSFactor(const Storage1D<CumTRWSVar*>& i
 
       for (int l1 = std::max(0,l2-1); l1 <= std::min<int>(nLabels1-1,l2+1); l1++) {
 
-        double w1 = param[0][l1];
+        const double w1 = param[0][l1];
 
-        int part = - 2*l2 + l1;
+        const int part = - 2*l2 + l1;
 
         for (int l3 = std::max(0,l2-1); l3 <= std::min<int>(nLabels3-1,l2+1); l3++) {
 
           assert(abs(l2-l1) <= 1);
           assert(abs(l3-l2) <= 1);
 
-          int so_diff = l3 + part; //- 2*l2 + l1;
+          const int so_diff = l3 + part; //- 2*l2 + l1;
 	  
           double hyp = 1e300;
 
@@ -482,16 +495,16 @@ SecondDiffCumTRWSFactor::SecondDiffCumTRWSFactor(const Storage1D<CumTRWSVar*>& i
 
       for (int l2 = std::max(0,l3-1); l2 <= std::min<int>(nLabels2-1,l3+1); l2++) {
 
-        double w2 = param[1][l2];
+        const double w2 = param[1][l2];
 
-        int part = l3 - 2*l2;
+        const int part = l3 - 2*l2;
 
         for (int l1 = std::max(0,l2-1); l1 <= std::min<int>(nLabels1-1,l2+1); l1++) {
 
           assert(abs(l2-l1) <= 1);
           assert(abs(l3-l2) <= 1);
 
-          int so_diff = part + l1; //l3 - 2*l2 + l1;
+          const int so_diff = part + l1; //l3 - 2*l2 + l1;
 	  
           double hyp = 1e300;
 
@@ -525,7 +538,9 @@ SecondDiffCumTRWSFactor::SecondDiffCumTRWSFactor(const Storage1D<CumTRWSVar*>& i
 
 FourthOrderCumTRWSFactor::FourthOrderCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars,
                                                    const Storage1D<Math3D::Tensor<float> >& cost) :
-  CumTRWSFactor(involved_vars), cost_(cost) {}
+  CumTRWSFactor(involved_vars), cost_(cost) {
+  assert(involved_vars.size() == 4);
+}
 
 /*virtual*/ double FourthOrderCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
 
@@ -553,18 +568,20 @@ FourthOrderCumTRWSFactor::FourthOrderCumTRWSFactor(const Storage1D<CumTRWSVar*>&
     for (uint l1 = 0; l1 < nLabels1; l1++) {
       
       double best = 1e300;
+
+      const Math3D::Tensor<float>& cur_cost = cost_[l1];
       
       for (uint l2 = 0; l2 < nLabels2; l2++) {
 
-        double w2 = param[1][l2];
+        const double w2 = param[1][l2];
 	
         for (uint l3 = 0; l3 < nLabels3; l3++) {
 
-          double sum3 = w2 + param[2][l3];
+          const double sum3 = w2 + param[2][l3];
 
           for (uint l4 = 0; l4 < nLabels4; l4++) {
 	  
-            double hyp = cost_[l1](l2,l3,l4) 
+            double hyp = cur_cost(l2,l3,l4) 
               - sum3 - param[3][l4];
 	  
             if (hyp < best)
@@ -587,16 +604,18 @@ FourthOrderCumTRWSFactor::FourthOrderCumTRWSFactor(const Storage1D<CumTRWSVar*>&
       double best = 1e300;
       
       for (uint l1 = 0; l1 < nLabels1; l1++) {
+
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
 	
-        double w1 = param[0][l1];
+        const double w1 = param[0][l1];
 
         for (uint l3 = 0; l3 < nLabels3; l3++) {
 
-          double sum3 = w1 + param[2][l3];
+          const double sum3 = w1 + param[2][l3];
 
           for (uint l4 = 0; l4 < nLabels3; l4++) {
 	  
-            double hyp = cost_[l1](l2,l3,l4) 
+            double hyp = cur_cost(l2,l3,l4) 
               - sum3 - param[3][l4];
 	  
             if (hyp < best)
@@ -619,16 +638,18 @@ FourthOrderCumTRWSFactor::FourthOrderCumTRWSFactor(const Storage1D<CumTRWSVar*>&
       double best = 1e300;
       
       for (uint l1 = 0; l1 < nLabels1; l1++) {
+
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
 	
-        double w1 = param[0][l1];
+        const double w1 = param[0][l1];
 
         for (uint l2 = 0; l2 < nLabels2; l2++) {
 
-          double sum2 = w1 + param[1][l2];
+          const double sum2 = w1 + param[1][l2];
 
           for (uint l4 = 0; l4 < nLabels4; l4++) {
 	  
-            double hyp = cost_[l1](l2,l3,l4) 
+            double hyp = cur_cost(l2,l3,l4) 
               - sum2 - param[3][l4];
 	  
             if (hyp < best)
@@ -654,15 +675,17 @@ FourthOrderCumTRWSFactor::FourthOrderCumTRWSFactor(const Storage1D<CumTRWSVar*>&
       
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 
-        double w1 = param[0][l1];
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
+        const double w1 = param[0][l1];
 	
         for (uint l2 = 0; l2 < nLabels2; l2++) {
 
-          double sum2 = w1 + param[1][l2];
+          const double sum2 = w1 + param[1][l2];
 
           for (uint l3 = 0; l3 < nLabels3; l3++) {
 	  
-            double hyp = cost_[l1](l2,l3,l4) 
+            double hyp = cur_cost(l2,l3,l4) 
               - sum2 - param[2][l3];
 	  
             if (hyp < best)
@@ -687,7 +710,11 @@ FourthOrderCumTRWSFactor::FourthOrderCumTRWSFactor(const Storage1D<CumTRWSVar*>&
 /********************/
 
 OneOfNCumTRWSFactor::OneOfNCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars) :
-  CumTRWSFactor(involved_vars) {}
+  CumTRWSFactor(involved_vars) {
+
+  for (uint v=0; v < involved_vars.size(); v++)
+    assert(involved_vars[v]->nLabels() == 2);
+}
 
 /*virtual*/ double OneOfNCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
 
@@ -746,7 +773,11 @@ OneOfNCumTRWSFactor::OneOfNCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_
 /********************/
 
 CardinalityCumTRWSFactor::CardinalityCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Math1D::Vector<float>& cost) :
-  CumTRWSFactor(involved_vars), cost_(cost) {}
+  CumTRWSFactor(involved_vars), cost_(cost) {
+
+  for (uint v=0; v < involved_vars.size(); v++)
+    assert(involved_vars[v]->nLabels() == 2);
+}
   
 /*virtual*/ double CardinalityCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
 
@@ -820,6 +851,9 @@ CardinalityCumTRWSFactor::CardinalityCumTRWSFactor(const Storage1D<CumTRWSVar*>&
 BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Storage1D<bool>& positive,
                                      int rhs_lower, int rhs_upper) :
   CumTRWSFactor(involved_vars), positive_(positive), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper) {
+
+  for (uint v=0; v < involved_vars.size(); v++)
+    assert(involved_vars[v]->nLabels() == 2);
 
   assert(rhs_lower_ <= rhs_upper_);
 
@@ -1025,10 +1059,6 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
     std::cerr << "var params:" << std::endl;
     for (uint v=0; v < involved_var_.size(); v++)
       std::cerr << involved_var_[v]->cost() << std::endl;
-
-    //DEBUG
-    exit(1);
-    //END_DEBUG
   }
 
   for (uint k=0; k < 2; k++)
@@ -1053,26 +1083,39 @@ CumFactorTRWS::~CumFactorTRWS() {
 
 void CumFactorTRWS::add_var(const Math1D::Vector<float>& cost) {
 
+  assert(!optimize_called_);
+
+  if (nUsedVars_ == var_.size())
+    var_.resize(uint(nUsedVars_*1.2)+4);
+
   assert(nUsedVars_ < var_.size());
   var_[nUsedVars_] = new CumTRWSVar(cost,nUsedVars_);
   rank2var_[nUsedVars_] = nUsedVars_;
 
   nUsedVars_++;
 }
+
+void CumFactorTRWS::add_factor(CumTRWSFactor* fac) {
+
+  assert(!optimize_called_);
+
+  if (factor_.size() == nUsedFactors_)
+    factor_.resize(uint(nUsedFactors_*1.2)+4);
+
+  factor_[nUsedFactors_] = fac;
+  nUsedFactors_++;
+}
   
 void CumFactorTRWS::add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost) {
+
+  assert(var1 < nUsedVars_);
+  assert(var2 < nUsedVars_);
 
   Storage1D<CumTRWSVar*> vars(2);
   vars[0] = var_[var1];
   vars[1] = var_[var2];
 
-  assert(var1 < nUsedVars_);
-  assert(var2 < nUsedVars_);
-  assert(nUsedFactors_ < factor_.size());
-
-  factor_[nUsedFactors_] = new BinaryCumTRWSFactor(vars,cost);
-
-  nUsedFactors_++;
+  add_factor(new BinaryCumTRWSFactor(vars,cost));
 }
 
 void CumFactorTRWS::add_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref) {
@@ -1082,14 +1125,14 @@ void CumFactorTRWS::add_ternary_factor(uint var1, uint var2, uint var3, const Ma
   vars[1] = var_[var2];
   vars[2] = var_[var3];
 
-  assert(nUsedFactors_ < factor_.size());
+  CumTRWSFactor* new_fac = 0;
 
   if (!ref)
-    factor_[nUsedFactors_] = new TernaryCumTRWSFactor(vars,cost);
+    new_fac = new TernaryCumTRWSFactor(vars,cost);
   else
-    factor_[nUsedFactors_] = new TernaryCumTRWSRefFactor(vars,cost);
+    new_fac = new TernaryCumTRWSRefFactor(vars,cost);
 
-  nUsedFactors_++;
+  add_factor(new_fac);
 }
 
 void CumFactorTRWS::add_second_diff_factor(uint var1, uint var2, uint var3, float lambda) {
@@ -1099,11 +1142,7 @@ void CumFactorTRWS::add_second_diff_factor(uint var1, uint var2, uint var3, floa
   vars[1] = var_[var2];
   vars[2] = var_[var3];
 
-  assert(nUsedFactors_ < factor_.size());
-
-  factor_[nUsedFactors_] = new SecondDiffCumTRWSFactor(vars,lambda);
-
-  nUsedFactors_++;
+  add_factor(new SecondDiffCumTRWSFactor(vars,lambda));
 }
 
 void CumFactorTRWS::add_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
@@ -1115,11 +1154,7 @@ void CumFactorTRWS::add_fourth_order_factor(uint var1, uint var2, uint var3, uin
   vars[2] = var_[var3];
   vars[3] = var_[var4];
 
-  assert(nUsedFactors_ < factor_.size());
-
-  factor_[nUsedFactors_] = new FourthOrderCumTRWSFactor(vars,cost);
-
-  nUsedFactors_++;
+  add_factor(new FourthOrderCumTRWSFactor(vars,cost));
 }
 
 void CumFactorTRWS::add_one_of_n_factor(Math1D::Vector<uint>& var) {
@@ -1129,11 +1164,7 @@ void CumFactorTRWS::add_one_of_n_factor(Math1D::Vector<uint>& var) {
   for (uint k=0; k < var.size(); k++)
     vars[k] = var_[var[k]];
 
-  assert(nUsedFactors_ < factor_.size());
-
-  factor_[nUsedFactors_] = new OneOfNCumTRWSFactor(vars);
-
-  nUsedFactors_++;
+  add_factor(new OneOfNCumTRWSFactor(vars));
 }
 
 void CumFactorTRWS::add_cardinality_factor(Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost) {
@@ -1147,12 +1178,8 @@ void CumFactorTRWS::add_cardinality_factor(Math1D::Vector<uint>& var, const Math
   
     for (uint k=0; k < var.size(); k++)
       vars[k] = var_[var[k]];
-    
-    assert(nUsedFactors_ < factor_.size());
-    
-    factor_[nUsedFactors_] = new CardinalityCumTRWSFactor(vars,cost);
-    
-    nUsedFactors_++;  
+
+    add_factor(new CardinalityCumTRWSFactor(vars,cost));
   }
 }
 
@@ -1172,7 +1199,16 @@ void CumFactorTRWS::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
     }
   }
 
+
   if (nUseful != 0) {
+    // if (nUseful < 2) {
+    //   std::cerr << "only " << nUseful << " out of " << var.size() << " variables are actually not fixed" << std::endl;
+    
+    //   for (uint k=0; k < var.size(); k++)
+    //     std::cerr << "cost: " << var_[var[k]]->cost() << std::endl;
+
+    //   std::cerr << "var: " << var << std::endl;
+    // }
 
     assert(nUseful >= 2);
     
@@ -1191,11 +1227,8 @@ void CumFactorTRWS::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
     }
 
     assert(next == nUseful);
-    assert(nUsedFactors_ < factor_.size());
-    
-    factor_[nUsedFactors_] = new BILPCumTRWSFactor(vars,reduced_positive,rhs_lower,rhs_upper);
-    
-    nUsedFactors_++;  
+
+    add_factor(new BILPCumTRWSFactor(vars,reduced_positive,rhs_lower,rhs_upper));
   }
   else {
     std::cerr << "WARNING: removed superfluous constraint factor" << std::endl;
@@ -1243,8 +1276,6 @@ double CumFactorTRWS::optimize(uint nIter) {
     double forward_lower = 0.0;
 
     for (uint i=0; i < nUsedVars_; i++) {
-
-      //std::cerr << "i: " << i << std::endl;
 
       if (rank2var_[i] == MAX_UINT)
         continue; //can happen when variables do not have adjacent factors

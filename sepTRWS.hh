@@ -13,8 +13,7 @@
 #include "matrix.hh"
 #include "tensor.hh"
 
-//#include <set>
-
+#include <set>
 
 
 class AllInclusiveSepCumTRWSFactor;
@@ -87,7 +86,7 @@ protected:
   //NOTE: right now, all listed entries are dead ends
   Storage1D<AllInclusiveSepCumTRWSVarChainLink*> chain_link_;
 
-  Math1D::Vector<float> cost_;
+  const Math1D::Vector<float> cost_;
 
   Math1D::Vector<double> cum_cost_;
 
@@ -158,17 +157,18 @@ public:
 
   virtual double compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair) = 0;
 
-  //this routine is required only for debugging/independent computation of bounds
+
   virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var, 
                                  const AllInclusiveSepCumTRWSVariable* outgoing_var,
                                  const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
                                  Math1D::Vector<double>& forward);
 
-  //this routine is required only for debugging/independent computation of bounds
   virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var, 
                                  const AllInclusiveSepCumTRWSPairSeparator* outgoing_sep,
                                  const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
                                  Math2D::Matrix<double>& forward);
+
+  virtual double best_value() = 0;
 
   void compute_rank_range();
 
@@ -217,7 +217,6 @@ protected:
   Storage1D<AllInclusiveSepCumTRWSPairSeparator*> adjacent_separator_;
   Storage1D<Math2D::Matrix<double> > pair_reparameterization_;
 
-  //DO WE REALLY NEED TO KEEP TRACK OF THESE??
   AllInclusiveSepCumTRWSFactor* prev_factor_;
   AllInclusiveSepCumTRWSFactor* next_factor_;
 
@@ -242,6 +241,9 @@ public:
 
   virtual double compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair);
 
+  virtual double best_value();
+
+
   virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, 
                                  const AllInclusiveSepCumTRWSVariable* incoming_var, 
                                  const AllInclusiveSepCumTRWSVariable* outgoing_var,
@@ -250,7 +252,7 @@ public:
 
 protected:
 
-  Math2D::Matrix<float> cost_;
+  const Math2D::Matrix<float> cost_;
 };
 
 //ternary factor
@@ -264,6 +266,9 @@ public:
   virtual double compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var);
 
   virtual double compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair);
+
+  virtual double best_value();
+
 
   virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var, 
                                  const AllInclusiveSepCumTRWSVariable* outgoing_var,
@@ -281,7 +286,7 @@ protected:
 
   double eval_pair(uint pair_num, uint x, uint y, uint z, const Storage1D< Math2D::Matrix<double> >& pair_param) const;
 
-  Math3D::Tensor<float> cost_;
+  const Math3D::Tensor<float> cost_;
 };
 
 //4th order factor
@@ -295,6 +300,9 @@ public:
   virtual double compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var);
 
   virtual double compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair);
+
+  virtual double best_value();
+
 
   virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var, 
                                  const AllInclusiveSepCumTRWSVariable* outgoing_var,
@@ -313,7 +321,7 @@ protected:
   double eval_pair(uint pair_num, uint x, uint y, uint z, uint w,
                    const Storage1D< Math2D::Matrix<double> >& pair_param) const;
 
-  Storage1D<Math3D::Tensor<float> > cost_;
+  const Storage1D<Math3D::Tensor<float> > cost_;
 };
 
 
@@ -345,6 +353,8 @@ public:
 
 protected:
 
+  void add_factor(AllInclusiveSepCumTRWSFactor* fac);
+
   double cur_bound(bool backward = false);
 
   Storage1D<AllInclusiveSepCumTRWSVariable*> var_;
@@ -359,6 +369,5 @@ protected:
 
   bool optimize_called_;
 };
-
 
 #endif

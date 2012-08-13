@@ -39,7 +39,7 @@ public:
 
 protected:
   
-  Math1D::Vector<float> cost_;
+  const Math1D::Vector<float> cost_;
 
   Storage1D<sepDualOptFactor*> adjacent_factor_; //contains only those factors that do not subsume any separator with this var.
   Storage1D<std::pair<sepDualOptVar*,sepDualOptPairSeparator*> > adjacent_separator_;
@@ -54,7 +54,7 @@ public:
 
   const Math1D::Vector<double>& dual_var(sepDualOptVar* var);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
 
   void add_factor(sepDualOptFactor* adjacent_fac);
 
@@ -88,7 +88,7 @@ public:
 
   const Math2D::Matrix<double>& pair_dual(sepDualOptPairSeparator* pair_sep);
 
-  virtual void update_duals(DualBCDMode mode) = 0;
+  virtual void update_duals(DualBCAMode mode) = 0;
 
   virtual double dual_value() = 0;
 
@@ -114,7 +114,7 @@ public:
 
   BinarySepDualOptFactor(const Storage1D<sepDualOptVar*>& vars, const Math2D::Matrix<float>& cost, bool minimal_links);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
 
   virtual double dual_value();
 
@@ -122,7 +122,7 @@ public:
 
 protected:
 
-  Math2D::Matrix<float> cost_;
+  const Math2D::Matrix<float> cost_;
 };
 
 //ternary factor
@@ -132,7 +132,7 @@ public:
   TernarySepDualOptFactor(const Storage1D<sepDualOptVar*>& vars, const Storage1D<sepDualOptPairSeparator*>& separators,
                           const Math3D::Tensor<float>& cost, bool minimal_links);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
 
   virtual double dual_value();
 
@@ -140,9 +140,9 @@ public:
 
 protected:
 
-  double eval_pair(uint pair_num, uint x, uint y, uint z);
+  double eval_pair(uint pair_num, uint x, uint y, uint z) const;
 
-  Math3D::Tensor<float> cost_;
+  const Math3D::Tensor<float> cost_;
 };
 
 // 4th order factor
@@ -152,7 +152,7 @@ public:
   FourthOrderSepDualOptFactor(const Storage1D<sepDualOptVar*>& vars, const Storage1D<sepDualOptPairSeparator*>& separators,
                               const Storage1D<Math3D::Tensor<float> >& cost, bool minimal_links);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
 
   virtual double dual_value();
 
@@ -160,16 +160,16 @@ public:
 
 protected:
 
-  double eval_pair(uint pair_num, uint x, uint y, uint z, uint w);
+  double eval_pair(uint pair_num, uint x, uint y, uint z, uint w) const;
 
-  Storage1D<Math3D::Tensor<float> > cost_;
+  const Storage1D<Math3D::Tensor<float> > cost_;
 };
 
 //this is the main class
 class SeparatorDualOptimization {
 public:
   
-  //you have to provide upper bounds on the number of variables, pair separators and factors you will add
+  //you can provide upper bounds on the number of variables, pair separators and factors you will add
   SeparatorDualOptimization(uint nVars, uint nSeparators, uint nFactors, bool minimal_links = true);
 
   ~SeparatorDualOptimization();
@@ -188,7 +188,7 @@ public:
                                const Storage1D<Math3D::Tensor<float> >& cost);
 
 
-  double optimize(uint nIter, DualBCDMode mode = DUAL_BCD_MODE_MSD, bool quiet = true);
+  double optimize(uint nIter, bool quiet = true);
 
   const Math1D::Vector<uint>& labeling();
 
@@ -196,6 +196,9 @@ public:
   void save_problem();
 
 protected:
+
+  void add_factor(sepDualOptFactor* fac);
+
   Storage1D<sepDualOptVar*> var_;
   Storage1D<sepDualOptPairSeparator*> separator_;
   Storage1D<sepDualOptFactor*> factor_;  

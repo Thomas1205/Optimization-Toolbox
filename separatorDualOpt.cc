@@ -120,9 +120,12 @@ const Math1D::Vector<double>& sepDualOptPairSeparator::dual_var(sepDualOptVar* v
   }
 }
 
-/*virtual*/ void sepDualOptPairSeparator::update_duals(DualBCDMode mode) {
+/*virtual*/ void sepDualOptPairSeparator::update_duals(DualBCAMode /*mode*/) {
 
-  Math2D::Matrix<double> fac_duals(var1_->nLabels(),var2_->nLabels(),0.0);
+  const uint xDim = var1_->nLabels();
+  const uint yDim = var2_->nLabels();
+
+  Math2D::Matrix<double> fac_duals(xDim,yDim,0.0);
 
   for (uint f=0; f < adjacent_factor_.size(); f++)
     fac_duals += adjacent_factor_[f]->pair_dual(this);
@@ -132,11 +135,11 @@ const Math1D::Vector<double>& sepDualOptPairSeparator::dual_var(sepDualOptVar* v
   //handle var1
   var1_->compute_message(this,msg);
 
-  for (uint x=0; x < fac_duals.xDim(); x++) {
+  for (uint x=0; x < xDim; x++) {
     
     double best = 1e300;
 
-    for (uint y=0; y < fac_duals.yDim(); y++) {
+    for (uint y=0; y < yDim; y++) {
 
       double hyp = fac_duals(x,y) - dual_var_[1][y];
 
@@ -150,11 +153,11 @@ const Math1D::Vector<double>& sepDualOptPairSeparator::dual_var(sepDualOptVar* v
   //handle var2
   var2_->compute_message(this,msg);
 
-  for (uint y=0; y < fac_duals.yDim(); y++) {
+  for (uint y=0; y < yDim; y++) {
   
     double best = 1e300;
 
-    for (uint x=0; x < fac_duals.xDim(); x++) {
+    for (uint x=0; x < xDim; x++) {
 
       double hyp = fac_duals(x,y) - dual_var_[0][x];
 
@@ -206,12 +209,17 @@ void sepDualOptPairSeparator::compute_message(sepDualOptFactor* factor, Math2D::
 
   msg.resize(var1_->nLabels(),var2_->nLabels());
 
+  const uint xDim = var1_->nLabels();
+  const uint yDim = var2_->nLabels();
+
   //this is separable - can we exploit that?
-  for (uint x=0; x < dual_var_[0].size(); x++)
-    for (uint y=0; y < dual_var_[1].size(); y++)
+  for (uint x=0; x < xDim; x++)
+    for (uint y=0; y < yDim; y++)
       msg(x,y) = - dual_var_[0][x] - dual_var_[1][y];
 
-  for (uint f=0; f < adjacent_factor_.size(); f++) {
+  const uint nFactors = adjacent_factor_.size();
+
+  for (uint f=0; f < nFactors; f++) {
 
     if (adjacent_factor_[f] != factor)
       msg += adjacent_factor_[f]->pair_dual(this);
@@ -304,14 +312,14 @@ BinarySepDualOptFactor::BinarySepDualOptFactor(const Storage1D<sepDualOptVar*>& 
   assert(vars.size() == 2);
 }
 
-/*virtual*/ void BinarySepDualOptFactor::update_duals(DualBCDMode mode) {
+/*virtual*/ void BinarySepDualOptFactor::update_duals(DualBCAMode /*mode*/) {
 
   Math1D::Vector<double> msg;
 
-  uint nLabels1 = cost_.xDim();
-  uint nLabels2 = cost_.yDim();
+  const uint nLabels1 = cost_.xDim();
+  const uint nLabels2 = cost_.yDim();
 
-   // handle var1
+  // handle var1
   var_[0]->compute_message(this,msg);
 
   for (uint x=0; x < nLabels1; x++) {
@@ -359,10 +367,13 @@ BinarySepDualOptFactor::BinarySepDualOptFactor(const Storage1D<sepDualOptVar*>& 
 /*virtual */
 double BinarySepDualOptFactor::dual_value() {
 
+  uint nLabels1 = cost_.xDim();
+  uint nLabels2 = cost_.yDim();
+
   double best = 1e300;
 
-  for (uint y=0; y < cost_.yDim(); y++) {
-    for (uint x=0; x < cost_.xDim(); x++) {
+  for (uint y=0; y < nLabels2; y++) {
+    for (uint x=0; x < nLabels1; x++) {
 
       double hyp = cost_(x,y) - dual_var_[0][x] - dual_var_[1][y];
       if (hyp < best)
@@ -382,7 +393,7 @@ TernarySepDualOptFactor::TernarySepDualOptFactor(const Storage1D<sepDualOptVar*>
   assert(vars.size() == 3);
 }
 
-double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z) {
+double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z) const {
 
   sepDualOptVar* v1 = separator_[pair_num]->var1();
   sepDualOptVar* v2 = separator_[pair_num]->var2();
@@ -405,25 +416,31 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
   return pair_dual_[pair_num](a,b);  
 }
 
-/*virtual*/ void TernarySepDualOptFactor::update_duals(DualBCDMode mode) {
+/*virtual*/ void TernarySepDualOptFactor::update_duals(DualBCAMode /*mode*/) {
+
+  const uint xDim = cost_.xDim();
+  const uint yDim = cost_.yDim();
+  const uint zDim = cost_.zDim();
+
+  const uint nSeps = separator_.size();
 
   //1.) update pairwise separators
 #if 1
   Math2D::Matrix<double> pair_msg;
 
-  for (uint s=0; s < separator_.size(); s++) {
+  for (uint s=0; s < nSeps; s++) {
     separator_[s]->compute_message(this,pair_msg);
 
     if (separator_[s]->var1() == var_[0]) {
 
       if (separator_[s]->var2() == var_[1]) {
 
-        for (uint y=0; y < cost_.yDim(); y++) {
-          for (uint x=0; x < cost_.xDim(); x++) {
+        for (uint y=0; y < yDim; y++) {
+          for (uint x=0; x < xDim; x++) {
 
             double best = 1e300;
 
-            for (uint z=0; z < cost_.zDim(); z++) {
+            for (uint z=0; z < zDim; z++) {
 
               double hyp = cost_(x,y,z);
 
@@ -434,10 +451,10 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
               if (dual_var_[2].size() > 0)
                 hyp -= dual_var_[2][z];
 	      
-              for (uint ss=0; ss < separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
 	      
                 if (ss != s) {
-	      
+
                   assert(separator_[ss]->var2() == var_[2]);
 
                   if (separator_[ss]->var1() == var_[0]) {
@@ -460,12 +477,12 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
       }
       else {
 
-        for (uint z=0; z < cost_.zDim(); z++) {
-          for (uint x=0; x < cost_.xDim(); x++) {
+        for (uint z=0; z < zDim; z++) {
+          for (uint x=0; x < xDim; x++) {
 
             double best = 1e300;
 
-            for (uint y=0; y < cost_.yDim(); y++) {
+            for (uint y=0; y < yDim; y++) {
 
               double hyp = cost_(x,y,z);
 
@@ -476,7 +493,7 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
               if (dual_var_[2].size() > 0)
                 hyp -= dual_var_[2][z];
 
-              for (uint ss=0; ss < separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
 	      
                 if (ss != s) {
 		  
@@ -504,12 +521,12 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
     }
     else {
 
-      for (uint z=0; z < cost_.zDim(); z++) {
-        for (uint y=0; y < cost_.yDim(); y++) {
+      for (uint z=0; z < zDim; z++) {
+        for (uint y=0; y < yDim; y++) {
 
           double best = 1e300;
 
-          for (uint x=0; x < cost_.xDim(); x++) {
+          for (uint x=0; x < xDim; x++) {
 
             double hyp = cost_(x,y,z);
 
@@ -520,12 +537,11 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
             if (dual_var_[2].size() > 0)
               hyp -= dual_var_[2][z];
 	    
-            for (uint ss=0; ss < separator_.size(); ss++) {
+            for (uint ss=0; ss < nSeps; ss++) {
 	    
               if (ss != s) {
 
                 assert(separator_[ss]->var1() != var_[1] || separator_[ss]->var2() != var_[2]);
-
                 assert(separator_[ss]->var1() == var_[0]);
 
                 if (separator_[ss]->var2() == var_[1]) {
@@ -556,12 +572,12 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
   if (dual_var_[0].size() > 0) {
     var_[0]->compute_message(this,msg);
 
-    for (uint x=0; x < cost_.xDim(); x++) {
+    for (uint x=0; x < xDim; x++) {
 
       double best = 1e300;
 
-      for (uint z=0; z < cost_.zDim(); z++) {
-        for (uint y=0; y < cost_.yDim(); y++) {
+      for (uint z=0; z < zDim; z++) {
+        for (uint y=0; y < yDim; y++) {
 
           double hyp = cost_(x,y,z);
 	  
@@ -570,7 +586,7 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
           if (dual_var_[2].size() > 0)
             hyp -= dual_var_[2][z];
 	  
-          for (uint s=0; s < separator_.size(); s++) {
+          for (uint s=0; s < nSeps; s++) {
 
             if (separator_[s]->var1() == var_[0]) {
 
@@ -598,12 +614,12 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
   if (dual_var_[1].size() > 0) {
     var_[1]->compute_message(this,msg);
 
-    for (uint y=0; y < cost_.yDim(); y++) {
+    for (uint y=0; y < yDim; y++) {
 
       double best = 1e300;
 
-      for (uint z=0; z < cost_.zDim(); z++) {
-        for (uint x=0; x < cost_.xDim(); x++) {
+      for (uint z=0; z < zDim; z++) {
+        for (uint x=0; x < xDim; x++) {
 
           double hyp = cost_(x,y,z);
 
@@ -612,7 +628,7 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
           if (dual_var_[2].size() > 0)
             hyp -= dual_var_[2][z];
 	  
-          for (uint s=0; s < separator_.size(); s++) {
+          for (uint s=0; s < nSeps; s++) {
 
             if (separator_[s]->var1() == var_[0]) {
 
@@ -641,12 +657,12 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
 
     var_[2]->compute_message(this,msg);
 
-    for (uint z=0; z < cost_.zDim(); z++) {
+    for (uint z=0; z < zDim; z++) {
 
       double best = 1e300;
 
-      for (uint y=0; y < cost_.yDim(); y++) {
-        for (uint x=0; x < cost_.xDim(); x++) {
+      for (uint y=0; y < yDim; y++) {
+        for (uint x=0; x < xDim; x++) {
 	
           double hyp = cost_(x,y,z);
 
@@ -655,7 +671,7 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
           if (dual_var_[1].size() > 0)
             hyp -= dual_var_[1][y];
 	  
-          for (uint s=0; s < separator_.size(); s++) {
+          for (uint s=0; s < nSeps; s++) {
 
             if (separator_[s]->var1() == var_[0]) {
 
@@ -691,15 +707,19 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
 
 /*virtual*/ double TernarySepDualOptFactor::dual_value() {
 
+  const uint xDim = cost_.xDim();
+  const uint yDim = cost_.yDim();
+  const uint zDim = cost_.zDim();
+
   Math3D::Tensor<double> sum(cost_.xDim(),cost_.yDim(),cost_.zDim());
   for (uint k=0; k < sum.size(); k++)
     sum.direct_access(k) = cost_.direct_access(k);
 
   if (dual_var_[0].size() + dual_var_[1].size() + dual_var_[2].size() >= 1) {
 
-    for (uint z=0; z < cost_.zDim(); z++) {
-      for (uint y=0; y < cost_.yDim(); y++) {
-        for (uint x=0; x < cost_.xDim(); x++) {
+    for (uint z=0; z < zDim; z++) {
+      for (uint y=0; y < yDim; y++) {
+        for (uint x=0; x < xDim; x++) {
 	  
           if (dual_var_[0].size() > 0)
             sum(x,y,z) -= dual_var_[0][x];
@@ -719,24 +739,24 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
 
       if (separator_[s]->var2() == var_[1]) {
 
-        for (uint z=0; z < cost_.zDim(); z++) 
-          for (uint y=0; y < cost_.yDim(); y++) 
-            for (uint x=0; x < cost_.xDim(); x++) 
+        for (uint z=0; z < zDim; z++) 
+          for (uint y=0; y < yDim; y++) 
+            for (uint x=0; x < xDim; x++) 
               sum(x,y,z) -= pair_dual_[s](x,y);
       }
       else {
 	
-        for (uint z=0; z < cost_.zDim(); z++) 
-          for (uint y=0; y < cost_.yDim(); y++) 
-            for (uint x=0; x < cost_.xDim(); x++) 
+        for (uint z=0; z < zDim; z++) 
+          for (uint y=0; y < yDim; y++) 
+            for (uint x=0; x < xDim; x++) 
               sum(x,y,z) -= pair_dual_[s](x,z);
       }
     }
     else {
 
-      for (uint z=0; z < cost_.zDim(); z++) 
-        for (uint y=0; y < cost_.yDim(); y++) 
-          for (uint x=0; x < cost_.xDim(); x++) 
+      for (uint z=0; z < zDim; z++) 
+        for (uint y=0; y < yDim; y++) 
+          for (uint x=0; x < xDim; x++) 
             sum(x,y,z) -= pair_dual_[s](y,z);
     }
   }
@@ -754,7 +774,7 @@ FourthOrderSepDualOptFactor::FourthOrderSepDualOptFactor(const Storage1D<sepDual
 }
 
 double FourthOrderSepDualOptFactor::eval_pair(uint pair_num, 
-                                              uint x, uint y, uint z, uint w) {
+                                              uint x, uint y, uint z, uint w) const {
 
   
   sepDualOptVar* v1 = separator_[pair_num]->var1();
@@ -783,28 +803,38 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
 }
 
 
-/*virtual*/ void FourthOrderSepDualOptFactor::update_duals(DualBCDMode mode) {
+/*virtual*/ void FourthOrderSepDualOptFactor::update_duals(DualBCAMode /*mode*/) {
+
+  const uint xDim = cost_.size();
+  const uint yDim = cost_[0].xDim();
+  const uint zDim = cost_[0].yDim();
+  const uint wDim = cost_[0].zDim();
+
+  const uint nSeps = separator_.size();
 
   //1.) update pair separators
   Math2D::Matrix<double> pair_msg;
 
-  for (uint s=0; s < separator_.size(); s++) {
+  for (uint s=0; s < nSeps; s++) {
     separator_[s]->compute_message(this,pair_msg);
 
     if (separator_[s]->var1() == var_[0]) {
 
       if (separator_[s]->var2() == var_[1]) {
 
-        for (uint x=0; x < cost_.size(); x++) {
-          for (uint y=0; y < cost_[0].xDim(); y++) {
+        for (uint x=0; x < xDim; x++) {
+
+          const Math3D::Tensor<float>& cur_cost = cost_[x];
+
+          for (uint y=0; y < yDim; y++) {
 
             double best = 1e300;
 
-            for (uint z=0; z < cost_[0].yDim(); z++) {
+            for (uint z=0; z < zDim; z++) {
 	      
-              for (uint w=0; w < cost_[0].zDim(); w++) {
+              for (uint w=0; w < wDim; w++) {
 
-                double hyp = cost_[x](y,z,w);
+                double hyp = cur_cost(y,z,w);
 		
                 if (dual_var_[0].size() > 0)
                   hyp -= dual_var_[0][x];
@@ -816,7 +846,7 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
                   hyp -= dual_var_[3][w];
 
 	      
-                for (uint ss=0; ss < separator_.size(); ss++) {
+                for (uint ss=0; ss < nSeps; ss++) {
 		  
                   if (ss != s) {
                     hyp -= eval_pair(ss,x,y,z,w);
@@ -833,16 +863,19 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
       }
       else if (separator_[s]->var2() == var_[2]) {
 
-        for (uint x=0; x < cost_.size(); x++) {
-          for (uint z=0; z < cost_[0].yDim(); z++) {
+        for (uint x=0; x < xDim; x++) {
+
+          const Math3D::Tensor<float>& cur_cost = cost_[x];
+
+          for (uint z=0; z < zDim; z++) {
 
             double best = 1e300;
 
-            for (uint y=0; y < cost_[0].xDim(); y++) {	    
+            for (uint y=0; y < yDim; y++) {	    
 
-              for (uint w=0; w < cost_[0].zDim(); w++) {
+              for (uint w=0; w < wDim; w++) {
 
-                double hyp = cost_[x](y,z,w);
+                double hyp = cur_cost(y,z,w);
 		
                 if (dual_var_[0].size() > 0)
                   hyp -= dual_var_[0][x];
@@ -854,7 +887,7 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
                   hyp -= dual_var_[3][w];
 
 	      
-                for (uint ss=0; ss < separator_.size(); ss++) {
+                for (uint ss=0; ss < nSeps; ss++) {
 		  
                   if (ss != s) {
                     hyp -= eval_pair(ss,x,y,z,w);
@@ -873,15 +906,18 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
       }
       else {
 
-        for (uint x=0; x < cost_.size(); x++) {
-          for (uint w=0; w < cost_[0].zDim(); w++) {
+        for (uint x=0; x < xDim; x++) {
+
+          const Math3D::Tensor<float>& cur_cost = cost_[x];
+
+          for (uint w=0; w < wDim; w++) {
 
             double best = 1e300;
 	    
-            for (uint y=0; y < cost_[0].xDim(); y++) {
-              for (uint z=0; z < cost_[0].yDim(); z++) {
+            for (uint y=0; y < yDim; y++) {
+              for (uint z=0; z < zDim; z++) {
 
-                double hyp = cost_[x](y,z,w);
+                double hyp = cur_cost(y,z,w);
 		
                 if (dual_var_[0].size() > 0)
                   hyp -= dual_var_[0][x];
@@ -893,7 +929,7 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
                   hyp -= dual_var_[3][w];
 
 	      
-                for (uint ss=0; ss < separator_.size(); ss++) {
+                for (uint ss=0; ss < nSeps; ss++) {
 		  
                   if (ss != s) {
                     hyp -= eval_pair(ss,x,y,z,w);
@@ -914,15 +950,18 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
 
       if (separator_[s]->var2() == var_[2]) {      
 
-        for (uint y=0; y < cost_[0].xDim(); y++) {
-          for (uint z=0; z < cost_[0].yDim(); z++) {
+        for (uint y=0; y < yDim; y++) {
+          for (uint z=0; z < zDim; z++) {
 
             double best = 1e300;
 
-            for (uint x=0; x < cost_.size(); x++) {
-              for (uint w=0; w < cost_[0].zDim(); w++) {
+            for (uint x=0; x < xDim; x++) {
+
+              const Math3D::Tensor<float>& cur_cost = cost_[x];
+          
+              for (uint w=0; w < wDim; w++) {
 	    
-                double hyp = cost_[x](y,z,w);
+                double hyp = cur_cost(y,z,w);
 		
                 if (dual_var_[0].size() > 0)
                   hyp -= dual_var_[0][x];
@@ -934,7 +973,7 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
                   hyp -= dual_var_[3][w];
 
 	      
-                for (uint ss=0; ss < separator_.size(); ss++) {
+                for (uint ss=0; ss < nSeps; ss++) {
 		  
                   if (ss != s) {
                     hyp -= eval_pair(ss,x,y,z,w);
@@ -953,15 +992,18 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
       }
       else  {
      
-        for (uint y=0; y < cost_[0].xDim(); y++) {
-          for (uint w=0; w < cost_[0].zDim(); w++) {
+        for (uint y=0; y < yDim; y++) {
+          for (uint w=0; w < wDim; w++) {
 
             double best = 1e300;
 
-            for (uint x=0; x < cost_.size(); x++) {
-              for (uint z=0; z < cost_[0].yDim(); z++) {
+            for (uint x=0; x < xDim; x++) {
 
-                double hyp = cost_[x](y,z,w);
+              const Math3D::Tensor<float>& cur_cost = cost_[x];
+
+              for (uint z=0; z < zDim; z++) {
+
+                double hyp = cur_cost(y,z,w);
 		
                 if (dual_var_[0].size() > 0)
                   hyp -= dual_var_[0][x];
@@ -973,7 +1015,7 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
                   hyp -= dual_var_[3][w];
 
 	      
-                for (uint ss=0; ss < separator_.size(); ss++) {
+                for (uint ss=0; ss < nSeps; ss++) {
 		  
                   if (ss != s) {
                     hyp -= eval_pair(ss,x,y,z,w);
@@ -993,15 +1035,18 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
     }
     else {
 
-      for (uint z=0; z < cost_[0].yDim(); z++) {
-        for (uint w=0; w < cost_[0].zDim(); w++) {
+      for (uint z=0; z < zDim; z++) {
+        for (uint w=0; w < wDim; w++) {
 
           double best = 1e300;
 
-          for (uint x=0; x < cost_.size(); x++) {
-            for (uint y=0; y < cost_[0].xDim(); y++) {
+          for (uint x=0; x < xDim; x++) {
 
-              double hyp = cost_[x](y,z,w);
+            const Math3D::Tensor<float>& cur_cost = cost_[x];
+
+            for (uint y=0; y < yDim; y++) {
+
+              double hyp = cur_cost(y,z,w);
 		
               if (dual_var_[0].size() > 0)
                 hyp -= dual_var_[0][x];
@@ -1013,7 +1058,7 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
                 hyp -= dual_var_[3][w];
 	      
 	      
-              for (uint ss=0; ss < separator_.size(); ss++) {
+              for (uint ss=0; ss < nSeps; ss++) {
 		
                 if (ss != s) {
                   hyp -= eval_pair(ss,x,y,z,w);
@@ -1039,15 +1084,17 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
   if (dual_var_[0].size() > 0) {
     var_[0]->compute_message(this,msg);
     
-    for (uint x=0; x < cost_.size(); x++) {
+    for (uint x=0; x < xDim; x++) {
 
       double best = 1e300;
 
-      for (uint w=0; w < cost_[x].zDim(); w++) {
-        for (uint z=0; z < cost_[x].yDim(); z++) {
-          for (uint y=0; y < cost_[x].xDim(); y++) {
+      const Math3D::Tensor<float>& cur_cost = cost_[x];
+
+      for (uint w=0; w < wDim; w++) {
+        for (uint z=0; z < zDim; z++) {
+          for (uint y=0; y < yDim; y++) {
 	    
-            double hyp = cost_[x](y,z,w);
+            double hyp = cur_cost(y,z,w);
 	    
             if (dual_var_[1].size() > 0)
               hyp -= dual_var_[1][y];
@@ -1057,7 +1104,7 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
               hyp -= dual_var_[3][w];
 	    
 	  
-            for (uint s=0; s < separator_.size(); s++) {
+            for (uint s=0; s < nSeps; s++) {
 	      
               if (separator_[s]->var1() == var_[0]) {
 		
@@ -1096,15 +1143,18 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
   if (dual_var_[1].size() > 0) {
     var_[1]->compute_message(this,msg);
 
-    for (uint y=0; y < cost_[0].xDim(); y++) {
+    for (uint y=0; y < yDim; y++) {
 
       double best = 1e300;
 
-      for (uint x=0; x < cost_.size(); x++) {
-        for (uint w=0; w < cost_[x].zDim(); w++) {
-          for (uint z=0; z < cost_[x].yDim(); z++) {
+      for (uint x=0; x < xDim; x++) {
 
-            double hyp = cost_[x](y,z,w);
+        const Math3D::Tensor<float>& cur_cost = cost_[x];
+
+        for (uint w=0; w < wDim; w++) {
+          for (uint z=0; z < zDim; z++) {
+
+            double hyp = cur_cost(y,z,w);
 	    
             if (dual_var_[0].size() > 0)
               hyp -= dual_var_[0][x];
@@ -1114,7 +1164,7 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
               hyp -= dual_var_[3][w];
 	    
 	  
-            for (uint s=0; s < separator_.size(); s++) {
+            for (uint s=0; s < nSeps; s++) {
 	      
               if (separator_[s]->var1() == var_[0]) {
 		
@@ -1140,7 +1190,7 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
             }
 	    
             if (hyp < best)
-              best = hyp;      
+              best = hyp;
           }
         }
       }
@@ -1153,15 +1203,18 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
   if (dual_var_[2].size() > 0) {
     var_[2]->compute_message(this,msg);
 
-    for (uint z=0; z < cost_[0].yDim(); z++) {
+    for (uint z=0; z < zDim; z++) {
 
       double best = 1e300;
 
-      for (uint x=0; x < cost_.size(); x++) {
-        for (uint w=0; w < cost_[x].zDim(); w++) {
-          for (uint y=0; y < cost_[x].xDim(); y++) {
+      for (uint x=0; x < xDim; x++) {
 
-            double hyp = cost_[x](y,z,w);
+        const Math3D::Tensor<float>& cur_cost = cost_[x];
+
+        for (uint w=0; w < wDim; w++) {
+          for (uint y=0; y < yDim; y++) {
+
+            double hyp = cur_cost(y,z,w);
 
             if (dual_var_[0].size() > 0)
               hyp -= dual_var_[0][x];
@@ -1170,7 +1223,7 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
             if (dual_var_[3].size() > 0)
               hyp -= dual_var_[3][w];
 	    	  
-            for (uint s=0; s < separator_.size(); s++) {
+            for (uint s=0; s < nSeps; s++) {
 	      
               if (separator_[s]->var1() == var_[0]) {
 		
@@ -1211,15 +1264,18 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
   if (dual_var_[3].size() > 0) {
     var_[3]->compute_message(this,msg);
 
-    for (uint w=0; w < cost_[0].zDim(); w++) {
+    for (uint w=0; w < wDim; w++) {
 
       double best = 1e300;
 
-      for (uint x=0; x < cost_.size(); x++) {
-        for (uint z=0; z < cost_[x].yDim(); z++) {
-          for (uint y=0; y < cost_[x].xDim(); y++) {
+      for (uint x=0; x < xDim; x++) {
 
-            double hyp = cost_[x](y,z,w);
+        const Math3D::Tensor<float>& cur_cost = cost_[x];
+
+        for (uint z=0; z < zDim; z++) {
+          for (uint y=0; y < yDim; y++) {
+
+            double hyp = cur_cost(y,z,w);
 
             if (dual_var_[0].size() > 0)
               hyp -= dual_var_[0][x];
@@ -1228,7 +1284,7 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
             if (dual_var_[2].size() > 0)
               hyp -= dual_var_[2][z];
 	  
-            for (uint s=0; s < separator_.size(); s++) {
+            for (uint s=0; s < nSeps; s++) {
 	      
               if (separator_[s]->var1() == var_[0]) {
 		
@@ -1278,9 +1334,14 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
 
 /*virtual*/ double FourthOrderSepDualOptFactor::dual_value() {
 
+  const uint xDim = cost_.size();
+  const uint yDim = cost_[0].xDim();
+  const uint zDim = cost_[0].yDim();
+  const uint wDim = cost_[0].zDim();
+
   Storage1D<Math3D::Tensor<double> > sum(cost_.size());
 
-  for (uint x=0; x < cost_.size(); x++)  {
+  for (uint x=0; x < xDim; x++)  {
 
     sum[x].resize(cost_[x].xDim(), cost_[x].yDim(),cost_[x].zDim());
     for (uint k=0; k < sum[x].size(); k++)
@@ -1289,11 +1350,11 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
 
   if (dual_var_[0].size() + dual_var_[1].size() + dual_var_[2].size() + dual_var_[3].size() >= 1) {
 
-    for (uint x=0; x < cost_.size(); x++) {
+    for (uint x=0; x < xDim; x++) {
 
-      for (uint w=0; w < cost_[x].zDim(); w++) {
-        for (uint z=0; z < cost_[x].yDim(); z++) {
-          for (uint y=0; y < cost_[x].xDim(); y++) {
+      for (uint w=0; w < wDim; w++) {
+        for (uint z=0; z < zDim; z++) {
+          for (uint y=0; y < yDim; y++) {
 	  
             if (dual_var_[0].size() > 0)
               sum[x](y,z,w) -= dual_var_[0][x];
@@ -1319,26 +1380,26 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
 
       if (v2 == var_[1]) {
 
-        for (uint x=0; x < cost_.size(); x++) 
-          for (uint w=0; w < cost_[x].zDim(); w++) 
-            for (uint z=0; z < cost_[x].yDim(); z++) 
-              for (uint y=0; y < cost_[x].xDim(); y++) 
+        for (uint x=0; x < xDim; x++) 
+          for (uint w=0; w < wDim; w++) 
+            for (uint z=0; z < zDim; z++) 
+              for (uint y=0; y < yDim; y++) 
                 sum[x](y,z,w) -= pair_dual_[s](x,y);
       }
       else if (v2 == var_[2]) {
 
-        for (uint x=0; x < cost_.size(); x++) 
-          for (uint w=0; w < cost_[x].zDim(); w++) 
-            for (uint z=0; z < cost_[x].yDim(); z++) 
-              for (uint y=0; y < cost_[x].xDim(); y++) 
+        for (uint x=0; x < xDim; x++) 
+          for (uint w=0; w < wDim; w++) 
+            for (uint z=0; z < zDim; z++) 
+              for (uint y=0; y < yDim; y++) 
                 sum[x](y,z,w) -= pair_dual_[s](x,z);
       }
       else {
 
-        for (uint x=0; x < cost_.size(); x++) 
-          for (uint w=0; w < cost_[x].zDim(); w++) 
-            for (uint z=0; z < cost_[x].yDim(); z++) 
-              for (uint y=0; y < cost_[x].xDim(); y++) 
+        for (uint x=0; x < xDim; x++) 
+          for (uint w=0; w < wDim; w++) 
+            for (uint z=0; z < zDim; z++) 
+              for (uint y=0; y < yDim; y++) 
                 sum[x](y,z,w) -= pair_dual_[s](x,w);
       }
     }
@@ -1346,37 +1407,37 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
 
       if (v2 == var_[2]) {
 
-        for (uint x=0; x < cost_.size(); x++) 
-          for (uint w=0; w < cost_[x].zDim(); w++) 
-            for (uint z=0; z < cost_[x].yDim(); z++) 
-              for (uint y=0; y < cost_[x].xDim(); y++) 
+        for (uint x=0; x < xDim; x++) 
+          for (uint w=0; w < wDim; w++) 
+            for (uint z=0; z < zDim; z++) 
+              for (uint y=0; y < yDim; y++) 
                 sum[x](y,z,w) -= pair_dual_[s](y,z);
       }
       else {
 
-        for (uint x=0; x < cost_.size(); x++) 
-          for (uint w=0; w < cost_[x].zDim(); w++) 
-            for (uint z=0; z < cost_[x].yDim(); z++) 
-              for (uint y=0; y < cost_[x].xDim(); y++) 
+        for (uint x=0; x < xDim; x++) 
+          for (uint w=0; w < wDim; w++) 
+            for (uint z=0; z < zDim; z++) 
+              for (uint y=0; y < yDim; y++) 
                 sum[x](y,z,w) -= pair_dual_[s](y,w);
       }
     }
     else {
 
-      for (uint x=0; x < cost_.size(); x++) 
-        for (uint w=0; w < cost_[x].zDim(); w++) 
-          for (uint z=0; z < cost_[x].yDim(); z++) 
-            for (uint y=0; y < cost_[x].xDim(); y++) 
+      for (uint x=0; x < xDim; x++) 
+        for (uint w=0; w < wDim; w++) 
+          for (uint z=0; z < zDim; z++) 
+            for (uint y=0; y < yDim; y++) 
               sum[x](y,z,w) -= pair_dual_[s](z,w);
     }
   }
   
   double best = 1e300;
 
-  for (uint x=0; x < cost_.size(); x++) {
-    for (uint w=0; w < cost_[x].zDim(); w++) {
-      for (uint z=0; z < cost_[x].yDim(); z++) {
-        for (uint y=0; y < cost_[x].xDim(); y++) {
+  for (uint x=0; x < xDim; x++) {
+    for (uint w=0; w < wDim; w++) {
+      for (uint z=0; z < zDim; z++) {
+        for (uint y=0; y < yDim; y++) {
 
           best = std::min(best,sum[x](y,z,w));
         }
@@ -1411,6 +1472,9 @@ SeparatorDualOptimization::~SeparatorDualOptimization() {
 
 uint SeparatorDualOptimization::add_var(const Math1D::Vector<float>& cost) {
 
+  if (nUsedVars_ == var_.size())
+    var_.resize(uint(1.2*nUsedVars_)+4);
+
   assert(nUsedVars_ < var_.size());
 
   var_[nUsedVars_] = new sepDualOptVar(cost);
@@ -1419,7 +1483,19 @@ uint SeparatorDualOptimization::add_var(const Math1D::Vector<float>& cost) {
   return nUsedVars_-1;
 }
 
+void SeparatorDualOptimization::add_factor(sepDualOptFactor* fac) {
+
+  if (nUsedFactors_ == factor_.size())
+    factor_.resize(uint(1.2*nUsedFactors_)+4);
+
+  factor_[nUsedFactors_] = fac;
+  nUsedFactors_++;
+}
+
 uint SeparatorDualOptimization::add_separator(uint v1, uint v2) {
+
+  if (nUsedSeparators_ == separator_.size())
+    separator_.resize(uint(1.2*nUsedSeparators_)+4);
 
   assert(v1 < nUsedVars_);
   assert(v2 < nUsedVars_);
@@ -1440,10 +1516,7 @@ void SeparatorDualOptimization::add_generic_binary_factor(uint v1, uint v2, cons
   var[0] = var_[v1];
   var[1] = var_[v2];
 
-  assert(nUsedFactors_ < factor_.size());
-  factor_[nUsedFactors_] = new BinarySepDualOptFactor(var,cost,minimal_links_);
-
-  nUsedFactors_++;
+  add_factor(new BinarySepDualOptFactor(var,cost,minimal_links_));
 }
 
 void SeparatorDualOptimization::add_generic_ternary_factor(uint v1, uint v2, uint v3, const Storage1D<uint>& separators,
@@ -1455,20 +1528,16 @@ void SeparatorDualOptimization::add_generic_ternary_factor(uint v1, uint v2, uin
 #if 1
   if (v1 > v2) {
 
+    //std::cerr << "v1-v2 1." << std::endl;
+
     if (var_[v1]->nLabels() != var_[v2]->nLabels())
       TODO("non-standard variable order with heterogeneous number of labels");
-
-    //std::cerr << "cost before swap: " << cost_copy << std::endl;
 
     for (uint x=0; x < var_[v1]->nLabels(); x++)
       for (uint y=x+1; y < var_[v2]->nLabels(); y++)
         for (uint z=0; z < var_[v3]->nLabels(); z++) {
-          //std::cerr << "before swap: " << cost_copy(x,y,z) << ", " << cost_copy(y,x,z) << std::endl;
           std::swap(cost_copy(x,y,z),cost_copy(y,x,z));
-          //std::cerr << "after swap: " << cost_copy(x,y,z) << ", " << cost_copy(y,x,z) << std::endl;
         }
-
-    //std::cerr << "cost after swap: " << cost_copy << std::endl;
 
     std::swap(v1,v2);
   }
@@ -1514,10 +1583,7 @@ void SeparatorDualOptimization::add_generic_ternary_factor(uint v1, uint v2, uin
   for (uint k=0; k < separators.size(); k++)
     sep[k] = separator_[separators[k]];
 
-  assert(nUsedFactors_ < factor_.size());
-  factor_[nUsedFactors_] = new TernarySepDualOptFactor(var,sep,cost_copy,minimal_links_);
-
-  nUsedFactors_++;
+  add_factor(new TernarySepDualOptFactor(var,sep,cost_copy,minimal_links_));
 }
 
 void SeparatorDualOptimization::add_fourth_order_factor(uint v1, uint v2, uint v3, uint v4,
@@ -1593,10 +1659,7 @@ void SeparatorDualOptimization::add_fourth_order_factor(uint v1, uint v2, uint v
   for (uint k=0; k < separators.size(); k++)
     sep[k] = separator_[separators[k]];
 
-  assert(nUsedFactors_ < factor_.size());
-  factor_[nUsedFactors_] = new FourthOrderSepDualOptFactor(var,sep,cost_copy,minimal_links_);
-
-  nUsedFactors_++;
+  add_factor(new FourthOrderSepDualOptFactor(var,sep,cost_copy,minimal_links_));
 }
 
 
@@ -1675,9 +1738,11 @@ void SeparatorDualOptimization::save_problem() {
   of.close();
 }
 
-double SeparatorDualOptimization::optimize(uint nIter, DualBCDMode mode, bool quiet) {
+double SeparatorDualOptimization::optimize(uint nIter, bool quiet) {
 
   double bound = -1e300;
+
+  DualBCAMode mode = DUAL_BCA_MODE_MSD; //this is the only implemented option
 
   labeling_.resize(nUsedVars_,0);
 
@@ -1727,7 +1792,6 @@ double SeparatorDualOptimization::optimize(uint nIter, DualBCDMode mode, bool qu
 
 #if 1
     for (uint f=0; f < nUsedFactors_; f++) {
-      //std::cerr << "f: " << f << std::endl;
       factor_[f]->update_duals(mode);
     }
 #endif
@@ -1735,20 +1799,14 @@ double SeparatorDualOptimization::optimize(uint nIter, DualBCDMode mode, bool qu
     /*** compute bound ***/
     if (!quiet) {
       bound = 0.0;
-      
-      //std::cerr << "computing bound" << std::endl;
 
       for (uint v=0; v < nUsedVars_; v++) {
 	bound += var_[v]->dual_value(label);
 	labeling_[v] = label;
       }
       
-      //std::cerr << "lower bound after vars: " << bound << std::endl;
-      
       for (uint s=0; s < nUsedSeparators_; s++)
 	bound += separator_[s]->dual_value();
-      
-      //std::cerr << "lower bound after seps: " << bound << std::endl;
       
       for (uint f=0; f < nUsedFactors_; f++)
 	bound += factor_[f]->dual_value();
@@ -1766,8 +1824,6 @@ double SeparatorDualOptimization::optimize(uint nIter, DualBCDMode mode, bool qu
 
   for (uint s=0; s < nUsedSeparators_; s++)
     bound += separator_[s]->dual_value();
-      
-  //std::cerr << "lower bound after seps: " << bound << std::endl;
   
   for (uint f=0; f < nUsedFactors_; f++)
     bound += factor_[f]->dual_value();

@@ -14,13 +14,21 @@ linear constraints).
  These classes were developed by the author, but in frequent correspondence
 with Vladimir Kolmogorov. 
 
+Associated files: factor*, sep*
+
+
 2. SUBMODULAR FUNCTIONS: here there is code to check a function for
 submodularity and to convert a submodular function into a form that can be
 optimized via graph mincut. The latter relies on code from Vladimir
 Kolmogorov, which you will have to download.
 
+Associated files: submod*, check_submodularity.*, function.*
+
+
 3. NBEST SEARCH in graphs. This is particularly useful for Natural Language
 Processing.
+
+Associated files: nbest.*
 
 
 A sample Makefile has been provided. It compiles all source files that do NOT

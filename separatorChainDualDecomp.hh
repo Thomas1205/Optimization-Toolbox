@@ -166,7 +166,7 @@ public:
 
 protected:
 
-  Math2D::Matrix<float> cost_;
+  const Math2D::Matrix<float> cost_;
 };
 
 /***************************************/
@@ -191,9 +191,9 @@ public:
                                  Math3D::Tensor<uint>& trace);
 protected:
 
-  Math3D::Tensor<float> cost_;
+  const Math3D::Tensor<float> cost_;
 
-  double eval_pair(uint s, uint l1, uint l2, uint l3, const Storage1D< Math2D::Matrix<double> >& pair_param);
+  double eval_pair(uint s, uint l1, uint l2, uint l3, const Storage1D< Math2D::Matrix<double> >& pair_param) const;
 };
 
 /***************************************/
@@ -218,9 +218,9 @@ public:
                                  Math3D::Tensor<uint>& trace);
 protected:
 
-  Storage1D<Math3D::Tensor<float> > cost_;
+  const Storage1D<Math3D::Tensor<float> > cost_;
 
-  double eval_pair(uint s, uint l1, uint l2, uint l3, uint l4, const Storage1D< Math2D::Matrix<double> >& pair_param);
+  double eval_pair(uint s, uint l1, uint l2, uint l3, uint l4, const Storage1D< Math2D::Matrix<double> >& pair_param) const;
 };
 
 /***************************************/
@@ -229,7 +229,7 @@ protected:
 class SeparatorChainDualDecomposition {
 public:
   
-  //you need to provide upper bounds on the number of variables, pair-separators and factors you will add
+  //you can provide upper bounds on the number of variables, pair-separators and factors you will add
   SeparatorChainDualDecomposition(uint nVars, uint nSeparators, uint nFactors);
 
   ~SeparatorChainDualDecomposition();
@@ -251,6 +251,8 @@ public:
   const Math1D::Vector<uint>& labeling();
 
 protected:
+
+  void add_factor(SepChainDDFactor* fac);
 
   void set_up_chains();
 

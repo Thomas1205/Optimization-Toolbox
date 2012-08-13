@@ -89,13 +89,13 @@ public:
   virtual double compute_reparameterization(CumTRWSVar* var);
 
 protected:
-  Math2D::Matrix<float> cost_;
+  const Math2D::Matrix<float> cost_;
 };
 
 /****************/
 
-/*** base class for ternary factors, do not instantiate ***/
-class TernaryCumTRWSFactorBase : public CumTRWSFactor {
+/*** abstract base class for ternary factors ***/
+/*abstract*/ class TernaryCumTRWSFactorBase : public CumTRWSFactor {
 public:
 
   TernaryCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars);
@@ -114,7 +114,7 @@ public:
   virtual double compute_reparameterization(CumTRWSVar* var);
 
 protected:
-  Math3D::Tensor<float> cost_;
+  const Math3D::Tensor<float> cost_;
 };
 
 /****************/
@@ -142,7 +142,7 @@ public:
   virtual double compute_reparameterization(CumTRWSVar* var);
 
 protected:
-  float lambda_;
+  const float lambda_;
 };
 
 /****************/
@@ -157,12 +157,12 @@ public:
   virtual double compute_reparameterization(CumTRWSVar* var);
 
 protected:
-  Storage1D<Math3D::Tensor<float> > cost_;
+  const Storage1D<Math3D::Tensor<float> > cost_;
 };
 
 /****************/
 
-/*** 1-of-N constraint ***/
+/*** 1-of-N constraint, all variables must be binary ***/
 class OneOfNCumTRWSFactor : public CumTRWSFactor {
 public:
 
@@ -173,7 +173,7 @@ public:
 
 /****************/
 
-/*** cardinality factor ***/
+/*** cardinality factor, all variables must be binary ***/
 class CardinalityCumTRWSFactor : public CumTRWSFactor {
 public:
 
@@ -182,12 +182,12 @@ public:
   virtual double compute_reparameterization(CumTRWSVar* var);
 
 protected:
-  Math1D::Vector<float> cost_;
+  const Math1D::Vector<float> cost_;
 };
 
 /****************/
 
-/*** binary integer linear constraint factor **/
+/*** integer linear constraint factor for binary variables **/
 class BILPCumTRWSFactor : public CumTRWSFactor {
 public:
 
@@ -198,7 +198,7 @@ public:
 
 protected:
 
-  Storage1D<bool> positive_;
+  const Storage1D<bool> positive_;
   short rhs_lower_;
   short rhs_upper_;
 
@@ -212,7 +212,7 @@ protected:
 class CumFactorTRWS {
 public:
 
-  /*** you presently need to provide upper bounds on the number of variables and factors you will add ***/
+  /*** you can provide upper bounds on the number of variables and factors you will add ***/
   CumFactorTRWS(uint nVars, uint nFactors);
 
   ~CumFactorTRWS();
@@ -240,6 +240,9 @@ public:
   const Math1D::Vector<uint>& labeling();
 
 protected:
+  
+  void add_factor(CumTRWSFactor* fac);
+
   Storage1D<CumTRWSVar*> var_;
   Storage1D<CumTRWSFactor*> factor_;
 

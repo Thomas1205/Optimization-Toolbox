@@ -1,0 +1,22 @@
+This is an introduction on how to use the message passing part of the
+Optimization Toolbox. Most of what you need to know you will learn from the
+sample program in the directory mp_sample/. Make sure that you build the
+directory common/ and the main directory before you build mp_sample/.
+
+Here are some more details:
+- when you add a factor, all participating variables must have been added
+already. It is therefore advisable to add all variables before you start
+adding factors.
+- if you use a class that supports pairwise separators, you need to add the
+two respective variables before you add the separator. Likewise, you need to
+add a separator before you add any factors that use it.
+- multiple calls to the respective optimization routines are
+supported. However, you should not add any variables, separators or factors
+in-between two such calls. 
+- the classes with pair separators only support factors of order two, three
+and four so far. It would however be possible to also support 1ofN,
+cardinality and BILP potentials, as long as these do not use pair separators.
+
+
+For feedback, questions, bug reports and feature requests, please contact
+thomas_schoenemann@yahoo.de

@@ -52,10 +52,6 @@ const Storage1D<FactorNode*>& VariableNode::neighboring_factor() const {
   return neighboring_factor_;
 }
 
-// ExplicitVarNode::ExplicitVarNode(const Math1D::Vector<float>& cost) :  
-//   VariableNode(cost.size()), cost_(cost) {
-// }
-
 /*virtual*/ void VariableNode::compute_beliefs(Math1D::Vector<double>& beliefs) {
 
   Storage1D<const double*> factor_message(neighboring_factor_.size());
@@ -83,11 +79,7 @@ const Storage1D<FactorNode*>& VariableNode::neighboring_factor() const {
 
 void VariableNode::compute_messages() {
 
-  //std::cerr << "var: compute message" << std::endl;
-
   uint nLabels = cost_.size();
-
-  //std::cerr << nLabels << " labels" << std::endl;
 
   Storage1D<const double*> factor_message(neighboring_factor_.size());
 
@@ -95,28 +87,17 @@ void VariableNode::compute_messages() {
     factor_message[i] = neighboring_factor_[i]->get_message(this);
   }
 
-  //std::cerr << neighboring_factor_.size() << " neighbors " << std::endl;
-
   for (uint i=0; i < neighboring_factor_.size(); i++) {
-
-    //std::cerr << "i: " << i << std::endl;
 
     double min_message = 1e300;
 
     for (uint l=0; l < nLabels; l++) {
-      
-      //std::cerr << "l: " << l << std::endl;
 
       assert(!isnan(cost_[l]));
 
       double cur_cost = cost_[l];
 
       for (uint j=0; j < neighboring_factor_.size(); j++) {
-
-        //std::cerr << "j: " << j << std::endl;
-
-        //std::cerr << "cast to TernaryNode: " << dynamic_cast<TernaryFactorNodeBase*>(neighboring_factor_[j]) << std::endl;
-        //std::cerr << "cast to FourthOrder Node: " << dynamic_cast<FourthOrderFactorNodeBase*>(neighboring_factor_[j]) << std::endl;
 
         if (j != i) {
           cur_cost += factor_message[j][l];
@@ -244,7 +225,6 @@ GenericFactorNode::GenericFactorNode(const Storage1D<VariableNode*>& participati
     }
     for (uint l=0; l < message_[k].size(); l++) {
       message_[k][l] -= min_msg;
-      //std::cerr << "msg val: " << message_[k][l] << std::endl;
       assert(message_[k][l] >= -1e-3);
     }
   }
@@ -581,8 +561,6 @@ TernaryFactorNodeBase::TernaryFactorNodeBase(const Storage1D<VariableNode*>& par
 
 void TernaryFactorNodeBase::compute_messages(const Math3D::Tensor<float>& cost) {
 
-  //std::cerr << "cm start" << std::endl;
-
   assert( participating_var_.size() == 3);
 
   Storage1D<const double*> var_message(participating_var_.size());
@@ -615,8 +593,6 @@ void TernaryFactorNodeBase::compute_messages(const Math3D::Tensor<float>& cost) 
   double msg_min = message1_.min();
   for (uint k=0; k < message1_.size(); k++)
     message1_[k] -= msg_min;
-  
-  //std::cerr << "m2" << std::endl;
 
   //Message 2
   for (uint k=0; k < nLabels2; k++) {
@@ -661,9 +637,6 @@ void TernaryFactorNodeBase::compute_messages(const Math3D::Tensor<float>& cost) 
   msg_min = message3_.min();
   for (uint k=0; k < message3_.size(); k++)
     message3_[k] -= msg_min;
-
-  //std::cerr << "cm end" << std::endl;
-
 }
 
 
@@ -1011,14 +984,12 @@ OneOfNFactorNode::OneOfNFactorNode(const Storage1D<VariableNode*>& participating
   double best = 1e50;
   uint arg_best = 0;
   double second_best = 1e50;
-  uint arg_second_best = 0;
   
   for (uint k=0; k < size; k++) {
 
     if (rel_msg[k] < best) {
 
       second_best = best;
-      arg_second_best = arg_best;
 
       best = rel_msg[k];
       arg_best = k;
@@ -1026,7 +997,6 @@ OneOfNFactorNode::OneOfNFactorNode(const Storage1D<VariableNode*>& participating
     else if (rel_msg[k] < second_best) {
 
       second_best = rel_msg[k];
-      arg_second_best = k;
     }
   }
     
@@ -1067,8 +1037,6 @@ CardinalityFactorNode::CardinalityFactorNode(const Storage1D<VariableNode*>& par
     INTERNAL_ERROR << " Cardinality vector size does not match with the number of variables. Exiting." << std::endl;
     exit(1);
   }
-
-  //assert(participating_vars.size() >= 2);
 }
 
 /*virtual*/ void CardinalityFactorNode::init_messages() {
@@ -1418,7 +1386,6 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
             int other = r + zero_offset - (s - zero_offset);
 
             if (other >= 0 && other < (int) range) {
-              //double cur = std::min(backward(other,0,k+1), backward(other,1,k+1));
               double cur = backward_light(other,k+1);
               if (cur < best_bwd)
                 best_bwd = cur;
@@ -1904,8 +1871,6 @@ void FactorMPBP::process_labeling() {
   }
 
   for (uint k=0; k < nUsedFactors_; k++) {
-
-    //std::cerr << "k: " << k << std::endl;
 
     const Storage1D<VariableNode*>& nodes = factor_[k]->participating_nodes();
 

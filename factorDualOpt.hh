@@ -1,7 +1,7 @@
 /******* written by Thomas Schoenemann as a private person without employment, July 2011 *****/
 
-
-/***** implements MPLP, MSD and subgradient optimization for single factors in negative log-space ****/
+/***** implements solving linear programming relaxations with singleton separators ****/
+/***** via MPLP, MSD and subgradient optimization for single factors in negative log-space ****/
 /***** NOTE: subgradient optimization for single factors is generally very slow, so not recommended. ****/
 
 #ifndef FACTOR_DUAL_OPT_HH
@@ -14,13 +14,15 @@
 
 class DualFactorNode;
 
-enum DualBCDMode {DUAL_BCD_MODE_MPLP, DUAL_BCD_MODE_MSD};
+enum DualBCAMode {DUAL_BCA_MODE_MPLP, DUAL_BCA_MODE_MSD};
 
-/*** class for variables ***/
+//variable class
 class DualVariableNode {
 public:
   
   DualVariableNode(const Math1D::Vector<float>& cost);
+
+  void add_cost(const Math1D::Vector<float>& add_cost);
   
   void add_factor(DualFactorNode* node);
   
@@ -57,19 +59,22 @@ protected:
 
 /***************************/
 
-/*** abstract base class for factors ***/
+// abstract base class for factors
 /*abstract*/ class DualFactorNode {
 public:
   
   DualFactorNode(const Storage1D<DualVariableNode*>& participating_vars);
   
-  virtual void update_duals(DualBCDMode mode) = 0;
+  virtual void update_duals(DualBCAMode mode) = 0;
   
   virtual double cost(const Math1D::Vector<uint>& labels) const = 0;
 
   virtual double dual_value() const;
 
   virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const = 0;
+
+  //factors can modify the current labeling, e.g. to satisfy some constraints
+  virtual bool process_labeling(Math1D::Vector<uint>& labels) const;
 
   const Storage1D<DualVariableNode*>& participating_nodes() const;
   
@@ -80,13 +85,13 @@ protected:
 
 /**************************/
 
-/*** generic factor node, cost stored in a multidimensional array of variable dimensions ***/
+//class for a factor of arbitrary order (run time will scale exponentially with the factor size)
 class GenericDualFactorNode : public DualFactorNode {
 public:
 
   GenericDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const VarDimStorage<float>& cost);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
   
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
@@ -101,13 +106,13 @@ protected:
 
 /**************************/
 
-/*** base class for binary factors, don't instantiate directly ***/
+// abstract base class for a binary factor
 /* abstract */ class BinaryDualFactorNodeBase : public DualFactorNode {
 public:
 
   BinaryDualFactorNodeBase(const Storage1D<DualVariableNode*>& participating_vars);
 
-  void update_duals(const Math2D::Matrix<float>& cost, DualBCDMode mode);
+  void update_duals(const Math2D::Matrix<float>& cost, DualBCAMode mode);
   
   double dual_value(const Math2D::Matrix<float>& cost) const;
 
@@ -116,13 +121,13 @@ public:
 
 /**************************/
 
-/*** binary factor where cost are stored inside the factor ***/
+// binary factor with costs stored explicitly
 class BinaryDualFactorNode : public BinaryDualFactorNodeBase {
 public:
 
   BinaryDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const Math2D::Matrix<float>& cost);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
   
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
@@ -136,13 +141,13 @@ protected:
 
 /**************************/
 
-/*** binary factor where only a reference to the cost are stored inside the factor (saves space if you have many similar factors) ***/
+// binary factor storing only a reference to the cost (saves memory if you have many similar factors)
 class BinaryDualRefFactorNode : public BinaryDualFactorNodeBase {
 public:
 
   BinaryDualRefFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const Math2D::Matrix<float>& cost);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
   
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
@@ -156,13 +161,13 @@ protected:
 
 /**************************/
 
-/*** (binary) Potts model ***/
+//Potts factor (for two variables, i.e. not generalized Potts)
 class PottsDualFactorNode: public DualFactorNode {
 public:
 
   PottsDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, float lambda);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
 
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
@@ -176,13 +181,13 @@ protected:
 
 /**************************/
 
-/*** base class for ternary factors, don't instantiate directly ***/
+//abstract base class for a ternary factor
 /*abstract*/ class TernaryDualFactorNodeBase : public DualFactorNode {
 public: 
 
   TernaryDualFactorNodeBase(const Storage1D<DualVariableNode*>& participating_vars);
 
-  void update_duals(const Math3D::Tensor<float>& cost, DualBCDMode mode);
+  void update_duals(const Math3D::Tensor<float>& cost, DualBCAMode mode);
   
   double dual_value(const Math3D::Tensor<float>& cost) const;
 
@@ -191,13 +196,13 @@ public:
 
 /**************************/
 
-/*** ternary factor where cost are stored inside the factor ***/
+// ternary factor with costs stored explicitly
 class TernaryDualFactorNode : public TernaryDualFactorNodeBase {
 public:
 
   TernaryDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const Math3D::Tensor<float>& cost);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
   
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
@@ -211,13 +216,13 @@ protected:
 
 /**************************/
 
-/*** ternary factor where only a reference to the cost are stored inside the factor (saves space if you have many similar factors) ***/
+// ternary factor storing only a reference to the cost (saves memory if you have many similar factors)
 class TernaryDualRefFactorNode : public TernaryDualFactorNodeBase {
 public:
 
   TernaryDualRefFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const Math3D::Tensor<float>& cost);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
   
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
@@ -229,13 +234,13 @@ protected:
   const Math3D::Tensor<float>& cost_;
 };
 
-/*** ternary factor where cost are based on second order differences ***/
+// ternary factor with costs based on second differences
 class SecondDiffDualFactorNode : public DualFactorNode {
 public:
 
   SecondDiffDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, float lambda);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
   
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
@@ -250,13 +255,13 @@ protected:
 
 /**************************/
 
-/*** base class for 4th order factors, don't instantiate directly ***/
+//abstract base class for a fourth-order factor
 /*abstract*/ class FourthOrderDualFactorNodeBase : public DualFactorNode {
 public: 
 
   FourthOrderDualFactorNodeBase(const Storage1D<DualVariableNode*>& participating_vars);
 
-  void update_duals(const Storage1D<Math3D::Tensor<float> >& cost, DualBCDMode mode);
+  void update_duals(const Storage1D<Math3D::Tensor<float> >& cost, DualBCAMode mode);
   
   double dual_value(const Storage1D<Math3D::Tensor<float> >& cost) const;
 
@@ -267,14 +272,14 @@ public:
 
 /**************************/
 
-/*** 4th order factor where cost are stored inside the factor ***/
+//fourth order factor with costs stored explicitly
 class FourthOrderDualFactorNode : public FourthOrderDualFactorNodeBase {
 public:
 
   FourthOrderDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, 
                             const Storage1D<Math3D::Tensor<float> >& cost);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
   
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
@@ -288,14 +293,14 @@ protected:
 
 /**************************/
 
-/*** 4th order factor where only a reference to the cost are stored inside the factor (saves space if you have many similar factors) ***/
+// fourth-order factor storing only a reference to the cost (saves memory if you have many similar factors)
 class FourthOrderDualRefFactorNode : public FourthOrderDualFactorNodeBase {
 public:
 
   FourthOrderDualRefFactorNode(const Storage1D<DualVariableNode*>& participating_vars, 
                                const Storage1D<Math3D::Tensor<float> >& cost);
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
   
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
@@ -309,7 +314,7 @@ protected:
 
 /**************************/
 
-/*** 1-of-N constraints (a special case of cardinality potentials) ***/
+//1-of-N constraints (a special case of cardinality potentials), all variables must be binary
 class OneOfNDualFactorNode : public DualFactorNode {
 public:
 
@@ -318,7 +323,7 @@ public:
 
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
 
   virtual double dual_value() const;
 
@@ -327,7 +332,7 @@ public:
 
 /**************************/
 
-/*** cardinality factor ***/
+//cardinality factor, all variables must be binary 
 class CardinalityDualFactorNode : public DualFactorNode {
 public:
 
@@ -336,19 +341,19 @@ public:
 
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
 
   virtual double dual_value() const;
 
   virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
 
 protected:
-  Math1D::Vector<float> card_cost_;
+  const Math1D::Vector<float> card_cost_;
 };
 
 /**************************/
 
-/*** binary integer linear constraint factor ***/
+//integer linear constraint factor for binary variables
 class BILPConstraintDualFactorNode: public DualFactorNode {
 public:
 
@@ -358,21 +363,21 @@ public:
 
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
-  virtual void update_duals(DualBCDMode mode);
+  virtual void update_duals(DualBCAMode mode);
 
   virtual double dual_value() const;
 
   virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
 
 protected:
-  Storage1D<bool> positive_;
+  const Storage1D<bool> positive_;
   int rhs_lower_;
   int rhs_upper_;
 };
 
 /**************************/
 
-/**** this is the main algorithmic class ***/
+//this is the main class
 class FactorDualOpt {
 public:
 
@@ -421,7 +426,7 @@ public:
   /**** run inference ***/
 
   //returns the computed lower bound
-  double dual_bcd(uint nIter, DualBCDMode mode = DUAL_BCD_MODE_MPLP, bool init=true, bool quiet = false);
+  double dual_bca(uint nIter, DualBCAMode mode = DUAL_BCA_MODE_MPLP, bool init=true, bool quiet = false);
 
   //returns the best found lower bound
   double subgradient_opt(uint nIter, double start_step_size = 0.1);
@@ -448,8 +453,6 @@ protected:
 
   uint nUsedVars_;
   uint nUsedFactors_;
-
-  bool optimize_called_;
 };
 
 

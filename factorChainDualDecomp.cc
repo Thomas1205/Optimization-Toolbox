@@ -7,7 +7,7 @@
 #include <set>
 #include "stl_out.hh"
 
-#define PRIMAL_DUAL_STEPSIZE
+//#define PRIMAL_DUAL_STEPSIZE
 
 ChainDDVar::ChainDDVar(const Math1D::Vector<float>& cost) : cost_(cost) {}
   
@@ -19,8 +19,17 @@ void ChainDDVar::add_factor(ChainDDFactor* factor) {
   neighboring_factor_[size] = factor;
 }
 
-void ChainDDVar::add_cost(const Math1D::Vector<float>& cost) {
-  cost_ += cost;
+void ChainDDVar::add_cost(const Math1D::Vector<float>& add_cost) {
+
+  if (add_cost.size() != cost_.size()) {
+    INTERNAL_ERROR << "cannot add cost due to incompatible vector sizes: " << cost_.size() << " and " << add_cost.size() << std::endl;
+    exit(1);
+  }
+
+  float nC = nChains();
+
+  for (uint i=0; i < cost_.size(); i++)
+    cost_[i] += add_cost[i] / nC;
 }
 
 const Math1D::Vector<float>& ChainDDVar::cost() const {
@@ -151,7 +160,10 @@ void ChainDDFactor::set_next_factor(ChainDDFactor* factor) {
 /********************************************/
 
 BinaryChainDDFactor::BinaryChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars, const Math2D::Matrix<float>& cost) :
-  ChainDDFactor(involved_vars), cost_(cost) {}
+  ChainDDFactor(involved_vars), cost_(cost) {
+
+  assert(involved_vars.size() == 2);
+}
 
 /*virtual*/ 
 double BinaryChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
@@ -171,8 +183,6 @@ double BinaryChainDDFactor::compute_forward(const ChainDDVar* in_var, const Chai
 
   uint idx = MAX_UINT;
 
-  //std::cerr << "A" << std::endl;
-
   Storage1D<Math1D::Vector<double> > param = dual_var_;
   for (uint k=0; k < involved_var_.size(); k++) {
     if (involved_var_[k] == in_var) {
@@ -190,8 +200,6 @@ double BinaryChainDDFactor::compute_forward(const ChainDDVar* in_var, const Chai
       }
     }
   }
-
-  //std::cerr << "B" << std::endl;
 
   forward.resize(involved_var_[idx]->nLabels());
   trace.resize(2,forward.size());
@@ -244,20 +252,16 @@ double BinaryChainDDFactor::compute_forward(const ChainDDVar* in_var, const Chai
 
   }
 
-  // std::cerr << "prev_forward: " << prev_forward << std::endl;
-  // std::cerr << "idx: " << idx << std::endl;
-  // std::cerr << "cost: " << cost_ << std::endl;
-  // std::cerr << "next forward: " << forward << std::endl;
-
-  //std::cerr << "C" << std::endl;
-
   return 0.0; //currently not removing a constant offset
 }
 
 /********************************************/
 
 TernaryChainDDFactorBase::TernaryChainDDFactorBase(const Storage1D<ChainDDVar*>& involved_vars)
-  : ChainDDFactor(involved_vars) {}
+  : ChainDDFactor(involved_vars) {
+
+  assert(involved_vars.size() == 3);
+}
 
 double TernaryChainDDFactorBase::compute_forward(const ChainDDVar* in_var, const ChainDDVar* out_var,
                                                  const Math1D::Vector<double>& prev_forward, const Math3D::Tensor<float>& cost,
@@ -369,7 +373,7 @@ double TernaryChainDDFactorBase::compute_forward(const ChainDDVar* in_var, const
       
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 	
-        double inter1 = param[0][l1];
+        const double inter1 = param[0][l1];
 
         for (uint l2 = 0; l2 < nLabels2; l2++) {
 	  
@@ -428,7 +432,10 @@ double TernaryChainDDRefFactor::cost(const Math1D::Vector<uint>& labeling) {
 }
 
 SecondDiffChainDDFactor::SecondDiffChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars, float lambda)
-  : ChainDDFactor(involved_vars), lambda_(lambda) {}
+  : ChainDDFactor(involved_vars), lambda_(lambda) {
+
+  assert(involved_vars.size() == 3);
+}
 
 /*virtual*/ 
 double SecondDiffChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
@@ -520,7 +527,7 @@ double SecondDiffChainDDFactor::compute_forward(const ChainDDVar* in_var, const 
           assert(abs(l2-l1) <= 1);
           assert(abs(l3-l2) <= 1);
 
-          int so_diff = l3 - 2*l2 + l1;
+          const int so_diff = l3 - 2*l2 + l1;
 	  
           double hyp = 1e300;
 
@@ -587,7 +594,7 @@ double SecondDiffChainDDFactor::compute_forward(const ChainDDVar* in_var, const 
           assert(abs(l2-l1) <= 1);
           assert(abs(l3-l2) <= 1);
 
-          int so_diff = l3 - 2*l2 + l1;
+          const int so_diff = l3 - 2*l2 + l1;
 	  
           double hyp = 1e300;
 
@@ -653,7 +660,7 @@ double SecondDiffChainDDFactor::compute_forward(const ChainDDVar* in_var, const 
           assert(abs(l2-l1) <= 1);
           assert(abs(l3-l2) <= 1);
 
-          int so_diff = l3 - 2*l2 + l1;
+          const int so_diff = l3 - 2*l2 + l1;
 	  
           double hyp = 1e300;
 
@@ -687,7 +694,9 @@ double SecondDiffChainDDFactor::compute_forward(const ChainDDVar* in_var, const 
 
 FourthOrderChainDDFactor::FourthOrderChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars, 
                                                    const Storage1D<Math3D::Tensor<float> >& cost) 
-  : ChainDDFactor(involved_vars), cost_(cost) {}
+  : ChainDDFactor(involved_vars), cost_(cost) {
+  assert(involved_vars.size() == 4);
+}
 
 /*virtual*/ 
 double FourthOrderChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
@@ -740,6 +749,8 @@ double FourthOrderChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
       uint argbest3 = MAX_UINT;
       uint argbest4 = MAX_UINT;
 
+      const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
       for (uint l2 = 0; l2 < nLabels2; l2++) {
 
        const double inter1 = param[1][l2];
@@ -750,7 +761,7 @@ double FourthOrderChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
 
           for (uint l4 = 0; l4 < nLabels4; l4++) {
 	  
-            double hyp = cost_[l1](l2,l3,l4) - inter2 - param[3][l4];
+            double hyp = cur_cost(l2,l3,l4) - inter2 - param[3][l4];
 	  
             if (hyp < best) {
               best = hyp;
@@ -782,6 +793,8 @@ double FourthOrderChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
       uint argbest4 = MAX_UINT;
       
       for (uint l1 = 0; l1 < nLabels1; l1++) {
+
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
 	
         const double inter1 = param[0][l1];
 
@@ -791,7 +804,7 @@ double FourthOrderChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
           
           for (uint l4 = 0; l4 < nLabels3; l4++) {
 	  
-            double hyp = cost_[l1](l2,l3,l4) - inter2 - param[3][l4];
+            double hyp = cur_cost(l2,l3,l4) - inter2 - param[3][l4];
 	  
             if (hyp < best) {
               best = hyp;
@@ -824,6 +837,8 @@ double FourthOrderChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
       
       for (uint l1 = 0; l1 < nLabels1; l1++) {
         
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
         const double inter1 = param[0][l1];
 	
         for (uint l2 = 0; l2 < nLabels2; l2++) {
@@ -832,7 +847,7 @@ double FourthOrderChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
 
           for (uint l4 = 0; l4 < nLabels4; l4++) {
 	  
-            double hyp = cost_[l1](l2,l3,l4) - inter2 - param[3][l4];
+            double hyp = cur_cost(l2,l3,l4) - inter2 - param[3][l4];
 	  
             if (hyp < best) {
               best = hyp;
@@ -867,6 +882,8 @@ double FourthOrderChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
 
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 	
+        const Math3D::Tensor<float>& cur_cost = cost_[l1];
+
         const double inter1 = param[0][l1];
 
         for (uint l2 = 0; l2 < nLabels2; l2++) {
@@ -875,7 +892,7 @@ double FourthOrderChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
 
           for (uint l3 = 0; l3 < nLabels3; l3++) {
 	  
-            double hyp = cost_[l1](l2,l3,l4) - inter2 - param[2][l3];
+            double hyp = cur_cost(l2,l3,l4) - inter2 - param[2][l3];
 	  
             if (hyp < best) {
               best = hyp;
@@ -901,7 +918,11 @@ double FourthOrderChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
 
 
 OneOfNChainDDFactor::OneOfNChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars) : 
-  ChainDDFactor(involved_vars) {}
+  ChainDDFactor(involved_vars) {
+  
+  for (uint v=0; v < involved_vars.size(); v++)
+    assert(involved_vars[v]->nLabels() == 2);
+}
 
 /*virtual*/ 
 double OneOfNChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
@@ -979,7 +1000,11 @@ double OneOfNChainDDFactor::compute_forward(const ChainDDVar* in_var, const Chai
 
 CardinalityChainDDFactor::CardinalityChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars, 
                                                    const Math1D::Vector<float>& cost) :
-  ChainDDFactor(involved_vars), cost_(cost) {}
+  ChainDDFactor(involved_vars), cost_(cost) {
+
+  for (uint v=0; v < involved_vars.size(); v++)
+    assert(involved_vars[v]->nLabels() == 2);
+}
 
 /*virtual*/ 
 double CardinalityChainDDFactor::cost(const Math1D::Vector<uint>& labeling) {
@@ -1086,6 +1111,9 @@ BILPChainDDFactor::BILPChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars
                                      int rhs_lower, int rhs_upper) : 
   ChainDDFactor(involved_vars), positive_(positive), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper) {
 
+  for (uint v=0; v < involved_vars.size(); v++)
+    assert(involved_vars[v]->nLabels() == 2);
+
   assert(rhs_lower_ <= rhs_upper_);
 
   int nPositive = 0;
@@ -1106,7 +1134,7 @@ BILPChainDDFactor::BILPChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars
 
   const int range = upper_bound - lower_bound + 1;
   const int zero_offset = -lower_bound;
-
+  
   if (rhs_upper_ + zero_offset < 0 || rhs_lower + zero_offset >= range) {
     INTERNAL_ERROR << "constraint is unsatisfiable. Exiting..." << std::endl;
     exit(1);
@@ -1146,8 +1174,6 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
                                           Math2D::Matrix<uint>& trace) {
 
   //based on [Potetz & Lee CVIU 2007]
-
-  //std::cerr << "forward comp" << std::endl;
 
   uint nVars = involved_var_.size();
 
@@ -1302,8 +1328,6 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
 
   for (uint l=0; l < 2; l++) {
 
-    //std::cerr << "l: " << l << std::endl;
-
     double min_msg = 1e300;
     int best_s = 0;
     int best_r = 0;
@@ -1352,8 +1376,6 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
     forward_msg[l] = min_msg;
     trace(idx,l) = l;
 
-    //std::cerr << "trace back" << std::endl;
-
     //a) trace backward to start
     uint cur_l = l;
     uint cur_sum = best_s;
@@ -1370,8 +1392,6 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
       if (k > 0)
         cur_l = forward_light_trace(cur_sum,k-1);
     }
-
-    //std::cerr << "trace for" << std::endl;
 
     //a) trace forward to end
     if (idx + 1 < nVars) {
@@ -1396,8 +1416,6 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
           cur_l = backward_light_trace(cur_sum,k+1);
       }
     }
-
-    //std::cerr << "done" << std::endl;
   }
 
   return 0.0; //currently not subtracting an offest
@@ -1421,25 +1439,38 @@ FactorChainDualDecomposition::~FactorChainDualDecomposition() {
 
 void FactorChainDualDecomposition::add_var(const Math1D::Vector<float>& cost) {
 
+  assert(!optimize_called_);
+
+  if (nUsedVars_ == var_.size())
+    var_.resize(uint(1.2*nUsedVars_)+4);
+
   assert(nUsedVars_ < var_.size());
   var_[nUsedVars_] = new ChainDDVar(cost);
 
   nUsedVars_++;
 }
 
+void FactorChainDualDecomposition::add_factor(ChainDDFactor* fac) {
+
+  assert(!optimize_called_);
+
+  if (nUsedFactors_ == factor_.size())
+    factor_.resize(uint(1.2*nUsedFactors_)+4);
+
+  factor_[nUsedFactors_] = fac;
+  nUsedFactors_++;
+}
+
 void FactorChainDualDecomposition::add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost) {
+
+  assert(var1 < nUsedVars_);
+  assert(var2 < nUsedVars_);
 
   Storage1D<ChainDDVar*> vars(2);
   vars[0] = var_[var1];
   vars[1] = var_[var2];
 
-  assert(var1 < nUsedVars_);
-  assert(var2 < nUsedVars_);
-  assert(nUsedFactors_ < factor_.size());
-
-  factor_[nUsedFactors_] = new BinaryChainDDFactor(vars,cost);
-
-  nUsedFactors_++;
+  add_factor(new BinaryChainDDFactor(vars,cost));
 }
 
 void FactorChainDualDecomposition::add_ternary_factor(uint var1, uint var2, uint var3, 
@@ -1450,14 +1481,14 @@ void FactorChainDualDecomposition::add_ternary_factor(uint var1, uint var2, uint
   vars[1] = var_[var2];
   vars[2] = var_[var3];
 
-  assert(nUsedFactors_ < factor_.size());
+  ChainDDFactor* new_fac = 0;
 
   if (!ref)
-    factor_[nUsedFactors_] = new TernaryChainDDFactor(vars,cost);
+    new_fac = new TernaryChainDDFactor(vars,cost);
   else
-    factor_[nUsedFactors_] = new TernaryChainDDRefFactor(vars,cost);
+    new_fac = new TernaryChainDDRefFactor(vars,cost);
 
-  nUsedFactors_++;
+  add_factor(new_fac);
 }
 
 void FactorChainDualDecomposition::add_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
@@ -1469,11 +1500,7 @@ void FactorChainDualDecomposition::add_fourth_order_factor(uint var1, uint var2,
   vars[2] = var_[var3];
   vars[3] = var_[var4];
 
-  assert(nUsedFactors_ < factor_.size());
-
-  factor_[nUsedFactors_] = new FourthOrderChainDDFactor(vars,cost);
-
-  nUsedFactors_++;
+  add_factor(new FourthOrderChainDDFactor(vars,cost));
 }
 
 void FactorChainDualDecomposition::add_second_diff_factor(uint var1, uint var2, uint var3, float lambda) {
@@ -1483,11 +1510,7 @@ void FactorChainDualDecomposition::add_second_diff_factor(uint var1, uint var2, 
   vars[1] = var_[var2];
   vars[2] = var_[var3];
 
-  assert(nUsedFactors_ < factor_.size());
-
-  factor_[nUsedFactors_] = new SecondDiffChainDDFactor(vars,lambda);
-
-  nUsedFactors_++;
+  add_factor(new SecondDiffChainDDFactor(vars,lambda));
 }
 
 void FactorChainDualDecomposition::add_one_of_n_factor(const Math1D::Vector<uint>& var) {
@@ -1497,11 +1520,7 @@ void FactorChainDualDecomposition::add_one_of_n_factor(const Math1D::Vector<uint
   for (uint k=0; k < var.size(); k++)
     vars[k] = var_[var[k]];
 
-  assert(nUsedFactors_ < factor_.size());
-
-  factor_[nUsedFactors_] = new OneOfNChainDDFactor(vars);
-
-  nUsedFactors_++;
+  add_factor(new OneOfNChainDDFactor(vars));
 }
 
 void FactorChainDualDecomposition::add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost) {
@@ -1515,12 +1534,8 @@ void FactorChainDualDecomposition::add_cardinality_factor(const Math1D::Vector<u
   
     for (uint k=0; k < var.size(); k++)
       vars[k] = var_[var[k]];
-    
-    assert(nUsedFactors_ < factor_.size());
-    
-    factor_[nUsedFactors_] = new CardinalityChainDDFactor(vars,cost);
-    
-    nUsedFactors_++;  
+
+    add_factor(new CardinalityChainDDFactor(vars,cost));
   }
 }
 
@@ -1565,11 +1580,8 @@ void FactorChainDualDecomposition::add_binary_ilp_factor(const Math1D::Vector<ui
     }
 
     assert(next == nUseful);
-    assert(nUsedFactors_ < factor_.size());
-    
-    factor_[nUsedFactors_] = new BILPChainDDFactor(vars,reduced_positive,rhs_lower,rhs_upper);
-    
-    nUsedFactors_++;  
+
+    add_factor(new BILPChainDDFactor(vars,reduced_positive,rhs_lower,rhs_upper));
   }
   else {
     std::cerr << "WARNING: removed superfluous constraint factor" << std::endl;
@@ -1590,16 +1602,12 @@ void FactorChainDualDecomposition::set_up_chains() {
   uint nAtLeast25 = 0;
 
   for (uint f=0; f < nUsedFactors_; f++) {
-
-    //std::cerr << "factor #" << f << "/" << nUsedFactors_ << std::endl;
     
     if (factor_[f]->prev_var() == 0 && factor_[f]->next_var() == 0) {
 
       uint length = 1;
 
       std::set<ChainDDVar*> current_vars;
-
-      //std::cerr << "extend lower" << std::endl;
 
       bool extension_found = true;
 
@@ -1670,8 +1678,6 @@ void FactorChainDualDecomposition::set_up_chains() {
 
 #if 1
       //extend upper end
-
-      //std::cerr << "extend upper" << std::endl;
 
       cur_factor = factor_[f];
       extension_found = true;
@@ -1746,10 +1752,6 @@ void FactorChainDualDecomposition::set_up_chains() {
         nAtLeast10++;
       if (length >= 25)
         nAtLeast25++;
-
-
-      // if (length > 15)
-      //   std::cerr << "chain length " << length << std::endl;
     }
   }
 
@@ -1793,7 +1795,7 @@ double FactorChainDualDecomposition::optimize(uint nIter, double start_step_size
   
   for (uint f=0; f < nUsedFactors_; f++) {
     factor_label[f].resize(factor_[f]->involved_vars().size());
-  //   denom += factor_[f]->involved_vars().size();
+    //   denom += factor_[f]->involved_vars().size();
   }
 
   std::map<ChainDDVar*,uint> var_num;
@@ -1816,7 +1818,6 @@ double FactorChainDualDecomposition::optimize(uint nIter, double start_step_size
 
     effort_per_iter += size;
   }
-
 
   //store chains for efficient access
 
