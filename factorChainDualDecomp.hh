@@ -86,8 +86,19 @@ protected:
 
 /***************************************/
 
-// binary factor
-class BinaryChainDDFactor: public ChainDDFactor {
+// abstract base class for a binary factor
+/*abstract */ class BinaryChainDDFactorBase: public ChainDDFactor {
+public:
+  
+  BinaryChainDDFactorBase(const Storage1D<ChainDDVar*>& involved_vars);
+
+  double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
+                         const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward, 
+                         Math2D::Matrix<uint>& trace, const Math2D::Matrix<float>& cost);
+};
+
+// binary factor with costs stored explicitly
+class BinaryChainDDFactor: public BinaryChainDDFactorBase {
 public:
   
   BinaryChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars, const Math2D::Matrix<float>& cost);
@@ -99,8 +110,26 @@ public:
   virtual double cost(const Math1D::Vector<uint>& labeling);
 
 protected:
-  Math2D::Matrix<float> cost_;
+  const Math2D::Matrix<float> cost_;
 };
+
+// binary factor where a reference to the cost is stored (saves memory if you have many similar factors)
+class BinaryChainDDRefFactor: public BinaryChainDDFactorBase {
+public:
+  
+  BinaryChainDDRefFactor(const Storage1D<ChainDDVar*>& involved_vars, const Math2D::Matrix<float>& cost);
+
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
+                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward, 
+                                 Math2D::Matrix<uint>& trace);
+
+  virtual double cost(const Math1D::Vector<uint>& labeling);
+
+protected:
+  const Math2D::Matrix<float>& cost_;
+};
+
+/***********/
 
 // abstract base class for a ternary factor
 class TernaryChainDDFactorBase : public ChainDDFactor {
@@ -126,7 +155,7 @@ public:
   virtual double cost(const Math1D::Vector<uint>& labeling);
 
 protected:
-  Math3D::Tensor<float> cost_;
+  const Math3D::Tensor<float> cost_;
 };
 
 
@@ -162,8 +191,21 @@ protected:
   const float lambda_;
 };
 
-// fourth order factor
-class FourthOrderChainDDFactor : public ChainDDFactor {
+/*****/
+
+//abstract base class for a 4th order factor
+/*abstract*/ class FourthOrderChainDDFactorBase : public ChainDDFactor {
+public:
+
+  FourthOrderChainDDFactorBase(const Storage1D<ChainDDVar*>& involved_vars);
+
+  double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
+                         const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward, 
+                         Math2D::Matrix<uint>& trace, const Storage1D<Math3D::Tensor<float> >& cost);
+};
+
+// 4th order factor with costs stored explicitly
+class FourthOrderChainDDFactor : public FourthOrderChainDDFactorBase {
 public:
   
   FourthOrderChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars, 
@@ -178,6 +220,25 @@ public:
 protected:
   const Storage1D<Math3D::Tensor<float> > cost_;
 };
+
+// 4th order factor storing only a reference to the cost (saves memory if you have many similar factors)
+class FourthOrderChainDDRefFactor : public FourthOrderChainDDFactorBase {
+public:
+  
+  FourthOrderChainDDRefFactor(const Storage1D<ChainDDVar*>& involved_vars, 
+                           const Storage1D<Math3D::Tensor<float> >& cost);
+
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
+                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward, 
+                                 Math2D::Matrix<uint>& trace);
+
+  virtual double cost(const Math1D::Vector<uint>& labeling);
+
+protected:
+  const Storage1D<Math3D::Tensor<float> >& cost_;
+};
+
+/******/
 
 //1-of-N constraints (a special case of cardinality potentials), all variables must be binary
 class OneOfNChainDDFactor : public ChainDDFactor {
@@ -246,14 +307,14 @@ public:
 
   void add_var(const Math1D::Vector<float>& cost);
 
-  void add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost);
+  void add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref=false);
 
   void add_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref=false);
 
   void add_second_diff_factor(uint var1, uint var2, uint var3, float lambda);
 
   void add_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
-                               const Storage1D<Math3D::Tensor<float> >& cost);
+                               const Storage1D<Math3D::Tensor<float> >& cost, bool ref=false);
 
   // all variables must be binary
   void add_one_of_n_factor(const Math1D::Vector<uint>& var);
