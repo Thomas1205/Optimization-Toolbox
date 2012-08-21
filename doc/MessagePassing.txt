@@ -16,7 +16,9 @@ in-between two such calls.
 - the classes with pair separators only support factors of order two, three
 and four so far. It would however be possible to also support 1ofN,
 cardinality and BILP potentials, as long as these do not use pair separators.
-
+- for factors of order 2,3,4 you can decide to pass only a reference of the
+cost to save memory. However, be careful that the passed container exists for
+as long as the message passing class exists (be careful with local variables!).
 
 For feedback, questions, bug reports and feature requests, please contact
 thomas_schoenemann@yahoo.de

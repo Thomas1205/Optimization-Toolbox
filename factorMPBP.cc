@@ -1625,7 +1625,7 @@ uint FactorMPBP::add_var(const Math1D::Vector<float>& unary_cost) {
 
   uint prev_size = var_.size();
   if (nUsedVars_ > prev_size) {
-    var_.resize(size_t(1.2*prev_size)+1,0);
+    var_.resize(size_t(1.2*prev_size)+4,0);
   }
   var_[nPrevVars] = ptr;
 
@@ -1830,6 +1830,8 @@ double FactorMPBP::labeling_energy() {
 
   std::map<VariableNode*,uint> label;
 
+  //std::cerr << nUsedVars_ << " variables" << std::endl;
+
   for (uint k=0; k < nUsedVars_; k++) {
     assert(label.find(var_[k]) == label.end());
     label[var_[k]] = labeling_[k];
@@ -1959,6 +1961,8 @@ void FactorMPBP::mpbp(uint nIter) {
   Math1D::Vector<double> belief;
 
   labeling_.resize(nUsedVars_,0);
+
+  //std::cerr << nUsedVars_ << " vars, " << nUsedFactors_ << " factors" << std::endl;
 
   //init messages
   for (uint v=0; v < nUsedVars_; v++)

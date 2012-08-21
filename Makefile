@@ -2,10 +2,8 @@ include common/Makefile.common
 
 ##############################################################
 
-COMMONDIR = common
+COMMONDIR = common/
 INCLUDE = -I common/ -I thirdparty/ -I . 
-
-# if you have the any of the solvers Gurobi, Cplex or Xpress, please add -DHAS_GUROBI etc. to the INCLUDE options
 
 all:  optlib.debug optlib.opt
 
