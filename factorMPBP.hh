@@ -40,7 +40,7 @@ protected:
   
   Math2D::Matrix<double> message_matrix_;
 
-  const Math1D::Vector<float>& cost_;
+  const Math1D::Vector<float> cost_;
 };
 
 
