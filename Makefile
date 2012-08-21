@@ -5,7 +5,7 @@ include common/Makefile.common
 COMMONDIR = common/
 INCLUDE = -I common/ -I thirdparty/ -I . 
 
-all:  optlib.debug optlib.opt
+all:  $(DEBUGDIR) $(OPTDIR) optlib.debug optlib.opt
 
 optlib.debug: $(DEBUGDIR)/check_submodularity.o $(DEBUGDIR)/nbest.o $(DEBUGDIR)/factorMPBP.o $(DEBUGDIR)/factorDualOpt.o $(DEBUGDIR)/factorChainDualDecomp.o $(DEBUGDIR)/separatorChainDualDecomp.o $(DEBUGDIR)/separatorDualOpt.o $(DEBUGDIR)/factorTRWS.o $(DEBUGDIR)/sepTRWS.o $(DEBUGDIR)/function.o $(DEBUGDIR)/submodularity_check.o
 	ar rs $@ $(DEBUGDIR)/check_submodularity.o $(DEBUGDIR)/nbest.o $(DEBUGDIR)/factorMPBP.o $(DEBUGDIR)/factorDualOpt.o $(DEBUGDIR)/factorChainDualDecomp.o $(DEBUGDIR)/separatorChainDualDecomp.o $(DEBUGDIR)/separatorDualOpt.o $(DEBUGDIR)/factorTRWS.o $(DEBUGDIR)/sepTRWS.o $(DEBUGDIR)/function.o $(DEBUGDIR)/submodularity_check.o
