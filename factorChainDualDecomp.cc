@@ -811,7 +811,7 @@ double FourthOrderChainDDFactorBase::compute_forward(const ChainDDVar* in_var, c
     forward.resize(nLabels2);
     trace.resize(4,nLabels2);
     
-    for (uint l2 = 0; l2 < nLabels1; l2++) {
+    for (uint l2 = 0; l2 < nLabels2; l2++) {
       
       double best = 1e300;
       uint argbest1 = MAX_UINT;
@@ -828,7 +828,7 @@ double FourthOrderChainDDFactorBase::compute_forward(const ChainDDVar* in_var, c
 
           const double inter2 = inter1 + param[2][l3];
           
-          for (uint l4 = 0; l4 < nLabels3; l4++) {
+          for (uint l4 = 0; l4 < nLabels4; l4++) {
 	  
             double hyp = cur_cost(l2,l3,l4) - inter2 - param[3][l4];
 	  

@@ -1182,7 +1182,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllIn
 
       Math1D::Vector<double>& repar = var_reparameterization_[1];
 
-      for (uint l2 = 0; l2 < nLabels1; l2++) {
+      for (uint l2 = 0; l2 < nLabels2; l2++) {
       
 	double best = 1e300;
 	

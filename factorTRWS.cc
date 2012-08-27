@@ -322,7 +322,7 @@ double TernaryCumTRWSFactorBase::compute_reparameterization(CumTRWSVar* var, con
 
     Math1D::Vector<double>& message = reparameterization_[idx];
 
-    for (uint l2 = 0; l2 < nLabels1; l2++) {
+    for (uint l2 = 0; l2 < nLabels2; l2++) {
       
       double best = 1e300;
       
@@ -622,7 +622,7 @@ double FourthOrderCumTRWSFactorBase::compute_reparameterization(CumTRWSVar* var,
 
     Math1D::Vector<double>& message = reparameterization_[idx];
     
-    for (uint l2 = 0; l2 < nLabels1; l2++) {
+    for (uint l2 = 0; l2 < nLabels2; l2++) {
       
       double best = 1e300;
       
@@ -636,7 +636,7 @@ double FourthOrderCumTRWSFactorBase::compute_reparameterization(CumTRWSVar* var,
 
           const double sum3 = w1 + param[2][l3];
 
-          for (uint l4 = 0; l4 < nLabels3; l4++) {
+          for (uint l4 = 0; l4 < nLabels4; l4++) {
 	  
             double hyp = cur_cost(l2,l3,l4) 
               - sum3 - param[3][l4];
