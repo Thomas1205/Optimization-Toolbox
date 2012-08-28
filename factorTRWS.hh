@@ -8,6 +8,7 @@
 #include "vector.hh"
 #include "matrix.hh"
 #include "tensor.hh"
+#include "vardim_storage.hh"
 
 class CumTRWSFactor;
 
@@ -75,6 +76,19 @@ protected:
 
   uint min_rank_;
   uint max_rank_;  
+};
+
+/******************************/
+
+class GenericCumTRWSFactor : public CumTRWSFactor {
+public:
+
+  GenericCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const VarDimStorage<float>& cost);
+
+  virtual double compute_reparameterization(CumTRWSVar* var);
+
+protected:
+  const VarDimStorage<float> cost_;
 };
 
 /******************************/
@@ -264,8 +278,10 @@ public:
 
   ~CumFactorTRWS();
 
-  void add_var(const Math1D::Vector<float>& cost);
+  uint add_var(const Math1D::Vector<float>& cost);
   
+  void add_generic_factor(const Math1D::Vector<uint>& vars, const VarDimStorage<float>& cost);
+
   void add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref=false);
 
   void add_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref=false);
