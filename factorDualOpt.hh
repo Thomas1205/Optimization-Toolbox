@@ -101,7 +101,7 @@ public:
 
 protected:
   
-  VarDimStorage<float> cost_;
+  const VarDimStorage<float> cost_;
 };
 
 /**************************/
@@ -136,7 +136,7 @@ public:
   virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
 
 protected:
-  Math2D::Matrix<float> cost_;
+  const Math2D::Matrix<float> cost_;
 };
 
 /**************************/
@@ -176,7 +176,7 @@ public:
   virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
 
 protected:
-  float lambda_;
+  const float lambda_;
 };
 
 /**************************/
@@ -211,7 +211,7 @@ public:
   virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
 
 protected:
-  Math3D::Tensor<float> cost_;
+  const Math3D::Tensor<float> cost_;
 };
 
 /**************************/
@@ -250,7 +250,7 @@ public:
   
 protected:
 
-  float lambda_;
+  const float lambda_;
 };
 
 /**************************/
@@ -288,7 +288,7 @@ public:
   virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
   
 protected:
-  Storage1D<Math3D::Tensor<float> > cost_;
+  const Storage1D<Math3D::Tensor<float> > cost_;
 };
 
 /**************************/
@@ -394,7 +394,7 @@ public:
   //NOTE: after calling this routine, owned vars can no longer be created
   uint pass_in_var_node(DualVariableNode* var);
 
-  uint add_generic_factor(const Math1D::Vector<uint> var, VarDimStorage<float>& cost);
+  uint add_generic_factor(const Math1D::Vector<uint> var, const VarDimStorage<float>& cost);
 
   uint add_generic_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref=false);
   

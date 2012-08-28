@@ -176,7 +176,7 @@ BinaryDualFactorNodeBase::BinaryDualFactorNodeBase(const Storage1D<DualVariableN
 }
 
 void BinaryDualFactorNodeBase::update_duals(const Math2D::Matrix<float>& cost, DualBCAMode mode) {
-  
+
   NamedStorage1D<Math1D::Vector<double> > msg(2, MAKENAME(msg));
 
   NamedStorage1D<double*> dual_ptr(2, MAKENAME(dual_ptr));
@@ -1910,7 +1910,6 @@ OneOfNDualFactorNode::OneOfNDualFactorNode(const Storage1D<DualVariableNode*>& p
 
       double prev_diff = dual_ptr[v][0] - dual_ptr[v][1];
       dual_ptr[v][1] = 0.5 * (offs - msg[v][1]);
-
       if (v == arg_best) 
         dual_ptr[v][0] = 0.5 * (offs + second_best - msg[v][0]);
       else
@@ -2658,7 +2657,7 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
           if (hyp < min_msg)
             min_msg = hyp;
         }
-	
+
         assert(!isnan(min_msg));
 	
         dual_ptr[k][l] = (min_msg) / nVars - msg[k][l];
@@ -2800,7 +2799,7 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
       for (int sum=0; sum < range; sum++) {
 
         for (uint l=0; l < 2; l++)
-          forward(sum,l,v) -= cur_dp[l]; 
+          forward(sum,l,v) -= cur_dp[l];
         forward_light(sum,v) = std::min(forward(sum,0,v), forward(sum,1,v));
       }
     }
@@ -3086,7 +3085,7 @@ uint FactorDualOpt::pass_in_var_node(DualVariableNode* var) {
   return prev_size;
 }
 
-uint FactorDualOpt::add_generic_factor(const Math1D::Vector<uint> var, VarDimStorage<float>& cost) {
+uint FactorDualOpt::add_generic_factor(const Math1D::Vector<uint> var, const VarDimStorage<float>& cost) {
 
   assert(var.size() == cost.nDims());
 
@@ -3281,7 +3280,6 @@ uint FactorDualOpt::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
     }
   }
 
-
   if (nUseful != 0) {
 
     assert(nUseful >= 2);
@@ -3305,7 +3303,7 @@ uint FactorDualOpt::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
 
     BILPConstraintDualFactorNode* ptr = new BILPConstraintDualFactorNode(vars, reduced_positive, rhs_lower, rhs_upper);
 
-    return add_factor(ptr);
+    return add_factor(ptr);    
   }
   else {
 
@@ -3474,14 +3472,7 @@ double FactorDualOpt::labeling_energy() {
     energy += var_[k]->cost(labeling_[k]);
   }
 
-  //std::cerr << "unary cost: " << energy << std::endl;
-
-  //  std::cerr << "sum of labeling: " << labeling_.sum() << std::endl;
-  //std::cerr << "nFactors: " << nUsedFactors_ << std::endl;
-
   for (uint k=0; k < nUsedFactors_; k++) {
-
-    //std::cerr << "k: " << k << std::endl;
 
     const Storage1D<DualVariableNode*>& nodes = factor_[k]->participating_nodes();
 

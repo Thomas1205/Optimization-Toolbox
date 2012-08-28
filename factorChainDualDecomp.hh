@@ -8,6 +8,7 @@
 #include "vector.hh"
 #include "matrix.hh"
 #include "tensor.hh"
+#include "vardim_storage.hh"
 
 class ChainDDFactor;
 
@@ -85,6 +86,22 @@ protected:
 };
 
 /***************************************/
+
+class GenericChainDDFactor: public ChainDDFactor {
+public:
+
+  GenericChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars, const VarDimStorage<float>& cost);
+
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
+                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward, 
+                                 Math2D::Matrix<uint>& trace);
+
+  virtual double cost(const Math1D::Vector<uint>& labeling);
+
+protected:
+
+  const VarDimStorage<float> cost_;
+};
 
 // abstract base class for a binary factor
 /*abstract */ class BinaryChainDDFactorBase: public ChainDDFactor {
@@ -306,6 +323,8 @@ public:
   ~FactorChainDualDecomposition();
 
   void add_var(const Math1D::Vector<float>& cost);
+
+  void add_generic_factor(const Math1D::Vector<uint> var, const VarDimStorage<float>& cost);
 
   void add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref=false);
 
