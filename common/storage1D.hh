@@ -379,10 +379,12 @@ void Storage1D<T>::resize(size_t new_size, T fill_value) {
 template<typename T>
 void Storage1D<T>::resize_dirty(size_t new_size) {
 
-  if (data_ != 0)
-    delete[] data_;
+  if (size_ != new_size) {
+    if (data_ != 0)
+      delete[] data_;
 
-  data_ = new T[new_size];
+    data_ = new T[new_size];
+  }
   size_ = new_size;
 }
 
