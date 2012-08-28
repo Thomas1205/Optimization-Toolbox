@@ -195,6 +195,7 @@ double GenericCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
   }
 
   Math1D::Vector<double>& cur_repar = reparameterization_[idx];
+  cur_repar.set_constant(1e300);
 
   Math1D::Vector<size_t> labeling(nVars,0);
 
