@@ -1,4 +1,5 @@
 /******* written by Thomas Schoenemann as an employee of the University of Pisa, Italy, 2011 *****/
+/******* continued at the University of Düsseldorf, Germany, 2012 ****/
 
 #include "factorChainDualDecomp.hh"
 

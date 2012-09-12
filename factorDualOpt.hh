@@ -1,4 +1,7 @@
-/******* written by Thomas Schoenemann as a private person without employment, July 2011 *****/
+/******* written by Thomas Schoenemann. Started as a private person without employment, July 2011, *****/
+/******* continued at the University of Pisa, Italy, October - December 2011 ***/
+/******* continued at the University of Düsseldorf, Germany, October - December 2011 ***/
+
 
 /***** implements solving linear programming relaxations with singleton separators ****/
 /***** via MPLP, MSD and subgradient optimization for single factors in negative log-space ****/

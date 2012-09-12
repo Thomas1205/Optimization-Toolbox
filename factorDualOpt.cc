@@ -1,4 +1,6 @@
-/******* written by Thomas Schoenemann as a private person without employment, July 2011 *****/
+/******* written by Thomas Schoenemann. Started as a private person without employment, July 2011, *****/
+/******* continued at the University of Pisa, Italy, October - December 2011 ***/
+/******* continued at the University of Düsseldorf, Germany, October - December 2011 ***/
 
 #include "factorDualOpt.hh"
 #include <map>
@@ -176,7 +178,7 @@ BinaryDualFactorNodeBase::BinaryDualFactorNodeBase(const Storage1D<DualVariableN
 }
 
 void BinaryDualFactorNodeBase::update_duals(const Math2D::Matrix<float>& cost, DualBCAMode mode) {
-
+  
   NamedStorage1D<Math1D::Vector<double> > msg(2, MAKENAME(msg));
 
   NamedStorage1D<double*> dual_ptr(2, MAKENAME(dual_ptr));
@@ -2312,15 +2314,16 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
 
       //update values and order
       values[cur_order].first = cur_dp[0]-cur_dp[1];
+      double val = values[cur_order].first;
 
-      while(cur_order > 0 && values[cur_order-1].first < values[cur_order].first) {
+      while(cur_order > 0 && values[cur_order-1].first > val) {
         uint other_var = values[cur_order-1].second;
         //assert(order[other_var] == cur_order-1);
         std::swap(values[cur_order-1],values[cur_order]);
         order[other_var]++;
         cur_order--;
       }
-      while (cur_order+1 < nVars && values[cur_order+1].first < values[cur_order].first) {
+      while (cur_order+1 < nVars && values[cur_order+1].first < val) {
         uint other_var = values[cur_order+1].second;
         //assert(order[other_var] == cur_order+1);
         std::swap(values[cur_order+1],values[cur_order]);
@@ -2799,7 +2802,7 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
       for (int sum=0; sum < range; sum++) {
 
         for (uint l=0; l < 2; l++)
-          forward(sum,l,v) -= cur_dp[l];
+          forward(sum,l,v) -= cur_dp[l]; 
         forward_light(sum,v) = std::min(forward(sum,0,v), forward(sum,1,v));
       }
     }
@@ -3280,7 +3283,16 @@ uint FactorDualOpt::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
     }
   }
 
+
   if (nUseful != 0) {
+    // if (nUseful < 2) {
+    //   std::cerr << "only " << nUseful << " out of " << var.size() << " variables are actually not fixed" << std::endl;
+    
+    //   for (uint k=0; k < var.size(); k++)
+    //     std::cerr << "cost: " << var_[var[k]]->cost() << std::endl;
+
+    //   std::cerr << "var: " << var << std::endl;
+    // }
 
     assert(nUseful >= 2);
     
@@ -3345,6 +3357,7 @@ double FactorDualOpt::dual_bca(uint nIter, DualBCAMode mode, bool init, bool qui
     std::cerr << "******** iteration " << iter << " ************" << std::endl;
 
     for (uint f=0; f < nUsedFactors_; f++) {
+      //std::cerr << "f: " << f << std::endl;
       factor_[f]->update_duals(mode);
     }
     
@@ -3412,8 +3425,6 @@ double FactorDualOpt::subgradient_opt(uint nIter, double start_step_size) {
       cur_bound += var_[v]->dual_value(cur_label);
       var_label[v] = cur_label;
     }
-    
-    std::cerr << "A" << std::endl;
 
     for (uint f=0; f < nUsedFactors_; f++) {
       cur_bound += factor_[f]->compute_minimizer(factor_label[f]);
@@ -3472,7 +3483,14 @@ double FactorDualOpt::labeling_energy() {
     energy += var_[k]->cost(labeling_[k]);
   }
 
+  //std::cerr << "unary cost: " << energy << std::endl;
+
+  //  std::cerr << "sum of labeling: " << labeling_.sum() << std::endl;
+  //std::cerr << "nFactors: " << nUsedFactors_ << std::endl;
+
   for (uint k=0; k < nUsedFactors_; k++) {
+
+    //std::cerr << "k: " << k << std::endl;
 
     const Storage1D<DualVariableNode*>& nodes = factor_[k]->participating_nodes();
 

@@ -1,4 +1,5 @@
 /**** written by Thomas Schoenemann as an employee of the University of Pisa, Italy, Oct. 2011 ****/
+/**** and continued at the University of Düsseldorf, Germany, 2012 ***/
 
 /***** implements the solving of dual relaxations with pairwise separators *****/
 /**** via the MSD with higher order factors (up to 4th order) *****/

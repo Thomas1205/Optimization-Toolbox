@@ -1,4 +1,5 @@
 /******* written by Thomas Schoenemann as an employee of the University of Pisa, Italy, 2011 *****/
+/******* continued at the University of Düsseldorf, Germany, 2012 ****/
 
 /**** this class implements the subgradient method for dual decomposition with factor chains *****/
 

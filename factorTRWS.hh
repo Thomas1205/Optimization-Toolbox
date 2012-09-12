@@ -1,4 +1,6 @@
-/**** written by Thomas Schoenemann as a private person without employment, August 2011 *****/
+/**** written by Thomas Schoenemann. Started as a private person without employment, August 2011 *****/
+/**** continued at the University of Pisa, Italy, October - December 2011 ****/
+/**** and at the Univeristy of Düsseldorf, Germany, 2012 ****/
 
 /*** this class implements TRWS with factors of arbitrarily high order and singleton separators ***/
 

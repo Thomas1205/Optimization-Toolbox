@@ -1,5 +1,6 @@
-/**** written by Thomas Schoenemann as a private person without employment, August 2011 *****/
-
+/**** written by Thomas Schoenemann. Started as a private person without employment, August 2011 *****/
+/**** continued at the University of Pisa, Italy, October - December 2011 ****/
+/**** and at the Univeristy of Düsseldorf, Germany, 2012 ****/
 
 #include "factorTRWS.hh"
 
@@ -22,8 +23,10 @@ void CumTRWSVar::add_cost(const Math1D::Vector<float>& add_cost) {
     exit(1);
   }
 
-  for (uint i=0; i < cost_.size(); i++)
-    cost_[i] += add_cost[i] / float(nChains_);
+  for (uint i=0; i < cost_.size(); i++) {
+    cost_[i] += add_cost[i];
+    cum_cost_[i] += add_cost[i] / float(nChains_);
+  }
 }
 
 void CumTRWSVar::set_up_chains() {
