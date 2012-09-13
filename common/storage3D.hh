@@ -1,4 +1,8 @@
-/*** written by Thomas Schoenemann as a private person without employment, September 2009 ***/
+/*-*-c++-*-*/ 
+/*** first version written by Thomas Schoenemann as a private person without employment, September 2009 ***/
+/*** much refined by Thomas Schoenemann  at Lund University, Sweden, the University of Pisa, Italy, ***
+ *** and the University of Düsseldorf, Germany 2010 - 2011 **/
+/*** if you desire the checked version, make sure your compiler defines the option SAFE_MODE on the command line ***/
 
 #include "makros.hh"
 
@@ -59,6 +63,30 @@ protected:
 };
 
 
+template<typename T>
+class NamedStorage3D : public Storage3D<T> {
+public:
+
+  NamedStorage3D();
+
+  NamedStorage3D(std::string name);
+  
+  NamedStorage3D(size_t xDim, size_t yDim, size_t zDim, std::string name);
+  
+  NamedStorage3D(size_t xDim, size_t yDim, size_t zDim, T default_value, std::string name);
+
+  virtual const std::string& name() const;
+
+  inline void operator=(const Storage3D<T>& toCopy);
+
+  //NOTE: the name is NOT copied
+  inline void operator=(const NamedStorage3D<T>& toCopy);
+
+protected:
+  std::string name_;
+};
+
+
 /******************************************** implementation **************************************************/
 template<typename T>
 /*static*/ const std::string Storage3D<T>::stor3D_name_ = "unnamed Storage3D";
@@ -114,7 +142,7 @@ OPTINLINE T& Storage3D<T>::operator()(size_t x, size_t y, size_t z) const {
 #ifdef SAFE_MODE
   if (x >= xDim_ || y >= yDim_ || z >= zDim_) {
     INTERNAL_ERROR << "     invalid access on element (" << x << "," << y << "," << z << ") of 3D-storage \"" 
-		   << this->name() << "\":" << std::endl;
+		   << this->name() << "\" of type " << typeid(T).name() << ":" << std::endl;
     std::cerr << "     dimensions " << xDim_ << "x" << yDim_ << "x" << zDim_ << " exceeded. Exiting..." << std::endl;
     exit(1);
   }
@@ -197,26 +225,29 @@ template<typename T>
 void Storage3D<T>::resize(size_t newxDim, size_t newyDim, size_t newzDim) {
 
   size_t new_size = newxDim*newyDim*newzDim;
-  T* new_data = new T[new_size];
 
-  if (data_ != 0) {
-    
-    //copy existing elements
-    for (size_t x=0; x < std::min(xDim_,newxDim); x++) {
-      for (size_t y=0; y < std::min(yDim_,newyDim); y++) {
-	for (size_t z=0; z < std::min(zDim_,newzDim); z++) {
-	  new_data[(y*newxDim+x)*newzDim+z] = data_[(y*xDim_+x)*zDim_+z];
-	}
+  if (newxDim != xDim_ || newyDim != yDim_ || newzDim != zDim_) {
+    T* new_data = new T[new_size];
+
+    if (data_ != 0) {
+      
+      //copy existing elements
+      for (size_t x=0; x < std::min(xDim_,newxDim); x++) {
+        for (size_t y=0; y < std::min(yDim_,newyDim); y++) {
+          for (size_t z=0; z < std::min(zDim_,newzDim); z++) {
+            new_data[(y*newxDim+x)*newzDim+z] = data_[(y*xDim_+x)*zDim_+z];
+          }
       }
+      }
+      
+      delete[] data_;
     }
-
-    delete[] data_;
+    data_ = new_data;
+    size_ = new_size;
+    xDim_ = newxDim;
+    yDim_ = newyDim;
+    zDim_ = newzDim;
   }
-  data_ = new_data;
-  size_ = new_size;
-  xDim_ = newxDim;
-  yDim_ = newyDim;
-  zDim_ = newzDim;
 }
 
 //existing positions are copied, new ones are uninitialized
@@ -224,41 +255,82 @@ template<typename T>
 void Storage3D<T>::resize(size_t newxDim, size_t newyDim, size_t newzDim, T default_value) {
 
   size_t new_size = newxDim*newyDim*newzDim;
-  T* new_data = new T[new_size];
-  for (size_t i=0; i < new_size; i++)
-    new_data[i] = default_value;
 
-  if (data_ != 0) {
+  if (newxDim != xDim_ || newyDim != yDim_ || newzDim != zDim_) {
+
+    T* new_data = new T[new_size];
+    for (size_t i=0; i < new_size; i++)
+      new_data[i] = default_value;
     
-    //copy existing elements
-    for (size_t x=0; x < std::min(xDim_,newxDim); x++) {
-      for (size_t y=0; y < std::min(yDim_,newyDim); y++) {
-	for (size_t z=0; z < std::min(zDim_,newzDim); z++) {
-	  new_data[(y*newxDim+x)*newzDim+z] = data_[(y*xDim_+x)*zDim_+z];
-	}
+    if (data_ != 0) {
+      
+      //copy existing elements
+      for (size_t x=0; x < std::min(xDim_,newxDim); x++) {
+        for (size_t y=0; y < std::min(yDim_,newyDim); y++) {
+          for (size_t z=0; z < std::min(zDim_,newzDim); z++) {
+            new_data[(y*newxDim+x)*newzDim+z] = data_[(y*xDim_+x)*zDim_+z];
+          }
+        }
       }
+      
+      delete[] data_;
     }
-
-    delete[] data_;
+    data_ = new_data;
+    size_ = new_size;
+    xDim_ = newxDim;
+    yDim_ = newyDim;
+    zDim_ = newzDim;
   }
-  data_ = new_data;
-  size_ = new_size;
-  xDim_ = newxDim;
-  yDim_ = newyDim;
-  zDim_ = newzDim;
 }
 
 //all elements are uninitialized after this operation
 template<typename T>
 void Storage3D<T>::resize_dirty(size_t newxDim, size_t newyDim, size_t newzDim) {
 
-  if (data_ != 0)
-    delete[] data_;
-
-  xDim_ = newxDim;
-  yDim_ = newyDim;
-  zDim_ = newzDim;
-  size_ = xDim_*yDim_*zDim_;
-
-  data_ = new T[size_];
+  if (newxDim != xDim_ || newyDim != yDim_ || newzDim != zDim_) {
+    
+    if (data_ != 0)
+      delete[] data_;
+    
+    xDim_ = newxDim;
+    yDim_ = newyDim;
+    zDim_ = newzDim;
+    size_ = xDim_*yDim_*zDim_;
+    
+    data_ = new T[size_];
+  }
 }
+
+
+/***********************/
+
+template<typename T>
+NamedStorage3D<T>::NamedStorage3D() : Storage3D<T>(), name_("yyy") {}
+
+template<typename T>
+NamedStorage3D<T>::NamedStorage3D(std::string name) : Storage3D<T>(), name_(name) {}
+
+template<typename T>
+NamedStorage3D<T>::NamedStorage3D(size_t xDim, size_t yDim, size_t zDim, std::string name) : 
+  Storage3D<T>(xDim,yDim,zDim), name_(name) {}
+
+template<typename T>
+NamedStorage3D<T>::NamedStorage3D(size_t xDim, size_t yDim, size_t zDim, T default_value, std::string name) 
+  : Storage3D<T>(xDim,yDim,zDim,default_value), name_(name) {}
+
+template<typename T>
+/*virtual*/ const std::string& NamedStorage3D<T>::name() const {
+  return name_;
+}
+
+template<typename T>
+inline void NamedStorage3D<T>::operator=(const Storage3D<T>& toCopy) {
+  Storage3D<T>::operator=(toCopy);
+}
+
+//NOTE: the name is NOT copied
+template<typename T>
+inline void NamedStorage3D<T>::operator=(const NamedStorage3D<T>& toCopy) {
+  Storage3D<T>::operator=(static_cast<Storage3D<T> >(toCopy));
+}
+

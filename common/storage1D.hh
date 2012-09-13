@@ -1,6 +1,7 @@
 /*-*-c++-*-*/ 
 /*** first version written by Thomas Schoenemann as a private person without employment, September 2009 ***/
-/*** much refined by Thomas Schoenemann  at Lund University, Sweden and the University of Pisa, Italy, 2010 - 2011 **/
+/*** much refined by Thomas Schoenemann  at Lund University, Sweden, the University of Pisa, Italy, ***
+ *** and the University of Düsseldorf, Germany 2010 - 2011 **/
 /*** if you desire the checked version, make sure your compiler defines the option SAFE_MODE on the command line ***/
 
 #ifndef STORAGE1D_HH
