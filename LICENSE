@@ -2,19 +2,19 @@ This software (except for the C++-Toolbox) was exclusively written by
 
 Thomas Schoenemann,
 
-in the following referred to as the copyright holder. The code was written in
-roughly equal parts in his freetime and at Lund University, Sweden. The
-package includes a recent (partial) version of the C++-Toolbox by Thomas
-Schoenemann, which received additional support from Petter Strandmark.
+partially in his free time, at Lund University, Sweden, at the University of
+Pisa, Italy and at the University of Düsseldorf, Germany.
+The package includes a recent (partial) version of the C++-Toolbox by Thomas
+Schoenemann, which received additional support from Petter Strandmark and
+Miriam Käshammer.
 
 
-The copyright holder grants the user access to this software under the
-following conditions:
+The user is granted access to this software under the following conditions:
 
 1. The software is provided "as is" by the author, with absolutely no
 actual or implied warranty of correctness, fitness, intellectual
 property ownership, or anything else whatsoever. You use the software
-entirely at your own risk. In no event shall the copyright holder be
+entirely at your own risk. In no event shall the author be
 liable for any direct, indirect or perceived damage whatsoever
 connected with the use of this work.
 
