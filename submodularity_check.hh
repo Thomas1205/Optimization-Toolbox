@@ -1,5 +1,6 @@
-/************** written by Thomas Schoenemann at the University of Bonn, 2007. Slightly adapted later in Lund ********/
-/************** usage granted by Daniel Cremers *******/
+/************** written by Thomas Schoenemann at the University of Bonn, 2007. 
+Slightly adapted later at Lund University, Sweden, 2010 ********/
+
 
 #ifndef SUBMODULARITY_CHECK_HH
 #define SUBMODULARITY_CHECK_HH

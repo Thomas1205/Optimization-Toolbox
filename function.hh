@@ -1,5 +1,5 @@
-/************** written by Thomas Schoenemann at the University of Bonn, 2007. Slightly adapted later in Lund ********/
-/************** usage granted by Daniel Cremers *******/
+/************** written by Thomas Schoenemann at the University of Bonn, 2007. 
+Slightly adapted later in Lund Univeristy, Sweden, 2010 ********/
 
 
 #ifndef FUNCTION_HH
