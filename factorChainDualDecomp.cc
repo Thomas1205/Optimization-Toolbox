@@ -1261,10 +1261,10 @@ double CardinalityChainDDFactor::compute_forward(const ChainDDVar* in_var, const
     forward[l] += offs - param[idx][l];
   }
 
-  for (int c = 0; c < best_c0-1; c++)
+  for (int c = 0; c < best_c0; c++)
     trace(rel_msg[c].second,0) = 1;
 
-  for (int c = 0; c < best_c1-1; c++)
+  for (int c = 0; c < best_c1; c++)
     trace(rel_msg[c].second,1) = 1;
 
   return 0.0; //presently not subtracting an offset
