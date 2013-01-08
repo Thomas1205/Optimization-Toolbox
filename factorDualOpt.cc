@@ -80,8 +80,6 @@ const double* DualVariableNode::get_dual_vars(const DualFactorNode* node) const 
 
   return ptr;
 }
-
-
   
 uint DualVariableNode::nLabels() const {
   return dual_var_.xDim();
@@ -104,7 +102,7 @@ void DualVariableNode::compute_message(const DualFactorNode* node, Math1D::Vecto
   const uint label_size = cost_.size();
   const uint nFactors = neighboring_factor_.size();
 
-  msg.resize(label_size);
+  msg.resize_dirty(label_size);
   
   for (uint l=0; l < label_size; l++)
     msg[l] = cost_[l];
@@ -153,6 +151,8 @@ DualFactorNode::DualFactorNode(const Storage1D<DualVariableNode*>& participating
   for (uint i=0; i < participating_var_.size(); i++)
     participating_var_[i]->add_factor(this);
 }
+
+/*virtual*/ DualFactorNode::~DualFactorNode() {}
   
 //factors can modify the current labeling, e.g. to satisfy some constraints
 /*virtual*/ bool DualFactorNode::process_labeling(Math1D::Vector<uint>& /*labels*/) const {
@@ -175,10 +175,15 @@ BinaryDualFactorNodeBase::BinaryDualFactorNodeBase(const Storage1D<DualVariableN
   DualFactorNode(participating_vars) {
 
   assert(participating_vars.size() == 2);
+
+  if (participating_vars.size() != 2 ){
+    INTERNAL_ERROR << "attempt to instantiate a binary factor with " << participating_vars.size() << " variables. Exiting." << std::endl;
+    exit(1);
+  }
 }
 
 void BinaryDualFactorNodeBase::update_duals(const Math2D::Matrix<float>& cost, DualBCAMode mode) {
-  
+
   NamedStorage1D<Math1D::Vector<double> > msg(2, MAKENAME(msg));
 
   NamedStorage1D<double*> dual_ptr(2, MAKENAME(dual_ptr));
@@ -187,8 +192,8 @@ void BinaryDualFactorNodeBase::update_duals(const Math2D::Matrix<float>& cost, D
   const uint nLabels2 = cost.yDim();
   
   //important for MSD-mode
-  msg[0].resize(nLabels1);
-  msg[1].resize(nLabels2);
+  msg[0].resize_dirty(nLabels1);
+  msg[1].resize_dirty(nLabels2);
   
   assert(nLabels1 == participating_var_[0]->nLabels());
   assert(nLabels2 == participating_var_[1]->nLabels());
@@ -310,7 +315,7 @@ double BinaryDualFactorNodeBase::dual_value(const Math2D::Matrix<float>& cost) c
 
 double BinaryDualFactorNodeBase::compute_minimizer(const Math2D::Matrix<float>& cost, Math1D::Vector<uint>& min_labels) const {
 
-  min_labels.resize(2);
+  min_labels.resize_dirty(2);
 
   NamedStorage1D<const double*> dual_ptr(2, MAKENAME(dual_ptr));
 
@@ -344,8 +349,15 @@ double BinaryDualFactorNodeBase::compute_minimizer(const Math2D::Matrix<float>& 
 
 PottsDualFactorNode::PottsDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, float lambda) :
   DualFactorNode(participating_vars), lambda_(lambda) {
-  assert(participating_vars.size() == 2);
+
+  if (participating_vars.size() != 2 ){
+    INTERNAL_ERROR << "attempt to instantiate a (standard) Potts factor with " 
+                   << participating_vars.size() << " variables. Exiting." << std::endl;
+    exit(1);
+  }
 }
+
+/*virtual*/ PottsDualFactorNode::~PottsDualFactorNode() {}
 
 /*virtual*/ double PottsDualFactorNode::cost(const Math1D::Vector<uint>& labels) const {
   return (labels[0] == labels[1]) ? 0.0 : lambda_;
@@ -526,7 +538,13 @@ PottsDualFactorNode::PottsDualFactorNode(const Storage1D<DualVariableNode*>& par
 BinaryDualFactorNode::BinaryDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, 
                                            const Math2D::Matrix<float>& cost) :
   BinaryDualFactorNodeBase(participating_vars), cost_(cost) {
+
+  if (cost_.xDim() < participating_var_[0]->nLabels() || cost_.yDim() < participating_var_[1]->nLabels()) {
+    INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+  }
 }
+
+/*virtual*/ BinaryDualFactorNode::~BinaryDualFactorNode() {}
 
 /*virtual*/ void BinaryDualFactorNode::update_duals(DualBCAMode mode) {
   BinaryDualFactorNodeBase::update_duals(cost_, mode);
@@ -551,7 +569,12 @@ BinaryDualRefFactorNode::BinaryDualRefFactorNode(const Storage1D<DualVariableNod
   BinaryDualFactorNodeBase(participating_vars), cost_(cost) {
 }
 
+/*virtual*/ BinaryDualRefFactorNode::~BinaryDualRefFactorNode() {}
+
 /*virtual*/ void BinaryDualRefFactorNode::update_duals(DualBCAMode mode) {
+
+  assert(cost_.xDim() >= participating_var_[0]->nLabels());
+  assert(cost_.yDim() >= participating_var_[1]->nLabels());
   BinaryDualFactorNodeBase::update_duals(cost_, mode);
 }
 
@@ -574,7 +597,20 @@ GenericDualFactorNode::GenericDualFactorNode(const Storage1D<DualVariableNode*>&
                                              const VarDimStorage<float>& cost) :
   DualFactorNode(participating_vars), cost_(cost)
 {
+  if (cost.nDims() != participating_vars.size()) {
+    INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+    exit(1);
+  }
+
+  for (uint v = 0; v < participating_vars.size(); v++) {
+    if (cost.dim(v) < participating_vars[v]->nLabels()) {
+      INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+      exit(1);
+    }
+  }
 }
+
+/*virtual*/ GenericDualFactorNode::~GenericDualFactorNode() {}
 
 /*virtual*/ void GenericDualFactorNode::update_duals(DualBCAMode mode) {
 
@@ -680,7 +716,7 @@ GenericDualFactorNode::GenericDualFactorNode(const Storage1D<DualVariableNode*>&
 
   const uint nVars = participating_var_.size();
 
-  min_labels.resize(nVars);
+  min_labels.resize_dirty(nVars);
 
   NamedStorage1D<const double*> dual_ptr(nVars, MAKENAME(dual_ptr));
 
@@ -738,7 +774,11 @@ GenericDualFactorNode::GenericDualFactorNode(const Storage1D<DualVariableNode*>&
 
 TernaryDualFactorNodeBase::TernaryDualFactorNodeBase(const Storage1D<DualVariableNode*>& participating_vars)
   : DualFactorNode(participating_vars) {
-  assert(participating_vars.size() == 3);
+
+  if (participating_vars.size() != 3){
+    INTERNAL_ERROR << "attempt to instantiate a binary factor with " << participating_vars.size() << " variables. Exiting." << std::endl;
+    exit(1);
+  }
 }
 
 void TernaryDualFactorNodeBase::update_duals(const Math3D::Tensor<float>& cost, DualBCAMode mode) {
@@ -915,7 +955,7 @@ double TernaryDualFactorNodeBase::dual_value(const Math3D::Tensor<float>& cost) 
 
 double TernaryDualFactorNodeBase::compute_minimizer(const Math3D::Tensor<float>& cost, Math1D::Vector<uint>& min_labels) const {
 
-  min_labels.resize(3);
+  min_labels.resize_dirty(3);
 
   NamedStorage1D<const double*> dual_ptr(3, MAKENAME(dual_ptr));
 
@@ -958,7 +998,15 @@ double TernaryDualFactorNodeBase::compute_minimizer(const Math3D::Tensor<float>&
 
 TernaryDualFactorNode::TernaryDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, 
                                              const Math3D::Tensor<float>& cost) :
-  TernaryDualFactorNodeBase(participating_vars), cost_(cost) {}
+  TernaryDualFactorNodeBase(participating_vars), cost_(cost) {
+
+  if (cost_.xDim() < participating_var_[0]->nLabels() || cost_.yDim() < participating_var_[1]->nLabels()
+      || cost_.zDim() < participating_var_[2]->nLabels()) {
+    INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+  }
+}
+
+/*virtual*/ TernaryDualFactorNode::~TernaryDualFactorNode() {}
 
 /*virtual*/ void TernaryDualFactorNode::update_duals(DualBCAMode mode) {
   TernaryDualFactorNodeBase::update_duals(cost_, mode);
@@ -982,7 +1030,14 @@ TernaryDualRefFactorNode::TernaryDualRefFactorNode(const Storage1D<DualVariableN
                                                    const Math3D::Tensor<float>& cost) :
   TernaryDualFactorNodeBase(participating_vars), cost_(cost) {}
 
+/*virtual*/ TernaryDualRefFactorNode::~TernaryDualRefFactorNode() {}
+
 /*virtual*/ void TernaryDualRefFactorNode::update_duals(DualBCAMode mode) {
+
+  assert(cost_.xDim() >= participating_var_[0]->nLabels());
+  assert(cost_.yDim() >= participating_var_[1]->nLabels());
+  assert(cost_.zDim() >= participating_var_[2]->nLabels());
+
   TernaryDualFactorNodeBase::update_duals(cost_, mode);
 }
 
@@ -1002,8 +1057,15 @@ TernaryDualRefFactorNode::TernaryDualRefFactorNode(const Storage1D<DualVariableN
 
 SecondDiffDualFactorNode::SecondDiffDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, float lambda) :
   DualFactorNode(participating_vars), lambda_(lambda) {
-  assert(participating_vars.size() == 3);
+
+  if (participating_vars.size() != 3){
+    INTERNAL_ERROR << "attempt to instantiate a second difference factor with " 
+                   << participating_vars.size() << " variables. Exiting." << std::endl;
+    exit(1);
+  }
 }  
+
+/*virtual*/ SecondDiffDualFactorNode::~SecondDiffDualFactorNode() {}
 
 /*virtual*/
 void SecondDiffDualFactorNode::update_duals(DualBCAMode mode) {
@@ -1375,7 +1437,7 @@ double SecondDiffDualFactorNode::dual_value() const {
 /*virtual*/
 double SecondDiffDualFactorNode::compute_minimizer(Math1D::Vector<uint>& min_labels) const {
 
-  min_labels.resize(3);
+  min_labels.resize_dirty(3);
 
   NamedStorage1D<const double*> dual_ptr(3, MAKENAME(dual_ptr));
 
@@ -1450,7 +1512,12 @@ double SecondDiffDualFactorNode::compute_minimizer(Math1D::Vector<uint>& min_lab
 
 FourthOrderDualFactorNodeBase::FourthOrderDualFactorNodeBase(const Storage1D<DualVariableNode*>& participating_vars) :
   DualFactorNode(participating_vars) {
-  assert(participating_vars.size() == 4);
+
+  if (participating_vars.size() != 4){
+    INTERNAL_ERROR << "attempt to instantiate a fourth order factor with " 
+                   << participating_vars.size() << " variables. Exiting." << std::endl;
+    exit(1);
+  }
 }
 
 void FourthOrderDualFactorNodeBase::update_duals(const Storage1D<Math3D::Tensor<float> >& cost, DualBCAMode mode) {
@@ -1703,7 +1770,7 @@ double FourthOrderDualFactorNodeBase::dual_value(const Storage1D<Math3D::Tensor<
 double FourthOrderDualFactorNodeBase::compute_minimizer(const Storage1D<Math3D::Tensor<float> >& cost, 
                                                         Math1D::Vector<uint>& min_labels) const {
 
-  min_labels.resize(4);
+  min_labels.resize_dirty(4);
 
   NamedStorage1D<const double*> dual_ptr(4, MAKENAME(dual_ptr));
 
@@ -1757,7 +1824,14 @@ double FourthOrderDualFactorNodeBase::compute_minimizer(const Storage1D<Math3D::
 FourthOrderDualFactorNode::FourthOrderDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, 
                                                      const Storage1D<Math3D::Tensor<float> >& cost) :
   FourthOrderDualFactorNodeBase(participating_vars), cost_(cost) {
+
+  if (cost_[0].size() < participating_var_[0]->nLabels() || cost_[0].xDim() < participating_var_[1]->nLabels()
+      || cost_[0].yDim() < participating_var_[2]->nLabels() || cost_[0].zDim() < participating_var_[3]->nLabels()) {
+    INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+  }
 }
+
+/*virtual*/ FourthOrderDualFactorNode::~FourthOrderDualFactorNode() {}
 
 /*virtual*/ void FourthOrderDualFactorNode::update_duals(DualBCAMode mode) {
   FourthOrderDualFactorNodeBase::update_duals(cost_, mode);
@@ -1783,7 +1857,15 @@ FourthOrderDualRefFactorNode::FourthOrderDualRefFactorNode(const Storage1D<DualV
   FourthOrderDualFactorNodeBase(participating_vars), cost_(cost) {
 }
 
+/*virtual*/ FourthOrderDualRefFactorNode::~FourthOrderDualRefFactorNode() {}
+
 /*virtual*/ void FourthOrderDualRefFactorNode::update_duals(DualBCAMode mode) {
+
+  assert(cost_[0].size() >= participating_var_[0]->nLabels());
+  assert(cost_[0].xDim() >= participating_var_[1]->nLabels());
+  assert(cost_[0].yDim() >= participating_var_[2]->nLabels()); 
+  assert(cost_[0].zDim() >= participating_var_[3]->nLabels());
+  
   FourthOrderDualFactorNodeBase::update_duals(cost_, mode);
 }
 
@@ -1804,9 +1886,16 @@ FourthOrderDualRefFactorNode::FourthOrderDualRefFactorNode(const Storage1D<DualV
 
 OneOfNDualFactorNode::OneOfNDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars) :
   DualFactorNode(participating_vars) {
-  for (uint v=0; v < participating_vars.size(); v++)
-    assert(participating_vars[v]->nLabels() == 2);
+
+  for (uint v=0; v < participating_vars.size(); v++) {
+    if (participating_vars[v]->nLabels() != 2) {
+      INTERNAL_ERROR << "instantiation of a 1-of-N factor with non-binary variables. Exiting." << std::endl;
+      exit(1);
+    }
+  }
 }
+
+/*virtual*/ OneOfNDualFactorNode::~OneOfNDualFactorNode() {}
 
 /*virtual*/ double OneOfNDualFactorNode::cost(const Math1D::Vector<uint>& labels) const {
 
@@ -1989,7 +2078,7 @@ OneOfNDualFactorNode::OneOfNDualFactorNode(const Storage1D<DualVariableNode*>& p
 
   const uint nVars = participating_var_.size();
 
-  min_labels.resize(nVars);
+  min_labels.resize_dirty(nVars);
   min_labels.set_constant(0);
 
   NamedStorage1D<const double*> dual_ptr(nVars, MAKENAME(dual_ptr));
@@ -2020,20 +2109,18 @@ OneOfNDualFactorNode::OneOfNDualFactorNode(const Storage1D<DualVariableNode*>& p
 
 /**********************************/
 
-CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars,
-                                                     const Math1D::Vector<float>& card_cost) :
-  DualFactorNode(participating_vars), card_cost_(card_cost) {
-  for (uint v=0; v < participating_vars.size(); v++)
-    assert(participating_vars[v]->nLabels() == 2);
+CardinalityDualFactorNodeBase::CardinalityDualFactorNodeBase(const Storage1D<DualVariableNode*>& participating_vars) 
+  : DualFactorNode(participating_vars) {
+
+  for (uint v=0; v < participating_vars.size(); v++) {
+    if (participating_vars[v]->nLabels() != 2) {
+      INTERNAL_ERROR << "instantiation of a cardinality factor with non-binary variables. Exiting." << std::endl;
+      exit(1);
+    }
+  }
 }
 
-/*virtual*/ double CardinalityDualFactorNode::cost(const Math1D::Vector<uint>& labels) const {
-  
-  uint sum = labels.sum();
-  return card_cost_[sum];
-}
-
-/*virtual*/ void CardinalityDualFactorNode::update_duals(DualBCAMode mode) {
+void CardinalityDualFactorNodeBase::update_duals(DualBCAMode mode, const Math1D::Vector<float>& card_cost) {
 
   const uint nVars = participating_var_.size();
 
@@ -2051,54 +2138,7 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
   
   if (mode == DUAL_BCA_MODE_MPLP) {
 
-    //TEMPORARY
-    // for (uint idx=0; idx < nVars; idx++) {
-
-    //   Math1D::NamedVector<double> rel_param(nVars-1,MAKENAME(rel_param));
-    
-    //   double offs = 0.0;
-    
-    //   uint next = 0;
-    //   for (uint k=0; k < nVars; k++) {
-    
-    //     if (k != idx) {
-    // 	rel_param[next] = (msg[k][1]) - (msg[k][0]);
-    // 	offs += msg[k][0];
-    
-    // 	next++;
-    //     }
-    //   }
-    
-    //   std::sort(rel_param.direct_access(), rel_param.direct_access() + nVars-1);
-  
-    //   double cum_sum = 0.0;
-    
-    //   Math1D::Vector<double> message(2,1e300);
-    
-    //   for (uint c=0; c < nVars; c++) {
-    
-    //     double hyp0 = cum_sum + card_cost_[c];
-    //     if (hyp0 < message[0])
-    // 	message[0] = hyp0;
-    
-    //     double hyp1 = cum_sum + card_cost_[c+1];
-    //     if (hyp1 < message[1])
-    // 	message[1] = hyp1;
-    
-    //     if (c+1 < nVars) 
-    // 	cum_sum += rel_param[c];
-    //   }
-    
-    //   for (uint l=0; l < 2; l++)
-    //     message[l] += offs + msg[idx][l];
-    
-    //   for (uint l=0; l < 2; l++) {
-    
-    //     dual_ptr[idx][l] = (message[l] / double(nVars)) - msg[idx][l]; 
-    //   }
-    // }
-    //END_TEMPORARY
-
+    const double inv_nVars = 1.0 / nVars;
 
     Math1D::Vector<std::pair<double,uint> > rel_msg(nVars);
 
@@ -2126,28 +2166,28 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
     }
 
     Math1D::Vector<double> cum_best(nVars + 1);
-    cum_best[0] = card_cost_[0]; 
+    cum_best[0] = card_cost[0]; 
     
     for (uint k=1; k <= nVars; k++) {
       
-      double hyp = card_cost_[k] + cum_sum[k-1];
+      double hyp = card_cost[k] + cum_sum[k-1];
       cum_best[k] = std::min(hyp, cum_best[k-1]);
     }
     
     
     Math1D::Vector<double> cum_best_m1(nVars+1);
     cum_best_m1[0] = 1e300;
-    cum_best_m1[1] = card_cost_[1];
+    cum_best_m1[1] = card_cost[1];
     
     for (uint k=2; k <= nVars; k++) {
-      cum_best_m1[k] = std::min(cum_best_m1[k-1], card_cost_[k] + cum_sum[k-2]  ); 
+      cum_best_m1[k] = std::min(cum_best_m1[k-1], card_cost[k] + cum_sum[k-2]  ); 
     }
     
     Math1D::Vector<double> rev_cum_best(nVars + 1);
-    rev_cum_best[nVars] = card_cost_[nVars] + cum_sum[nVars-1];
+    rev_cum_best[nVars] = card_cost[nVars] + cum_sum[nVars-1];
     for (int k=nVars-1; k >= 1; k--) {
       
-      double hyp = card_cost_[k] + cum_sum[k-1];
+      double hyp = card_cost[k] + cum_sum[k-1];
       rev_cum_best[k] = std::min(hyp, rev_cum_best[k+1]);
     }
     rev_cum_best[0] = 1e300;
@@ -2155,17 +2195,17 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
     Math1D::Vector<double> rev_cum_best_p1(nVars+1);
     rev_cum_best_p1[nVars] = 1e300;
     for (int k=nVars-1; k >= 0; k--) {
-      rev_cum_best_p1[k] = std::min(rev_cum_best_p1[k+1], card_cost_[k] + cum_sum[k]);
+      rev_cum_best_p1[k] = std::min(rev_cum_best_p1[k+1], card_cost[k] + cum_sum[k]);
     }
     
     for (uint k=0; k < nVars; k++) {
 
       double* cur_dp = dual_ptr[k];
-      Math1D::Vector<double>& cur_msg = msg[k];
+      const Math1D::Vector<double>& cur_msg = msg[k];
       
       const uint cur_order = order[k];
       
-      double cur_rel_msg = cur_msg[1] - cur_msg[0];
+      const double cur_rel_msg = cur_msg[1] - cur_msg[0];
       
       const double val0 = std::min(cum_best[cur_order-1], rev_cum_best_p1[cur_order] - cur_rel_msg);
       cur_dp[0] = val0 + offs;
@@ -2176,7 +2216,7 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
       //DEBUG
 #if 0
       //a) check msg0
-      double best0 = card_cost_[0];
+      double best0 = card_cost[0];
       uint arg_best0 = 0;
       for (uint l=1; l < nVars; l++) {
         
@@ -2211,7 +2251,7 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
       uint arg_best1 = 0;
       for (uint l=1; l <= nVars; l++) {
         
-        double hyp = card_cost_[l];
+        double hyp = card_cost[l];
         if (cur_order <= l)
           hyp += cum_sum[l-1] - cur_rel_msg;
         else {
@@ -2242,7 +2282,7 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
       //END_DEBUG
 
       for (uint i=0; i < 2; i++) {
-        cur_dp[i] /= double(nVars);
+        cur_dp[i] *= inv_nVars;
         cur_dp[i] -= cur_msg[i];
       }
     }
@@ -2279,7 +2319,7 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
 
       uint cur_order = order[v];
 
-      double best_zero = card_cost_[0];
+      double best_zero = card_cost[0];
       double cum_sum = 0.0;
       for (uint c=1; c < nVars; c++) {
 
@@ -2288,21 +2328,21 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
         else
           cum_sum += values[c-1].first;
 
-        double hyp = cum_sum + card_cost_[c];
+        double hyp = cum_sum + card_cost[c];
         if (hyp < best_zero)
           best_zero  = hyp;
       }
 
 
       cum_sum = 0.0; // the current var doesn't enter!! 
-      double best_one = card_cost_[1];
+      double best_one = card_cost[1];
       for (uint c=2; c <= nVars; c++) {
         if (cur_order < c-1)
           cum_sum += values[c-1].first;
         else
           cum_sum += values[c-2].first;
         
-        double hyp = cum_sum + card_cost_[c];
+        double hyp = cum_sum + card_cost[c];
         if (hyp < best_one)
           best_one  = hyp;
       }
@@ -2316,6 +2356,7 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
       values[cur_order].first = cur_dp[0]-cur_dp[1];
       double val = values[cur_order].first;
 
+#if 0
       while(cur_order > 0 && values[cur_order-1].first > val) {
         uint other_var = values[cur_order-1].second;
         //assert(order[other_var] == cur_order-1);
@@ -2330,12 +2371,34 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
         order[other_var]--;
         cur_order++;
       }
+#else
+      uint k=cur_order;
+      while (k>0 && values[k-1].first > val)
+        k--;
+      if (k != cur_order) {
+        for (uint kk=cur_order; kk > k; kk--) {
+          values[kk] = values[kk-1];
+          order[values[kk].second] = kk;
+        }
+      }
+      else {
+        while (k+1 < nVars && values[k+1].first < val)
+          k++;
+        for (uint kk=cur_order; kk < k; kk++) {
+          values[kk] = values[kk+1];
+          order[values[kk].second] = kk;
+        }
+      }
+      values[k].first = val;
+      values[k].second = v;
+#endif
       //order[v] = cur_order; //not that we will ever need this again....
     }
   }
+
 }
 
-/*virtual*/ double CardinalityDualFactorNode::dual_value() const {
+double CardinalityDualFactorNodeBase::dual_value(const Math1D::Vector<float>& card_cost) const {
 
   const uint nVars = participating_var_.size();
 
@@ -2360,13 +2423,13 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
 
   std::sort(rel_msg.direct_access(), rel_msg.direct_access() + nVars);
 
-  double min_val = card_cost_[0];
+  double min_val = card_cost[0];
 
   double cum_sum = 0.0;
   for (uint c=1; c <= nVars; c++) {
     cum_sum += rel_msg[c-1];
 
-    const double hyp = cum_sum + card_cost_[c];
+    const double hyp = cum_sum + card_cost[c];
 
     if (hyp < min_val) {
       min_val = hyp;
@@ -2376,11 +2439,13 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
   return min_val + offs;
 }
 
-/*virtual*/ double CardinalityDualFactorNode::compute_minimizer(Math1D::Vector<uint>& min_labels) const {
+double CardinalityDualFactorNodeBase::compute_minimizer(Math1D::Vector<uint>& min_labels, 
+                                                        const Math1D::Vector<float>& card_cost) const {
+
 
   const uint nVars = participating_var_.size();
 
-  min_labels.resize(nVars);
+  min_labels.resize_dirty(nVars);
 
   NamedStorage1D<const double*> dual_ptr(nVars, MAKENAME(dual_ptr));
 
@@ -2403,14 +2468,14 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
 
   std::sort(rel_msg.direct_access(), rel_msg.direct_access() + nVars);
 
-  double min_val = card_cost_[0];
+  double min_val = card_cost[0];
   uint arg_min = 0;
   
   double cum_sum = 0.0;
   for (uint c=1; c <= nVars; c++) {
     cum_sum += rel_msg[c-1].first;
     
-    const double hyp = cum_sum + card_cost_[c];
+    const double hyp = cum_sum + card_cost[c];
 
     if (hyp < min_val) {
       min_val = hyp;
@@ -2427,14 +2492,426 @@ CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariabl
 
 /**********************************/
 
+CardinalityDualFactorNode::CardinalityDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars,
+                                                     const Math1D::Vector<float>& card_cost) :
+  CardinalityDualFactorNodeBase(participating_vars), card_cost_(card_cost) {
+
+  if (card_cost_.size() < participating_vars.size()+1) {
+    INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+    exit(1);
+  }
+}
+
+/*virtual*/ CardinalityDualFactorNode::~CardinalityDualFactorNode() {}
+
+/*virtual*/ double CardinalityDualFactorNode::cost(const Math1D::Vector<uint>& labels) const {
+  
+  uint sum = labels.sum();
+  return card_cost_[sum];
+}
+
+/*virtual*/ void CardinalityDualFactorNode::update_duals(DualBCAMode mode) {
+
+  CardinalityDualFactorNodeBase::update_duals(mode,card_cost_);
+}
+
+/*virtual*/ double CardinalityDualFactorNode::dual_value() const {
+
+  return CardinalityDualFactorNodeBase::dual_value(card_cost_);
+}
+
+/*virtual*/ double CardinalityDualFactorNode::compute_minimizer(Math1D::Vector<uint>& min_labels) const {
+
+  return CardinalityDualFactorNodeBase::compute_minimizer(min_labels,card_cost_);
+}
+
+/*virtual*/ double CardinalityDualFactorRefNode::compute_minimizer(Math1D::Vector<uint>& min_labels) const {
+
+  return CardinalityDualFactorNodeBase::compute_minimizer(min_labels,card_cost_);
+}
+
+/**********************************/
+
+CardinalityDualFactorRefNode::CardinalityDualFactorRefNode(const Storage1D<DualVariableNode*>& participating_vars,
+                                                           const Math1D::Vector<float>& card_cost) :
+  CardinalityDualFactorNodeBase(participating_vars), card_cost_(card_cost) {
+}
+
+/*virtual*/ CardinalityDualFactorRefNode::~CardinalityDualFactorRefNode() {}
+
+/*virtual*/ double CardinalityDualFactorRefNode::cost(const Math1D::Vector<uint>& labels) const {
+  
+  uint sum = labels.sum();
+  return card_cost_[sum];
+}
+
+/*virtual*/ void CardinalityDualFactorRefNode::update_duals(DualBCAMode mode) {
+
+  assert(card_cost_.size() >= participating_var_.size()+1);
+
+  CardinalityDualFactorNodeBase::update_duals(mode,card_cost_);
+}
+
+/*virtual*/ double CardinalityDualFactorRefNode::dual_value() const {
+
+  return CardinalityDualFactorNodeBase::dual_value(card_cost_);
+}
+
+/**********************************/
+
+AllPosBILPConstraintDualFactorNode::AllPosBILPConstraintDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars,
+                                                                       int rhs_lower, int rhs_upper) 
+  : DualFactorNode(participating_vars), rhs_lower_(std::max(0,rhs_lower)), rhs_upper_(std::min<int>(participating_vars.size(),rhs_upper)) {
+
+  if (rhs_lower_ > rhs_upper_ || rhs_upper < 0) {
+    INTERNAL_ERROR << "constraint is unsatisfiable, so inference is pointless. Exiting." << std::endl;
+    exit(1);
+  }
+
+  for (uint v=0; v < participating_vars.size(); v++) {
+    if (participating_vars[v]->nLabels() != 2) {
+      INTERNAL_ERROR << "instantiation of an AllPosBILP factor with non-binary variables. Exiting." << std::endl;
+      exit(1);
+    }
+  }
+}
+
+/*virtual*/ AllPosBILPConstraintDualFactorNode::~AllPosBILPConstraintDualFactorNode() {}
+
+/*virtual*/ double AllPosBILPConstraintDualFactorNode::cost(const Math1D::Vector<uint>& labels) const {
+  int sum = labels.sum();
+
+  return (sum >= rhs_lower_ && sum <= rhs_upper_) ? 0.0 : 1e20;
+}
+
+/*virtual*/ 
+void AllPosBILPConstraintDualFactorNode::update_duals(DualBCAMode mode) {
+
+  const uint nVars = participating_var_.size();
+
+  NamedStorage1D<Math1D::Vector<double> > msg(nVars, MAKENAME(msg));
+
+  NamedStorage1D<double*> dual_ptr(nVars, MAKENAME(dual_ptr));
+
+  for (uint v=0; v < nVars; v++) {
+    if (mode == DUAL_BCA_MODE_MPLP)     
+      participating_var_[v]->compute_message(this, msg[v]);
+    else
+      msg[v].resize(2);
+    dual_ptr[v] = participating_var_[v]->get_dual_vars(this);
+  }
+
+
+  if (mode == DUAL_BCA_MODE_MPLP) {
+
+    const double inv_nVars = 1.0 / nVars;
+
+    Math1D::Vector<std::pair<double,uint> > rel_msg(nVars);
+
+    double offs = 0.0;
+    
+    for (uint k=0; k < nVars; k++) {
+      
+      rel_msg[k].first = msg[k][1] - msg[k][0];
+      rel_msg[k].second = k;
+      offs += msg[k][0];
+    }
+    
+    std::sort(rel_msg.direct_access(), rel_msg.direct_access() + nVars);
+    
+    Math1D::Vector<uint> order(nVars);
+    for (uint k=0; k < nVars; k++) {
+      order[rel_msg[k].second] = k + 1;
+    }
+    
+    Math1D::Vector<double> cum_sum(nVars+1);
+    cum_sum[0] = rel_msg[0].first;
+    for (uint k=1; k < nVars; k++) {
+      assert(rel_msg[k].first >= rel_msg[k-1].first);
+      cum_sum[k] = cum_sum[k-1] + rel_msg[k].first;
+    }
+
+    Math1D::Vector<double> cum_best(nVars + 1,1e20);
+    cum_best[0] = (rhs_lower_ == 0) ? 0.0 : 1e20;
+
+    for (int k=1; k <= int(nVars); k++) {
+
+      if (rhs_lower_ <= k && rhs_upper_ >= k) {
+        double hyp = cum_sum[k-1];
+        cum_best[k] = std::min(hyp, cum_best[k-1]);
+      }
+      else
+        cum_best[k] = cum_best[k-1];
+    }
+    
+    Math1D::Vector<double> cum_best_m1(nVars+1);
+    cum_best_m1[0] = 1e300;
+    cum_best_m1[1] = (rhs_lower_ <= 1 && rhs_upper_ >= 1) ? 0.0 : 1e20;
+    
+    for (int k=2; k <= int(nVars); k++) {
+      if (k >= rhs_lower_ && k <= rhs_upper_)
+        cum_best_m1[k] = std::min(cum_best_m1[k-1], cum_sum[k-2]  ); 
+      else
+        cum_best_m1[k] = cum_best_m1[k-1];
+    }
+    
+    Math1D::Vector<double> rev_cum_best(nVars + 1,1e20);
+    rev_cum_best[nVars] = (rhs_upper_ >= int(nVars)) ? cum_sum[nVars-1] : 1e20;
+    for (int k=nVars-1; k >= 1; k--) {
+      
+      double hyp = (k >= rhs_lower_ && k <= rhs_upper_) ? cum_sum[k-1] : 0.0;
+      rev_cum_best[k] = std::min(hyp, rev_cum_best[k+1]);
+    }
+    rev_cum_best[0] = 1e300;
+    
+    Math1D::Vector<double> rev_cum_best_p1(nVars+1);
+    rev_cum_best_p1[nVars] = 1e300;
+    for (int k=nVars-1; k >= 0; k--) {
+      if (k >= rhs_lower_ && k <= rhs_upper_)
+        rev_cum_best_p1[k] = std::min(rev_cum_best_p1[k+1], cum_sum[k]);
+      else
+        rev_cum_best_p1[k] = rev_cum_best_p1[k+1];
+    }
+    
+    for (uint k=0; k < nVars; k++) {
+
+      double* cur_dp = dual_ptr[k];
+      const Math1D::Vector<double>& cur_msg = msg[k];
+      
+      const uint cur_order = order[k];
+      
+      const double cur_rel_msg = cur_msg[1] - cur_msg[0];
+      
+      const double val0 = std::min(cum_best[cur_order-1], rev_cum_best_p1[cur_order] - cur_rel_msg);
+      cur_dp[0] = val0 + offs;
+
+      const double val1 = std::min(rev_cum_best[cur_order], cum_best_m1[cur_order-1] + cur_rel_msg );
+      cur_dp[1] = val1 + offs;
+      
+
+      for (uint i=0; i < 2; i++) {
+        cur_dp[i] *= inv_nVars;
+        cur_dp[i] -= cur_msg[i];
+      }
+    }
+
+
+  }
+  else { //MSD
+
+    assert(nVars >= 2);
+
+    Storage1D<std::pair<double,uint> > values(nVars);
+
+    double offs = 0.0;
+
+    for (uint v=0; v < nVars; v++) {
+      const double* cur_dp = dual_ptr[v];
+      values[v] = std::make_pair(cur_dp[0]-cur_dp[1],v);
+      offs -= cur_dp[0];
+    }
+
+    std::sort(values.direct_access(),values.direct_access()+nVars);
+
+    Storage1D<uint> order(nVars);
+    for (uint v=0; v < nVars; v++) {
+      order[values[v].second] = v;
+    }
+
+    for (uint v=0; v < nVars; v++) {
+
+      Math1D::Vector<double>& cur_msg = msg[v];
+      double* cur_dp = dual_ptr[v];      
+
+      participating_var_[v]->compute_message(this, cur_msg);
+
+      offs += cur_dp[0]; //the current dual vars don't enter!
+
+      uint cur_order = order[v];
+
+      double best_zero = (rhs_lower_ == 0) ? 0.0 : 1e20;
+      double cum_sum = 0.0;
+      for (uint c=1; c < std::min<uint>(nVars,rhs_upper_+1); c++) {
+
+        if (cur_order < c)
+          cum_sum += values[c].first;
+        else
+          cum_sum += values[c-1].first;
+
+        if (c >= uint(rhs_lower_)) {
+          if (cum_sum < best_zero)
+            best_zero  = cum_sum;
+        }
+      }
+
+
+      cum_sum = 0.0; // the current var doesn't enter!! 
+      double best_one = (rhs_lower_ <= 1 && rhs_upper_ >= 1) ? 0.0 : 1e20;
+      for (uint c=2; c <= std::min<uint>(rhs_upper_,nVars); c++) {
+        if (cur_order < c-1)
+          cum_sum += values[c-1].first;
+        else
+          cum_sum += values[c-2].first;
+        
+        if (uint(rhs_lower_) <= c) {
+          if (cum_sum < best_one)
+            best_one  = cum_sum;
+        }
+      }
+
+      cur_dp[1] = 0.5 * (best_one + offs - cur_msg[1]);
+      cur_dp[0] = 0.5 * (best_zero + offs - cur_msg[0]);
+        
+      offs -= cur_dp[0];
+
+      //update values and order
+      values[cur_order].first = cur_dp[0]-cur_dp[1];
+      double val = values[cur_order].first;
+
+      uint k=cur_order;
+      while (k>0 && values[k-1].first > val)
+        k--;
+      if (k != cur_order) {
+        for (uint kk=cur_order; kk > k; kk--) {
+          values[kk] = values[kk-1];
+          order[values[kk].second] = kk;
+        }
+      }
+      else {
+        while (k+1 < nVars && values[k+1].first < val)
+          k++;
+        for (uint kk=cur_order; kk < k; kk++) {
+          values[kk] = values[kk+1];
+          order[values[kk].second] = kk;
+        }
+      }
+      values[k].first = val;
+      values[k].second = v;
+      //order[v] = cur_order; //not that we will ever need this again....
+    }
+
+  }
+}
+
+/*virtual*/ 
+double AllPosBILPConstraintDualFactorNode::dual_value() const {
+
+  const uint nVars = participating_var_.size();
+
+  NamedStorage1D<const double*> dual_ptr(nVars, MAKENAME(dual_ptr));
+
+  for (uint v=0; v < nVars; v++) {
+    dual_ptr[v] = participating_var_[v]->get_dual_vars(this);
+  }
+
+  Math1D::Vector<double> rel_msg(nVars);
+
+  double offs = 0.0;
+
+  for (uint k=0; k < nVars; k++) {
+
+    const double val0 = - dual_ptr[k][0];
+    const double val1 = - dual_ptr[k][1];
+
+    rel_msg[k] = val1 - val0;
+    offs += val0;
+  }
+
+  std::sort(rel_msg.direct_access(), rel_msg.direct_access() + nVars);
+
+  double min_val = (rhs_lower_ == 0) ? 0.0 : 1e20;
+
+  double cum_sum = 0.0;
+  for (int c=1; c <= rhs_upper_; c++) {
+    cum_sum += rel_msg[c-1];
+
+    if (c >= rhs_lower_) {
+      const double hyp = cum_sum;
+
+      if (hyp < min_val) {
+        min_val = hyp;
+      }
+    }
+  }
+
+  return min_val + offs;
+}
+
+/*virtual*/ 
+double AllPosBILPConstraintDualFactorNode::compute_minimizer(Math1D::Vector<uint>& min_labels) const {
+
+  const uint nVars = participating_var_.size();
+
+  min_labels.resize_dirty(nVars);
+
+  NamedStorage1D<const double*> dual_ptr(nVars, MAKENAME(dual_ptr));
+
+  for (uint v=0; v < nVars; v++) {
+    dual_ptr[v] = participating_var_[v]->get_dual_vars(this);
+  }
+
+  Storage1D<std::pair<double,uint> > rel_msg(nVars);
+
+  double offs = 0.0;
+
+  for (uint k=0; k < nVars; k++) {
+
+    const double val0 = - dual_ptr[k][0];
+    const double val1 = - dual_ptr[k][1];
+
+    rel_msg[k] = std::make_pair(val1 - val0,k);
+    offs += val0;
+  }
+
+  std::sort(rel_msg.direct_access(), rel_msg.direct_access() + nVars);
+
+  double min_val = (rhs_lower_ == 0) ? 0.0 : 1e20;
+  uint arg_min = 0;
+  
+  double cum_sum = 0.0;
+  for (int c=1; c <= rhs_upper_; c++) {
+    cum_sum += rel_msg[c-1].first;
+    
+    if (c >= rhs_lower_) {
+      const double hyp = cum_sum;
+      
+      if (hyp < min_val) {
+        min_val = hyp;
+        arg_min = c;
+      }
+    }
+  }
+
+  min_labels.set_constant(0);
+  for (uint k=0; k < arg_min; k++)
+    min_labels[rel_msg[k].second] = 1;
+
+  return min_val + offs;
+}
+
+/**********************************/
+
+
 BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars,
                                                            const Storage1D<bool>& positive, int rhs_lower, int rhs_upper) :
   DualFactorNode(participating_vars), positive_(positive), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper) {
 
-  for (uint v=0; v < participating_vars.size(); v++)
-    assert(participating_vars[v]->nLabels() == 2);
+  for (uint v=0; v < participating_vars.size(); v++) {
+    if (participating_vars[v]->nLabels() != 2) {
+      INTERNAL_ERROR << "instantiation of a BILP factor with non-binary variables. Exiting." << std::endl;
+      exit(1);
+    }
+  }
 
-  assert(rhs_lower_ <= rhs_upper_);
+  if (positive.size() < participating_vars.size()) {
+    INTERNAL_ERROR << "dimension mismatch" << std::endl;
+    exit(1);
+  }
+
+  if (rhs_lower_ > rhs_upper_) {
+    INTERNAL_ERROR << "constraint is unsatisfiable, so inference is pointless. Exiting." << std::endl;
+    exit(1);
+  }
 
   int nPositive = 0;
   int nNegative = 0;
@@ -2468,6 +2945,8 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
     rhs_upper_ -= (rhs_upper_ + zero_offset - range +1);
   }
 }
+
+/*virtual*/ BILPConstraintDualFactorNode::~BILPConstraintDualFactorNode() {}
 
 /*virtual*/ double BILPConstraintDualFactorNode::cost(const Math1D::Vector<uint>& labels) const {
 
@@ -2533,8 +3012,10 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
 
   if (mode == DUAL_BCA_MODE_MPLP) {
 
-    /**** forward ****/
+    const double inv_nVars = 1.0 / nVars;
 
+    /**** forward ****/
+      
     //init
     for (int sum=0; sum < range; sum++) {
       
@@ -2543,44 +3024,44 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
         forward(sum,l,0) = 1e100;
       }
     }
-
+      
     forward(zero_offset,0,0) = msg[0][0];
     forward_light(zero_offset,0) = msg[0][0];
     const int init_mul = (positive_[0]) ? 1 : -1;
-
+      
     if (int(zero_offset)+init_mul >= 0
-	&& int(zero_offset)+init_mul < range ) {
+        && int(zero_offset)+init_mul < range ) {
       forward(zero_offset+init_mul,1,0) = msg[0][1];
       forward_light(zero_offset+init_mul,0) = msg[0][1];
     }
-
+      
     //proceed
     for (uint v=1; v < nVars; v++) {
       
       const Math1D::Vector<double>& cur_msg = msg[v];
-
+      
       for (int sum=0; sum < range; sum++) {
-
+        
         for (int l=0; l < 2; l++) {
-	
+          
           double best_prev = 1e75;
-	
+          
           int move = l;
           if (positive_[v]) //since we are tracing backward here
             move *= -1;
-	  
+          
           const int dest = sum + move;
           if (dest >= 0 && dest < range) {
-	    
+            
             best_prev = forward_light(dest,v-1);
           }
-	  
+          
           forward(sum,l,v) = best_prev + cur_msg[l];
         }
         forward_light(sum,v) = std::min(forward(sum,0,v), forward(sum,1,v));
       }
     }
-
+    
     /**** backward ****/
 
     //init
@@ -2590,80 +3071,83 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
     backward_light(zero_offset,last_var) = msg[last_var][0];
     const int end_mul = (positive_[last_var]) ? 1 : -1;
     if (int(zero_offset)+end_mul >= 0
-	&& int(zero_offset)+end_mul < range ) {
+        && int(zero_offset)+end_mul < range ) {
       backward_light(zero_offset + end_mul,last_var) = msg[last_var][1];
     }
-    
+      
     //proceed
     for (int v=last_var-1; v >= 1; v--) {
-
+        
       const Math1D::Vector<double>& cur_msg = msg[v];
       
       for (int sum=0; sum < range; sum++) {
-	
+        
         double best_prev = 1e75;
-	
+        
         for (int l=0; l < 2; l++) {
-	  
+          
           int move = l;
           if (positive_[v]) //since we are tracing backward here
             move *= -1;
-	  
+          
           const int dest = sum + move;
           double hyp = 1e75;
           if (dest >= 0 && dest < range) {
             hyp = backward_light(dest,v+1) + cur_msg[l];
           }
-
+          
           if (hyp < best_prev)
             best_prev = hyp;
         }
-	
+        
         backward_light(sum,v) = best_prev;
       }
     }
     
     /*** derive messages ***/
     
-    for (uint k=0; k < nVars; k++) {
-
+    for (uint v=0; v < nVars; v++) {
+      
+      double* cur_dp = dual_ptr[v];
+      const Math1D::Vector<double>& cur_msg = msg[v];
+        
       for (uint l=0; l < 2; l++) {
-
+        
         double min_msg = 1e300;
-
+        
         for (int s=0; s < (int) range; s++) {
-
-          double hyp = forward(s,l,k);
-
-          if (k+1 < positive_.size()) {
-
+            
+          double hyp = forward(s,l,v);
+          
+          if (v+1 < positive_.size()) {
+            
             double best_bwd = 1e300;
-	    
+            
             const int diff = (s - zero_offset);
-	    
+            
             for (int r=rhs_lower_; r <= rhs_upper_; r++) {
               const int other = r + zero_offset - diff; 
-	      
+              
               if (other >= 0 && other < (int) range) {
-
-                best_bwd = std::min(best_bwd,backward_light(other,k+1));
+                
+                best_bwd = std::min(best_bwd,backward_light(other,v+1));
               }
             }
-
+            
             hyp += best_bwd;
           }
           else {
             if (s < int(rhs_lower_ + zero_offset) || s > int(rhs_upper_ + zero_offset)) 
               hyp = 1e300;
           }
-	  
+          
           if (hyp < min_msg)
             min_msg = hyp;
         }
-
+        
         assert(!isnan(min_msg));
 	
-        dual_ptr[k][l] = (min_msg) / nVars - msg[k][l];
+        cur_dp[l] = min_msg * inv_nVars - cur_msg[l];
       }
     }
   }
@@ -2681,51 +3165,52 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
     
     //proceed
     for (int v=last_var-1; v >= 0; v--) {
-
+      
       const double* cur_dp = dual_ptr[v];
       
       for (int sum=0; sum < range; sum++) {
-	
+        
         double best_prev = 1e75;
-	
+        
         for (int l=0; l < 2; l++) {
-	  
+          
           int move = l;
           if (positive_[v]) //since we are tracing backward here
             move *= -1;
-	  
+          
           const int dest = sum + move;
           double hyp = 1e75;
           if (dest >= 0 && dest < range) {
             hyp = backward_light(dest,v+1) - cur_dp[l]; 
           }
-
+          
           if (hyp < best_prev)
             best_prev = hyp;
         }
-	
+        
         backward_light(sum,v) = best_prev;
       }
     }
-
-    //b) compute forward incrementally and derive messages
     
-    for (uint v=0; v < nVars; v++) {
-
-      const double* cur_dp = dual_ptr[v];
+    //b) compute forward incrementally and derive messages
       
-      //correct?
-      participating_var_[v]->compute_message(this, msg[v]);
+    for (uint v=0; v < nVars; v++) {
+      
+      const double* cur_dp = dual_ptr[v];
 
+      Math1D::Vector<double>& cur_msg = msg[v];
+      
+      participating_var_[v]->compute_message(this, cur_msg);
+      
       if (v == 0) {
         for (int sum=0; sum < range; sum++) {
-      
+          
           forward_light(sum,0) = 1e100;
           for (int l=0; l < 2; l++) {
             forward(sum,l,0) = 1e100;
           }
         }
-	
+          
         forward(zero_offset,0,0) = 0.0;
         forward_light(zero_offset,0) = 0.0;
         const int init_mul = (positive_[0]) ? 1 : -1;
@@ -2733,80 +3218,77 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
         forward_light(zero_offset+init_mul,0) = 0.0;
       }
       else {
-
+        
         for (int sum=0; sum < range; sum++) {
-
+          
           for (int l=0; l < 2; l++) {
-	    
+            
             double best_prev = 1e75;
-	    
+            
             int move = l;
             if (positive_[v]) //since we are tracing backward here
               move *= -1;
-	    
+            
             const int dest = sum + move;
             if (dest >= 0 && dest < range) {
-	      
+              
               best_prev = forward_light(dest,v-1);
             }
-	    
+            
             forward(sum,l,v) = best_prev;
           }
-          //forward_light(sum,v) = std::min(forward(sum,0,v), forward(sum,1,v));
         }
       }
-
+        
       //now compute new duals
       for (uint l=0; l < 2; l++) {
-
+        
         double min_msg = 1e300;
-
+        
         for (int s=0; s < (int) range; s++) {
-
+          
           double hyp = forward(s,l,v);
-
+          
           if (v+1 < positive_.size()) {
-
+            
             double best_bwd = 1e300;
-	    
+              
             const int diff = (s - zero_offset);
-	    
+            
             for (int r=rhs_lower_; r <= rhs_upper_; r++) {
               const int other = r + zero_offset - diff; 
-	      
+              
               if (other >= 0 && other < (int) range) {
-
+                
                 best_bwd = std::min(best_bwd,backward_light(other,v+1));
               }
             }
-
+            
             hyp += best_bwd;
           }
           else {
             if (s < int(rhs_lower_ + zero_offset) || s > int(rhs_upper_ + zero_offset)) 
               hyp = 1e300;
           }
-	  
+          
           if (hyp < min_msg)
             min_msg = hyp;
         }
-	
+        
         assert(!isnan(min_msg));
-
-
-        dual_ptr[v][l] = 0.5 * (min_msg - msg[v][l]);
+          
+        
+        dual_ptr[v][l] = 0.5 * (min_msg - cur_msg[l]);
       }
-
 
       //correct the freshly computed forward term
       for (int sum=0; sum < range; sum++) {
-
+        
         for (uint l=0; l < 2; l++)
           forward(sum,l,v) -= cur_dp[l]; 
         forward_light(sum,v) = std::min(forward(sum,0,v), forward(sum,1,v));
       }
     }
-
   }
 }
 
@@ -2844,7 +3326,9 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
 
   /**** forward ****/
 
-  Math2D::Matrix<double> forward_light(range,participating_var_.size(),1e100);
+  Math2D::Matrix<double> forward_light(range,participating_var_.size());
+  for (int sum = 0; sum < range; sum++)
+    forward_light(sum,0) = 1e100;
 
   //init
   forward_light(zero_offset,0) = - dual_ptr[0][0];
@@ -3093,8 +3577,14 @@ uint FactorDualOpt::add_generic_factor(const Math1D::Vector<uint> var, const Var
   assert(var.size() == cost.nDims());
 
   Storage1D<DualVariableNode*> var_nodes(var.size());
-  for (uint k=0; k < var.size(); k++)
+  for (uint k=0; k < var.size(); k++) {
+    if (var[k] >= nUsedVars_) {
+      INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+      exit(1);
+    }
+
     var_nodes[k] = var_[var[k]];
+  }
 
   GenericDualFactorNode* ptr = new GenericDualFactorNode(var_nodes,cost);
   return add_factor(ptr);
@@ -3102,8 +3592,10 @@ uint FactorDualOpt::add_generic_factor(const Math1D::Vector<uint> var, const Var
 
 uint FactorDualOpt::add_generic_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref) {
 
-  assert(var1 < var_.size());
-  assert(var2 < var_.size());
+  if (var1 >= nUsedVars_ || var2 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
 
   Storage1D<DualVariableNode*> var_nodes(2);
   var_nodes[0] = var_[var1];
@@ -3121,8 +3613,10 @@ uint FactorDualOpt::add_generic_binary_factor(uint var1, uint var2, const Math2D
   
 uint FactorDualOpt::add_potts_factor(uint var1, uint var2, double lambda) {
 
-  assert(var1 < var_.size());
-  assert(var2 < var_.size());
+  if (var1 >= nUsedVars_ || var2 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
 
   Storage1D<DualVariableNode*> var_nodes(2);
   var_nodes[0] = var_[var1];
@@ -3135,10 +3629,10 @@ uint FactorDualOpt::add_potts_factor(uint var1, uint var2, double lambda) {
 //return factor number
 uint FactorDualOpt::add_generic_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref) {
 
-
-  assert(var1 < var_.size());
-  assert(var2 < var_.size());
-  assert(var3 < var_.size());
+  if (var1 >= nUsedVars_ || var2 >= nUsedVars_ || var3 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
 
   Storage1D<DualVariableNode*> var_nodes(3);
   var_nodes[0] = var_[var1];
@@ -3157,9 +3651,10 @@ uint FactorDualOpt::add_generic_ternary_factor(uint var1, uint var2, uint var3, 
 
 uint FactorDualOpt::add_second_diff_factor(uint var1, uint var2, uint var3, float lambda) {
 
-  assert(var1 < var_.size());
-  assert(var2 < var_.size());
-  assert(var3 < var_.size());
+  if (var1 >= nUsedVars_ || var2 >= nUsedVars_ || var3 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
 
   Storage1D<DualVariableNode*> var_nodes(3);
   var_nodes[0] = var_[var1];
@@ -3175,10 +3670,10 @@ uint FactorDualOpt::add_second_diff_factor(uint var1, uint var2, uint var3, floa
 uint FactorDualOpt::add_generic_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
                                                     const Storage1D<Math3D::Tensor<float> >& cost, bool ref) {
 
-  assert(var1 < var_.size());
-  assert(var2 < var_.size());
-  assert(var3 < var_.size());
-  assert(var4 < var_.size());
+  if (var1 >= nUsedVars_ || var2 >= nUsedVars_ || var3 >= nUsedVars_ || var4 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
 
   Storage1D<DualVariableNode*> var_nodes(4);
   var_nodes[0] = var_[var1];
@@ -3205,7 +3700,11 @@ uint FactorDualOpt::add_one_of_N_factor(const Math1D::Vector<uint>& var) {
 
   for (uint k=0; k < var.size(); k++) {
 
-    assert(var[k] < var_.size());
+    if (var[k] >= nUsedVars_) {
+      INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+      exit(1);
+    }
+
     var_nodes[k] = var_[var[k]];
 
     if (var_[var[k]]->nLabels() != 2) {
@@ -3231,9 +3730,14 @@ uint FactorDualOpt::add_one_of_N_factor(const Math1D::Vector<uint>& var) {
 }
 
 //all participating variables must be binary
-uint FactorDualOpt::add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& card_cost) {
+uint FactorDualOpt::add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& card_cost, bool ref) {
 
   if (var.size() == 1) {
+    if (var[0] >= nUsedVars_) {
+      INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+      exit(1);
+    }
+
     var_[var[0]]->add_cost(card_cost);
 
     return MAX_UINT;
@@ -3243,8 +3747,11 @@ uint FactorDualOpt::add_cardinality_factor(const Math1D::Vector<uint>& var, cons
     Storage1D<DualVariableNode*> var_nodes(var.size());
 
     for (uint k=0; k < var.size(); k++) {
+      if (var[k] >= nUsedVars_) {
+        INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+        exit(1);
+      }
       
-      assert(var[k] < var_.size());
       var_nodes[k] = var_[var[k]];
       
       if (var_[var[k]]->nLabels() != 2) {
@@ -3253,7 +3760,11 @@ uint FactorDualOpt::add_cardinality_factor(const Math1D::Vector<uint>& var, cons
       }
     }
 
-    CardinalityDualFactorNode* ptr = new CardinalityDualFactorNode(var_nodes, card_cost);
+    DualFactorNode* ptr;
+    if (!ref)
+      ptr = new CardinalityDualFactorNode(var_nodes, card_cost);
+    else
+      ptr = new CardinalityDualFactorRefNode(var_nodes, card_cost);
 
     return add_factor(ptr);
   }
@@ -3265,8 +3776,16 @@ uint FactorDualOpt::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
 
   uint nUseful = 0;
 
+  int nPos = 0;
+  int nNeg = 0;
+
   //check for variables whose value is essentially fixed due to the cost vector
   for (uint k=0; k < var.size(); k++) {
+
+    if (var[k] >= nUsedVars_) {
+      INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+      exit(1);
+    }
 
     if (var_[var[k]]->nLabels() != 2) {
       INTERNAL_ERROR << " variables of BILP nodes must be binary. Exiting..." << std::endl;
@@ -3275,24 +3794,32 @@ uint FactorDualOpt::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
     
     const Math1D::Vector<float>& cur_cost = var_[var[k]]->cost();
 
-    if (fabs(cur_cost[0] - cur_cost[1]) < 1e10)
+    if (fabs(cur_cost[0] - cur_cost[1]) < 1e10) {
       nUseful++;
+      if (positive[k])
+        nPos++;
+      else
+        nNeg++;
+    }
     else {
-      assert(cur_cost[0] < cur_cost[1]); 
-      //otherwise need to adjust rhs_lower and upper (currently not implemented)
+      if (cur_cost[0] > cur_cost[1]) {
+        if (positive[k]) {
+          rhs_lower--;
+          rhs_upper--;
+        }
+        else {
+          rhs_lower++;
+          rhs_upper++;
+        }
+      }
     }
   }
 
+  if (nUseful != 0 && rhs_lower <= -nNeg && rhs_upper >= nPos)
+    nUseful = 0; //constraint is always true
+
 
   if (nUseful != 0) {
-    // if (nUseful < 2) {
-    //   std::cerr << "only " << nUseful << " out of " << var.size() << " variables are actually not fixed" << std::endl;
-    
-    //   for (uint k=0; k < var.size(); k++)
-    //     std::cerr << "cost: " << var_[var[k]]->cost() << std::endl;
-
-    //   std::cerr << "var: " << var << std::endl;
-    // }
 
     assert(nUseful >= 2);
     
@@ -3313,7 +3840,13 @@ uint FactorDualOpt::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
     assert(next == nUseful);
     assert(nUsedFactors_ < factor_.size());
 
-    BILPConstraintDualFactorNode* ptr = new BILPConstraintDualFactorNode(vars, reduced_positive, rhs_lower, rhs_upper);
+    
+    DualFactorNode* ptr;
+
+    if (nNeg == 0) 
+      ptr = new AllPosBILPConstraintDualFactorNode(vars, rhs_lower, rhs_upper);
+    else
+      ptr = new BILPConstraintDualFactorNode(vars, reduced_positive, rhs_lower, rhs_upper);
 
     return add_factor(ptr);    
   }
@@ -3357,7 +3890,6 @@ double FactorDualOpt::dual_bca(uint nIter, DualBCAMode mode, bool init, bool qui
     std::cerr << "******** iteration " << iter << " ************" << std::endl;
 
     for (uint f=0; f < nUsedFactors_; f++) {
-      //std::cerr << "f: " << f << std::endl;
       factor_[f]->update_duals(mode);
     }
     
@@ -3483,14 +4015,7 @@ double FactorDualOpt::labeling_energy() {
     energy += var_[k]->cost(labeling_[k]);
   }
 
-  //std::cerr << "unary cost: " << energy << std::endl;
-
-  //  std::cerr << "sum of labeling: " << labeling_.sum() << std::endl;
-  //std::cerr << "nFactors: " << nUsedFactors_ << std::endl;
-
   for (uint k=0; k < nUsedFactors_; k++) {
-
-    //std::cerr << "k: " << k << std::endl;
 
     const Storage1D<DualVariableNode*>& nodes = factor_[k]->participating_nodes();
 

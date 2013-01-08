@@ -43,11 +43,12 @@ protected:
   const Math1D::Vector<float> cost_;
 };
 
-
 /*abstract*/ class FactorNode {
 public:
   
   FactorNode(const Storage1D<VariableNode*>& participating_vars);
+
+  virtual ~FactorNode();
   
   virtual void compute_messages() = 0;
   
@@ -72,6 +73,8 @@ public:
 
   GenericFactorNode(const Storage1D<VariableNode*>& participating_vars, const VarDimStorage<float>& cost);
 
+  virtual ~GenericFactorNode();
+
   virtual void compute_messages();
   
   virtual double* get_message(VariableNode* node);
@@ -88,6 +91,7 @@ protected:
 
 /* abstract */ class BinaryFactorNodeBase : public FactorNode {
 public:
+
   BinaryFactorNodeBase(const Storage1D<VariableNode*>& participating_vars);
 
   void compute_messages(const Math2D::Matrix<float>& cost);
@@ -107,6 +111,8 @@ public:
 
   BinaryFactorNode(const Storage1D<VariableNode*>& participating_vars, const Math2D::Matrix<float>& cost);
 
+  virtual ~BinaryFactorNode();
+
   virtual void compute_messages();
 
   virtual double cost(const Math1D::Vector<uint>& labels) const;
@@ -122,6 +128,8 @@ public:
 
   BinaryRefFactorNode(const Storage1D<VariableNode*>& participating_vars, const Math2D::Matrix<float>& cost);
 
+  virtual ~BinaryRefFactorNode();
+
   virtual void compute_messages();
 
   virtual double cost(const Math1D::Vector<uint>& labels) const;
@@ -136,6 +144,8 @@ public:
 
   PottsFactorNode(const Storage1D<VariableNode*>& participating_vars, float lambda);
 
+  virtual ~PottsFactorNode();
+
   virtual void compute_messages();
 
   virtual double cost(const Math1D::Vector<uint>& labels) const;
@@ -143,32 +153,6 @@ public:
 protected:
   float lambda_;
 };
-
-
-//THIS IS NOT AS EASY AS IT APPEARS: 
-// when you use a message originally to send information _to_ a factor, then to send information _from_
-// a factor, things get inconsistent (the role of the labels changes, messages are not always used as they should)
-
-//If you want fix this, make sure that var. nodes never update the messages to mem.saving binary factors
-// and that mem.saving binary factors take into account all messages arriving at the respective var. nodes
-
-// class BinaryFactorNodeMemSave : public FactorNode {
-// public:
-
-//   BinaryFactorNodeMemSave(const Storage1D<VariableNode*>& participating_vars, const Math2D::Matrix<float>& cost);
-
-//   virtual void compute_messages();
-
-//   virtual double* get_message(VariableNode* node);
-
-//   virtual double cost(const Math1D::Vector<uint>& labels);
-
-//   virtual void init_messages();
-
-// protected:
-//   Math2D::Matrix<float> cost_;
-// };
-
 
 /*abstract*/ class TernaryFactorNodeBase : public FactorNode {
 public: 
@@ -193,6 +177,8 @@ public:
 
   TernaryFactorNode(const Storage1D<VariableNode*>& participating_vars, const Math3D::Tensor<float>& cost);
 
+  virtual ~TernaryFactorNode();
+
   virtual void compute_messages();
 
   virtual double cost(const Math1D::Vector<uint>& labels) const;
@@ -205,6 +191,8 @@ class TernaryRefFactorNode : public TernaryFactorNodeBase {
 public: 
 
   TernaryRefFactorNode(const Storage1D<VariableNode*>& participating_vars, const Math3D::Tensor<float>& cost);
+
+  virtual ~TernaryRefFactorNode();
 
   virtual void compute_messages();
 
@@ -240,6 +228,8 @@ public:
 
   FourthOrderFactorNode(const Storage1D<VariableNode*>& participating_vars, const Storage1D<Math3D::Tensor<float> >& cost);
 
+  virtual ~FourthOrderFactorNode();
+
   virtual void compute_messages();
 
   virtual double cost(const Math1D::Vector<uint>& labels) const;
@@ -252,6 +242,8 @@ class FourthOrderRefFactorNode : public FourthOrderFactorNodeBase {
 public: 
 
   FourthOrderRefFactorNode(const Storage1D<VariableNode*>& participating_vars, const Storage1D<Math3D::Tensor<float> >& cost);
+
+  virtual ~FourthOrderRefFactorNode();
 
   virtual void compute_messages();
 
@@ -271,6 +263,8 @@ public:
   //all variables must be binary
   OneOfNFactorNode(const Storage1D<VariableNode*>& participating_vars);
 
+  virtual ~OneOfNFactorNode();
+
   virtual void init_messages();
 
   virtual double cost(const Math1D::Vector<uint>& labels) const;
@@ -289,6 +283,8 @@ public:
 
   //all variables must be binary
   CardinalityFactorNode(const Storage1D<VariableNode*>& participating_vars, const Math1D::Vector<float>& card_cost);
+
+  virtual ~CardinalityFactorNode();
 
   virtual void compute_messages();
 
@@ -312,6 +308,8 @@ public:
   //all variables must be binary
   BILPConstraintFactorNode(const Storage1D<VariableNode*>& participating_vars,
                            const Storage1D<bool>& positive, int rhs_lower = 0, int rhs_upper = 0);
+
+  virtual ~BILPConstraintFactorNode();
 
   virtual void compute_messages();
 
@@ -351,14 +349,17 @@ public:
 
   uint add_generic_factor(const Math1D::Vector<uint> var, VarDimStorage<float>& cost);
 
+  //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
   uint add_generic_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref=false);
   
   uint add_potts_factor(uint var1, uint var2, double lambda);
 
   //return factor number
+  //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
   uint add_generic_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref=false);
 
   //return factor number
+  //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
   uint add_generic_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
                                        const Storage1D<Math3D::Tensor<float> >& cost, bool ref=false);
 
@@ -391,7 +392,7 @@ public:
 protected:
 
   void process_labeling();
-
+  
   uint add_factor(FactorNode* node, bool owned = true);
 
   uint first_shared_var_;
