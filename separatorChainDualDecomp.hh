@@ -32,7 +32,11 @@ public:
 
   const Storage1D<SepChainDDFactor*>& neighboring_factor() const;
 
+  uint nChains() const;
+
   void set_up_chains();
+
+  //double dual_value(uint& arg_min);
 
 protected:
 
@@ -80,23 +84,24 @@ public:
 
   SepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars, const Storage1D<SepChainDDPairSeparator*>& separators);
 
+  virtual ~SepChainDDFactor();
 
   virtual double compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
                                  const SepChainDDVar* outgoing_var,
                                  const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
                                  Math1D::Vector<double>& forward, 
-                                 Math2D::Matrix<uint>& trace) = 0;
+                                 Math2D::Matrix<uint>& trace) const = 0;
 
 
   virtual double compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
                                  const SepChainDDPairSeparator* outgoing_sep,
                                  const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
                                  Math2D::Matrix<double>& forward, 
-                                 Math3D::Tensor<uint>& trace) = 0;
+                                 Math3D::Tensor<uint>& trace) const = 0;
 
-  Math1D::Vector<double>& get_duals(SepChainDDVar* var);
+  Math1D::Vector<double>& get_duals(const SepChainDDVar* var);
 
-  Math2D::Matrix<double>& get_pair_duals(SepChainDDPairSeparator* sep);
+  Math2D::Matrix<double>& get_pair_duals(const SepChainDDPairSeparator* sep);
 
   SepChainDDVar* prev_var() const;
 
@@ -122,9 +127,9 @@ public:
 
   void set_next_factor(SepChainDDFactor* factor);
 
-  const Storage1D<SepChainDDVar*>& involved_vars();
+  const Storage1D<SepChainDDVar*>& involved_vars() const;
 
-  const Storage1D<SepChainDDPairSeparator*>& involved_separators();
+  const Storage1D<SepChainDDPairSeparator*>& involved_separators() const;
 
 protected:
 
@@ -152,17 +157,19 @@ public:
   BinarySepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars,
                           const Math2D::Matrix<float>& cost);
 
+  virtual ~BinarySepChainDDFactor();
+
   virtual double compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
                                  const SepChainDDVar* outgoing_var,
                                  const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
                                  Math1D::Vector<double>& forward, 
-                                 Math2D::Matrix<uint>& trace);
+                                 Math2D::Matrix<uint>& trace) const;
 
   virtual double compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
                                  const SepChainDDPairSeparator* outgoing_sep,
                                  const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
                                  Math2D::Matrix<double>& forward, 
-                                 Math3D::Tensor<uint>& trace);
+                                 Math3D::Tensor<uint>& trace) const;
 
 protected:
 
@@ -178,17 +185,19 @@ public:
   TernarySepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars, Storage1D<SepChainDDPairSeparator*>& separators,
                           const Math3D::Tensor<float>& cost);
 
+  virtual ~TernarySepChainDDFactor();
+
   virtual double compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
                                  const SepChainDDVar* outgoing_var,
                                  const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
                                  Math1D::Vector<double>& forward, 
-                                 Math2D::Matrix<uint>& trace);
+                                 Math2D::Matrix<uint>& trace) const;
 
   virtual double compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
                                  const SepChainDDPairSeparator* outgoing_sep,
                                  const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
                                  Math2D::Matrix<double>& forward, 
-                                 Math3D::Tensor<uint>& trace);
+                                 Math3D::Tensor<uint>& trace) const;
 protected:
 
   const Math3D::Tensor<float> cost_;
@@ -205,17 +214,19 @@ public:
   FourthOrderSepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars, Storage1D<SepChainDDPairSeparator*>& separators,
                               const Storage1D<Math3D::Tensor<float> >& cost);
 
+  virtual ~FourthOrderSepChainDDFactor();
+
   virtual double compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
                                  const SepChainDDVar* outgoing_var,
                                  const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
                                  Math1D::Vector<double>& forward, 
-                                 Math2D::Matrix<uint>& trace);
+                                 Math2D::Matrix<uint>& trace) const;
 
   virtual double compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
                                  const SepChainDDPairSeparator* outgoing_sep,
                                  const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
                                  Math2D::Matrix<double>& forward, 
-                                 Math3D::Tensor<uint>& trace);
+                                 Math3D::Tensor<uint>& trace) const;
 protected:
 
   const Storage1D<Math3D::Tensor<float> > cost_;
@@ -229,7 +240,7 @@ protected:
 class SeparatorChainDualDecomposition {
 public:
   
-  //you can provide upper bounds on the number of variables, pair-separators and factors you will add
+  //you need to provide upper bounds on the number of variables, pair-separators and factors you will add
   SeparatorChainDualDecomposition(uint nVars, uint nSeparators, uint nFactors);
 
   ~SeparatorChainDualDecomposition();

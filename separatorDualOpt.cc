@@ -34,7 +34,7 @@ void sepDualOptVar::add_pair_separator(sepDualOptPairSeparator* adjacent_sep) {
   adjacent_separator_[size] = std::make_pair(other,adjacent_sep);
 }
 
-double sepDualOptVar::dual_value(uint& arg_min) {
+double sepDualOptVar::dual_value(uint& arg_min) const {
 
   Math1D::Vector<double> sum(cost_.size());
   for (uint k=0; k < sum.size(); k++)
@@ -62,9 +62,9 @@ uint sepDualOptVar::nLabels() {
   return cost_.size();
 }
 
-void sepDualOptVar::compute_message(sepDualOptFactor* factor, Math1D::Vector<double>& msg) {
+void sepDualOptVar::compute_message(const sepDualOptFactor* factor, Math1D::Vector<double>& msg) {
 
-  msg.resize(cost_.size());
+  msg.resize_dirty(cost_.size());
   for (uint k=0; k < msg.size(); k++)
     msg[k] = cost_[k];
 
@@ -77,9 +77,9 @@ void sepDualOptVar::compute_message(sepDualOptFactor* factor, Math1D::Vector<dou
   }
 }
 
-void sepDualOptVar::compute_message(sepDualOptPairSeparator* sep, Math1D::Vector<double>& msg) {
+void sepDualOptVar::compute_message(const sepDualOptPairSeparator* sep, Math1D::Vector<double>& msg) {
 
-  msg.resize(cost_.size());
+  msg.resize_dirty(cost_.size());
   for (uint k=0; k < msg.size(); k++)
     msg[k] = cost_[k];
 
@@ -101,7 +101,7 @@ const Math1D::Vector<float>& sepDualOptVar::cost() const {
 
 sepDualOptPairSeparator::sepDualOptPairSeparator(sepDualOptVar* var1, sepDualOptVar* var2) :
   var1_(var1), var2_(var2), dual_var_(2) {
-  
+
   var1_->add_pair_separator(this);
   var2_->add_pair_separator(this);
  
@@ -109,7 +109,9 @@ sepDualOptPairSeparator::sepDualOptPairSeparator(sepDualOptVar* var1, sepDualOpt
   dual_var_[1].resize(var2_->nLabels(),0.0);
 }
 
-const Math1D::Vector<double>& sepDualOptPairSeparator::dual_var(sepDualOptVar* var) {
+/*virtual*/ sepDualOptPairSeparator::~sepDualOptPairSeparator() {}
+
+const Math1D::Vector<double>& sepDualOptPairSeparator::dual_var(const sepDualOptVar* var) const {
 
   if (var == var1_)
     return dual_var_[0];
@@ -186,7 +188,7 @@ std::set<sepDualOptVar*> sepDualOptPairSeparator::involved_vars() {
   return s;
 }
 
-double sepDualOptPairSeparator::dual_value() {
+double sepDualOptPairSeparator::dual_value() const {
 
   uint nLabels1 = var1_->nLabels();
   uint nLabels2 = var2_->nLabels();
@@ -206,9 +208,9 @@ double sepDualOptPairSeparator::dual_value() {
   return msum.min();
 }
 
-void sepDualOptPairSeparator::compute_message(sepDualOptFactor* factor, Math2D::Matrix<double>& msg) {
+void sepDualOptPairSeparator::compute_message(const sepDualOptFactor* factor, Math2D::Matrix<double>& msg) {
 
-  msg.resize(var1_->nLabels(),var2_->nLabels());
+  msg.resize_dirty(var1_->nLabels(),var2_->nLabels());
 
   const uint xDim = var1_->nLabels();
   const uint yDim = var2_->nLabels();
@@ -276,7 +278,9 @@ sepDualOptFactor::sepDualOptFactor(const Storage1D<sepDualOptVar*>& vars,
   }
 }
 
-const Math1D::Vector<double>& sepDualOptFactor::dual_var(sepDualOptVar* var) {
+/*virtual*/ sepDualOptFactor::~sepDualOptFactor() {}
+
+const Math1D::Vector<double>& sepDualOptFactor::dual_var(const sepDualOptVar* var) const {
 
   for (uint k=0; k < var_.size(); k++) {
 
@@ -287,7 +291,7 @@ const Math1D::Vector<double>& sepDualOptFactor::dual_var(sepDualOptVar* var) {
   return dual_var_[0];
 }
 
-const Math2D::Matrix<double>& sepDualOptFactor::pair_dual(sepDualOptPairSeparator* pair_sep) {
+const Math2D::Matrix<double>& sepDualOptFactor::pair_dual(const sepDualOptPairSeparator* pair_sep) const {
 
   for (uint k=0; k < separator_.size(); k++) {
     if (separator_[k] == pair_sep)
@@ -297,11 +301,11 @@ const Math2D::Matrix<double>& sepDualOptFactor::pair_dual(sepDualOptPairSeparato
   return pair_dual_[0];
 }
 
-const Storage1D<sepDualOptVar*>& sepDualOptFactor::vars() {
+const Storage1D<sepDualOptVar*>& sepDualOptFactor::vars() const {
   return var_;
 }
 
-const Storage1D<sepDualOptPairSeparator*>& sepDualOptFactor::separators() {
+const Storage1D<sepDualOptPairSeparator*>& sepDualOptFactor::separators() const {
   return separator_;
 }
 
@@ -310,8 +314,19 @@ const Storage1D<sepDualOptPairSeparator*>& sepDualOptFactor::separators() {
 BinarySepDualOptFactor::BinarySepDualOptFactor(const Storage1D<sepDualOptVar*>& vars, 
                                                const Math2D::Matrix<float>& cost, bool minimal_links) :
   sepDualOptFactor(vars,Storage1D<sepDualOptPairSeparator*>(),minimal_links), cost_(cost) {
-  assert(vars.size() == 2);
+
+  if (vars.size() != 2) {
+    INTERNAL_ERROR << " attempt to instantiate binary factor with " << vars.size() << " variables. Exiting." << std::endl;
+    exit(1);
+  }
+
+  if (cost.xDim() < vars[0]->nLabels() || cost.yDim() < vars[1]->nLabels()) {
+    INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+    exit(1);
+  }
 }
+
+/*virtual*/ BinarySepDualOptFactor::~BinarySepDualOptFactor() {}
 
 /*virtual*/ void BinarySepDualOptFactor::update_duals(DualBCAMode /*mode*/) {
 
@@ -366,7 +381,7 @@ BinarySepDualOptFactor::BinarySepDualOptFactor(const Storage1D<sepDualOptVar*>& 
 
 
 /*virtual */
-double BinarySepDualOptFactor::dual_value() {
+double BinarySepDualOptFactor::dual_value() const {
 
   uint nLabels1 = cost_.xDim();
   uint nLabels2 = cost_.yDim();
@@ -391,8 +406,19 @@ TernarySepDualOptFactor::TernarySepDualOptFactor(const Storage1D<sepDualOptVar*>
                                                  const Storage1D<sepDualOptPairSeparator*>& separators,
                                                  const Math3D::Tensor<float>& cost, bool minimal_links) :
   sepDualOptFactor(vars,separators,minimal_links), cost_(cost) {
-  assert(vars.size() == 3);
+
+  if (vars.size() != 3) {
+    INTERNAL_ERROR << " attempt to instantiate ternary factor with " << vars.size() << " variables. Exiting." << std::endl;
+    exit(1);
+  }
+
+  if (cost.xDim() < vars[0]->nLabels() || cost.yDim() < vars[1]->nLabels() || cost.zDim() < vars[2]->nLabels()) {
+    INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+    exit(1);
+  }
 }
+
+/*virtual*/ TernarySepDualOptFactor::~TernarySepDualOptFactor() {}
 
 double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z) const {
 
@@ -706,7 +732,7 @@ double TernarySepDualOptFactor::eval_pair(uint pair_num, uint x, uint y, uint z)
         out << (factor*cost_(x,y,z)) << " ";
 }
 
-/*virtual*/ double TernarySepDualOptFactor::dual_value() {
+/*virtual*/ double TernarySepDualOptFactor::dual_value() const {
 
   const uint xDim = cost_.xDim();
   const uint yDim = cost_.yDim();
@@ -771,8 +797,20 @@ FourthOrderSepDualOptFactor::FourthOrderSepDualOptFactor(const Storage1D<sepDual
                                                          const Storage1D<sepDualOptPairSeparator*>& separators,
                                                          const Storage1D<Math3D::Tensor<float> >& cost, bool minimal_links)
   :   sepDualOptFactor(vars,separators,minimal_links), cost_(cost) {
-  assert(vars.size() == 4);
+
+  if (vars.size() != 4) {
+    INTERNAL_ERROR << " attempt to instantiate ternary factor with " << vars.size() << " variables. Exiting." << std::endl;
+    exit(1);
+  }
+
+  if (cost.size() < vars[0]->nLabels() || cost[0].xDim() < vars[1]->nLabels() || cost[0].yDim() < vars[2]->nLabels()
+      || cost[0].zDim() < vars[3]->nLabels()) {
+    INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+    exit(1);
+  }
 }
+
+/*virtual*/ FourthOrderSepDualOptFactor::~FourthOrderSepDualOptFactor() {}
 
 double FourthOrderSepDualOptFactor::eval_pair(uint pair_num, 
                                               uint x, uint y, uint z, uint w) const {
@@ -1333,7 +1371,7 @@ double FourthOrderSepDualOptFactor::eval_pair(uint pair_num,
 }
 
 
-/*virtual*/ double FourthOrderSepDualOptFactor::dual_value() {
+/*virtual*/ double FourthOrderSepDualOptFactor::dual_value() const {
 
   const uint xDim = cost_.size();
   const uint yDim = cost_[0].xDim();
@@ -1495,11 +1533,13 @@ void SeparatorDualOptimization::add_factor(sepDualOptFactor* fac) {
 
 uint SeparatorDualOptimization::add_separator(uint v1, uint v2) {
 
+  if (v1 >= nUsedVars_ || v2 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
+
   if (nUsedSeparators_ == separator_.size())
     separator_.resize(uint(1.2*nUsedSeparators_)+4);
-
-  assert(v1 < nUsedVars_);
-  assert(v2 < nUsedVars_);
 
   assert(v1 < v2);
 
@@ -1513,6 +1553,12 @@ uint SeparatorDualOptimization::add_separator(uint v1, uint v2) {
 
 void SeparatorDualOptimization::add_generic_binary_factor(uint v1, uint v2, const Math2D::Matrix<float>& cost) {
 
+  if (v1 >= nUsedVars_ || v2 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
+
+
   Storage1D<sepDualOptVar*> var(2);
   var[0] = var_[v1];
   var[1] = var_[v2];
@@ -1523,13 +1569,15 @@ void SeparatorDualOptimization::add_generic_binary_factor(uint v1, uint v2, cons
 void SeparatorDualOptimization::add_generic_ternary_factor(uint v1, uint v2, uint v3, const Storage1D<uint>& separators,
                                                            const Math3D::Tensor<float>& cost) {
 
+  if (v1 >= nUsedVars_ || v2 >= nUsedVars_ || v3 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
 
   Math3D::Tensor<float> cost_copy = cost;
 
 #if 1
   if (v1 > v2) {
-
-    //std::cerr << "v1-v2 1." << std::endl;
 
     if (var_[v1]->nLabels() != var_[v2]->nLabels())
       TODO("non-standard variable order with heterogeneous number of labels");
@@ -1544,8 +1592,6 @@ void SeparatorDualOptimization::add_generic_ternary_factor(uint v1, uint v2, uin
   }
   if (v2 > v3) {
 
-    //std::cerr << "v2-v3" << std::endl;
-
     if (var_[v2]->nLabels() != var_[v3]->nLabels())
       TODO("non-standard variable order with heterogeneous number of labels");
 
@@ -1557,8 +1603,6 @@ void SeparatorDualOptimization::add_generic_ternary_factor(uint v1, uint v2, uin
     std::swap(v2,v3);
   }
   if (v1 > v2) {
-
-    //std::cerr << "v1-v2 2." << std::endl;
 
     if (var_[v1]->nLabels() != var_[v2]->nLabels())
       TODO("non-standard variable order with heterogeneous number of labels");
@@ -1581,8 +1625,14 @@ void SeparatorDualOptimization::add_generic_ternary_factor(uint v1, uint v2, uin
   var[2] = var_[v3];
 
   Storage1D<sepDualOptPairSeparator*> sep(separators.size());
-  for (uint k=0; k < separators.size(); k++)
+  for (uint k=0; k < separators.size(); k++) {
+    if (separators[k] >= nUsedSeparators_) {
+      INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+      exit(1);
+    }
+
     sep[k] = separator_[separators[k]];
+  }
 
   add_factor(new TernarySepDualOptFactor(var,sep,cost_copy,minimal_links_));
 }
@@ -1591,6 +1641,10 @@ void SeparatorDualOptimization::add_fourth_order_factor(uint v1, uint v2, uint v
                                                         const Storage1D<uint>& separators,
                                                         const Storage1D<Math3D::Tensor<float> >& cost) {
 
+  if (v1 >= nUsedVars_ || v2 >= nUsedVars_ || v3 >= nUsedVars_ || v4 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
 
   Storage1D<Math3D::Tensor<float> > cost_copy = cost;
 
@@ -1657,8 +1711,14 @@ void SeparatorDualOptimization::add_fourth_order_factor(uint v1, uint v2, uint v
   var[3] = var_[v4];
 
   Storage1D<sepDualOptPairSeparator*> sep(separators.size());
-  for (uint k=0; k < separators.size(); k++)
+  for (uint k=0; k < separators.size(); k++) {
+    if (separators[k] >= nUsedSeparators_) {
+      INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+      exit(1);
+    }
+
     sep[k] = separator_[separators[k]];
+  }
 
   add_factor(new FourthOrderSepDualOptFactor(var,sep,cost_copy,minimal_links_));
 }
@@ -1699,10 +1759,6 @@ void SeparatorDualOptimization::save_problem() {
   for (uint v=0; v < nUsedVars_; v++) {
     of << (v+1) << std::endl;
   }
-  // for (uint s=0; s < nUsedSeparators_; s++) {
-  //   of << (var_idx[separator_[s]->var1()] + 1) << " "
-  //      << (var_idx[separator_[s]->var2()] + 1) << std::endl;
-  // }
   of.close();
   
   of.open("region_intersects.txt");
@@ -1710,10 +1766,7 @@ void SeparatorDualOptimization::save_problem() {
     
     for (uint v=0; v < factor_[f]->vars().size(); v++)
       of << (var_idx[factor_[f]->vars()[v]] + 1) << " ";
-    
-    // for (uint s=0; s < factor_[f]->separators().size(); s++) {
-    //   of << (sep_idx[factor_[f]->separators()[s]] + nUsedVars_ + 1) << " "; 
-    // }
+
     of << std::endl;
   }
   for (uint v=0; v < nUsedVars_; v++) 
@@ -1739,11 +1792,9 @@ void SeparatorDualOptimization::save_problem() {
   of.close();
 }
 
-double SeparatorDualOptimization::optimize(uint nIter, bool quiet) {
+double SeparatorDualOptimization::optimize(uint nIter, DualBCAMode mode, bool quiet) {
 
   double bound = -1e300;
-
-  DualBCAMode mode = DUAL_BCA_MODE_MSD; //this is the only implemented option
 
   labeling_.resize(nUsedVars_,0);
 
@@ -1754,18 +1805,15 @@ double SeparatorDualOptimization::optimize(uint nIter, bool quiet) {
   //DEBUG
   bound = 0.0;
   for (uint v=0; v < nUsedVars_; v++) {
-    //std::cerr << "v: " << v << std::endl;
     bound += var_[v]->dual_value(label);
     labeling_[v] = label;
   }
   
   for (uint s=0; s < nUsedSeparators_; s++) {
-    //std::cerr << "s: " << s << std::endl;
     bound += separator_[s]->dual_value();
   }
   
   for (uint f=0; f < nUsedFactors_; f++) {
-    //std::cerr << "f: " << f << std::endl;
     bound += factor_[f]->dual_value();
   }
   std::cerr << "first bound: " << bound << std::endl;
