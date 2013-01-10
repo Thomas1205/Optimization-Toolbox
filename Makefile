@@ -5,13 +5,11 @@ include common/Makefile.common
 COMMONDIR = common/
 INCLUDE = -I common/ -I thirdparty/ -I . 
 
-all:  $(DEBUGDIR) $(OPTDIR) optlib.debug optlib.opt $(COMMONDIR)/lib/commonlib.debug $(COMMONDIR)/lib/commonlib.opt 
+all: .subdirs $(DEBUGDIR) $(OPTDIR) optlib.debug optlib.opt 
 
-$(COMMONDIR)/lib/commonlib.debug:
-	cd common; make; cd ..
-
-$(COMMONDIR)/lib/commonlib.opt:
-	cd common; make; cd ..
+.subdirs :
+	cd common; make; cd -
+#	cd mp_sample; make; cd -
 
 optlib.debug: $(DEBUGDIR)/check_submodularity.o $(DEBUGDIR)/nbest.o $(DEBUGDIR)/factorMPBP.o $(DEBUGDIR)/factorDualOpt.o $(DEBUGDIR)/factorChainDualDecomp.o $(DEBUGDIR)/separatorChainDualDecomp.o $(DEBUGDIR)/separatorDualOpt.o $(DEBUGDIR)/factorTRWS.o $(DEBUGDIR)/sepTRWS.o $(DEBUGDIR)/function.o $(DEBUGDIR)/submodularity_check.o
 	ar rs $@ $(DEBUGDIR)/check_submodularity.o $(DEBUGDIR)/nbest.o $(DEBUGDIR)/factorMPBP.o $(DEBUGDIR)/factorDualOpt.o $(DEBUGDIR)/factorChainDualDecomp.o $(DEBUGDIR)/separatorChainDualDecomp.o $(DEBUGDIR)/separatorDualOpt.o $(DEBUGDIR)/factorTRWS.o $(DEBUGDIR)/sepTRWS.o $(DEBUGDIR)/function.o $(DEBUGDIR)/submodularity_check.o
