@@ -199,7 +199,7 @@ public:
                                const Storage1D<uint>& separators,
                                const Storage1D<Math3D::Tensor<float> >& cost);
 
-
+  //NOTE: mode is so far ignored
   double optimize(uint nIter, DualBCAMode mode = DUAL_BCA_MODE_MSD, bool quiet = true);
 
   const Math1D::Vector<uint>& labeling();

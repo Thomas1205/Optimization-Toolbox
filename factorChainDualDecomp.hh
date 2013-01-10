@@ -56,7 +56,7 @@ public:
 
   virtual double cost(const Math1D::Vector<uint>& labeling) const = 0;
 
-  Math1D::Vector<double>& get_duals(ChainDDVar* var);
+  Math1D::Vector<double>& get_duals(const ChainDDVar* var);
 
   ChainDDVar* prev_var() const;
 
@@ -74,7 +74,7 @@ public:
 
   void set_next_factor(ChainDDFactor* factor);
 
-  const Storage1D<ChainDDVar*>& involved_vars();
+  const Storage1D<ChainDDVar*>& involved_vars() const;
 
 protected:
 

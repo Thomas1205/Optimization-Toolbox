@@ -111,7 +111,7 @@ ChainDDFactor::ChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars) :
 
 /*virtual*/ ChainDDFactor::~ChainDDFactor() {}
 
-Math1D::Vector<double>& ChainDDFactor::get_duals(ChainDDVar* var) {
+Math1D::Vector<double>& ChainDDFactor::get_duals(const ChainDDVar* var) {
 
   for (uint k=0; k < involved_var_.size(); k++) {
 
@@ -123,7 +123,7 @@ Math1D::Vector<double>& ChainDDFactor::get_duals(ChainDDVar* var) {
   return dual_var_[0];
 }
 
-const Storage1D<ChainDDVar*>& ChainDDFactor::involved_vars() {
+const Storage1D<ChainDDVar*>& ChainDDFactor::involved_vars() const {
   return involved_var_;
 }
 
@@ -2377,11 +2377,11 @@ double FactorChainDualDecomposition::optimize(uint nIter, double start_step_size
     //   denom += factor_[f]->involved_vars().size();
   }
 
-  std::map<ChainDDVar*,uint> var_num;
+  std::map<const ChainDDVar*,uint> var_num;
   for (uint v=0; v < nUsedVars_; v++)
     var_num[var_[v]] = v;
 
-  std::map<ChainDDFactor*,uint> factor_num;
+  std::map<const ChainDDFactor*,uint> factor_num;
   for (uint f=0; f < nUsedFactors_; f++)
     factor_num[factor_[f]] = f;
 
@@ -2473,7 +2473,7 @@ double FactorChainDualDecomposition::optimize(uint nIter, double start_step_size
 
         const std::vector<ChainDDFactor*>& cur_chain = chain[k];
         const std::vector<ChainDDVar*>& cur_out_var = out_var[k];
-        ChainDDVar* cur_in_var = in_var[k];
+        const ChainDDVar* cur_in_var = in_var[k];
         
         uint chain_length = cur_chain.size();
 
@@ -2639,7 +2639,7 @@ double FactorChainDualDecomposition::optimize(uint nIter, double start_step_size
 	
         for (uint k=0; k < factor_label[f].size(); k++) {
 	  
-          ChainDDVar* cur_var = factor_[f]->involved_vars()[k];
+          const ChainDDVar* cur_var = factor_[f]->involved_vars()[k];
 	  
           uint cur_fac_label = factor_label[f][k];
           uint cur_var_label = var_label[var_num[cur_var]];
@@ -2663,7 +2663,7 @@ double FactorChainDualDecomposition::optimize(uint nIter, double start_step_size
 
         for (uint k=0; k < factor_label[f].size(); k++) {
 	  
-          ChainDDVar* cur_var = factor_[f]->involved_vars()[k];
+          const ChainDDVar* cur_var = factor_[f]->involved_vars()[k];
 	  
           uint cur_fac_label = factor_label[f][k];
           factor_[f]->get_duals(cur_var)[cur_fac_label] -= step_size;
@@ -2703,7 +2703,7 @@ double FactorChainDualDecomposition::optimize(uint nIter, double start_step_size
       
       for (uint k=0; k < factor_label[f].size(); k++) {
 	
-        ChainDDVar* cur_var = factor_[f]->involved_vars()[k];
+        const ChainDDVar* cur_var = factor_[f]->involved_vars()[k];
         
         uint vnum = var_num[cur_var];
 

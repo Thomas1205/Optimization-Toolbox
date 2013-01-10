@@ -7,7 +7,7 @@
 #include <map>
 
 //DEBUG
-#include "stl_out.hh"
+//#include "stl_out.hh"
 //END_DEBUG
 
 AllInclusiveSepCumTRWSSepChainLink::AllInclusiveSepCumTRWSSepChainLink() : sep_(0), left_fac_(0), right_fac_(0) {}
@@ -115,10 +115,20 @@ double AllInclusiveSepCumTRWSVariable::reparameterize_forward() {
 	fac = cur_chain_link->involved_factor_[f];
       }
       
+      //DEBUG
+      // if ( !(f < chain_link_[c]->involved_factor_.size())) {
+      //   std::cerr << "var " << rank_ << std::endl;
+      //   std::cerr << "involved factors: " << std::endl;
+      //   for (uint k=0; k < chain_link_[c]->involved_factor_.size(); k++)
+      //     chain_link_[c]->involved_factor_[k]->print_factor();
+      // }
+      //END_DEBUG
+      
       assert(f < chain_link_[c]->involved_factor_.size());
     }
 
     double temp = fac->compute_var_reparameterization(this);
+
 
     if (fac->max_rank() == rank_ && fac->end_separator() == 0) {
 
@@ -209,7 +219,7 @@ double AllInclusiveSepCumTRWSVariable::average(uint& arg_min) {
 }
 
 
-const Math1D::Vector<double>& AllInclusiveSepCumTRWSVariable::cost() {
+const Math1D::Vector<double>& AllInclusiveSepCumTRWSVariable::cost() const {
   return cum_cost_;
 }
 
@@ -355,7 +365,7 @@ void AllInclusiveSepCumTRWSVariable::set_up_chains() {
       processed.insert(cur_fac);
       link->involved_factor_.insert(link->involved_factor_.begin(),cur_fac);
     }
-    
+
     cur_fac = adjacent_factor_[f];
 
     if (is_var_end_link) {
@@ -388,7 +398,7 @@ void AllInclusiveSepCumTRWSVariable::set_up_chains() {
       processed.insert(cur_fac);
       link->involved_factor_.push_back(cur_fac);
     }
-
+      
     assert(link->involved_factor_.size() <= 3);
     assert(link->sep_.size() <= 2);
 
@@ -612,6 +622,7 @@ AllInclusiveSepCumTRWSFactor::AllInclusiveSepCumTRWSFactor(const Storage1D<AllIn
   }
 }
 
+/*virtual*/ AllInclusiveSepCumTRWSFactor::~AllInclusiveSepCumTRWSFactor() {}
 
 /*virtual*/
  double AllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* /*incoming_sep*/, 
@@ -679,7 +690,7 @@ void AllInclusiveSepCumTRWSFactor::compute_rank_range() {
   }  
 }
 
-const Math1D::Vector<double>& AllInclusiveSepCumTRWSFactor::var_reparameterization(AllInclusiveSepCumTRWSVariable* var) {
+const Math1D::Vector<double>& AllInclusiveSepCumTRWSFactor::var_reparameterization(AllInclusiveSepCumTRWSVariable* var) const {
 
   for (uint v=0; v < involved_var_.size(); v++) {
     if (involved_var_[v] == var)
@@ -690,7 +701,7 @@ const Math1D::Vector<double>& AllInclusiveSepCumTRWSFactor::var_reparameterizati
   return var_reparameterization_[0];
 }
   
-const Math2D::Matrix<double>& AllInclusiveSepCumTRWSFactor::pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair) {
+const Math2D::Matrix<double>& AllInclusiveSepCumTRWSFactor::pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair) const {
 
   for (uint s=0; s < adjacent_separator_.size(); s++) {
     
@@ -881,8 +892,18 @@ BinaryAllInclusiveSepCumTRWSFactor::BinaryAllInclusiveSepCumTRWSFactor(const Sto
                                                                        const Math2D::Matrix<float>& cost) :
   AllInclusiveSepCumTRWSFactor(vars,Storage1D<AllInclusiveSepCumTRWSPairSeparator*>()), cost_(cost) {
 
-  assert(vars.size() == 2);
+  if (vars.size() != 2) {
+    INTERNAL_ERROR << " attempt to instantiate binary factor with " << vars.size() << " variables. Exiting." << std::endl;
+    exit(1);
+  }
+
+  if (cost.xDim() < vars[0]->nLabels() || cost.yDim() < vars[1]->nLabels()) {
+    INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+    exit(1);
+  }
 }
+
+/*virtual*/ BinaryAllInclusiveSepCumTRWSFactor::~BinaryAllInclusiveSepCumTRWSFactor() {}
   
 /*virtual*/ 
 double BinaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var) {
@@ -1066,8 +1087,18 @@ TernaryAllInclusiveSepCumTRWSFactor::TernaryAllInclusiveSepCumTRWSFactor(const S
 									 const Math3D::Tensor<float>& cost) :
   AllInclusiveSepCumTRWSFactor(vars,separators), cost_(cost) {
 
-  assert(vars.size() == 3);
+  if (vars.size() != 3) {
+    INTERNAL_ERROR << " attempt to instantiate ternary factor with " << vars.size() << " variables. Exiting." << std::endl;
+    exit(1);
+  }
+
+  if (cost.xDim() < vars[0]->nLabels() || cost.yDim() < vars[1]->nLabels() || cost.zDim() < vars[2]->nLabels()) {
+    INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+    exit(1);
+  }
 }
+
+/*virtual*/ TernaryAllInclusiveSepCumTRWSFactor::~TernaryAllInclusiveSepCumTRWSFactor() {}
   
 /*virtual*/ 
 double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var) {
@@ -1140,6 +1171,8 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllIn
     const uint nLabels3 = involved_var_[2]->nLabels();
     
     const uint nSeps = adjacent_separator_.size();
+
+    //std::cerr << "before" << std::endl;
 
     Storage1D<Math1D::Vector<double> > param = var_reparameterization_;
     for (uint v=0; v < involved_var_.size(); v++) {
@@ -1726,9 +1759,19 @@ FourthOrderAllInclusiveSepCumTRWSFactor::FourthOrderAllInclusiveSepCumTRWSFactor
                                                                                  const Storage1D<Math3D::Tensor<float> >& cost) :
   AllInclusiveSepCumTRWSFactor(vars,separators), cost_(cost) {
 
-  assert(vars.size() == 4);
+  if (vars.size() != 4) {
+    INTERNAL_ERROR << " attempt to instantiate ternary factor with " << vars.size() << " variables. Exiting." << std::endl;
+    exit(1);
+  }
+
+  if (cost.size() < vars[0]->nLabels() || cost[0].xDim() < vars[1]->nLabels() || cost[0].yDim() < vars[2]->nLabels()
+      || cost[0].zDim() < vars[3]->nLabels()) {
+    INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+    exit(1);
+  }
 }
 
+/*virtual*/ FourthOrderAllInclusiveSepCumTRWSFactor::~FourthOrderAllInclusiveSepCumTRWSFactor() {}
 
 /*virtual*/ 
 double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var) {
@@ -2792,6 +2835,11 @@ uint AllInclusiveSepCumTRWS::add_var(const Math1D::Vector<float>& cost) {
 
 uint AllInclusiveSepCumTRWS::add_pair_separator(uint var1, uint var2) {
 
+  if (var1 >= nUsedVars_ || var2 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
+
   assert(!optimize_called_);
 
   if (nUsedSeparators_ == separator_.size())
@@ -2820,6 +2868,10 @@ void AllInclusiveSepCumTRWS::add_factor(AllInclusiveSepCumTRWSFactor* fac) {
 
 void AllInclusiveSepCumTRWS::add_binary_factor(uint v1, uint v2, const Math2D::Matrix<float>& cost)
 {
+  if (v1 >= nUsedVars_ || v2 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
 
   Storage1D<AllInclusiveSepCumTRWSVariable*> vars(2);
   vars[0] = var_[v1];
@@ -2830,6 +2882,11 @@ void AllInclusiveSepCumTRWS::add_binary_factor(uint v1, uint v2, const Math2D::M
 
 void AllInclusiveSepCumTRWS::add_ternary_factor(uint v1, uint v2, uint v3, const Storage1D<uint>& separators,
 						const Math3D::Tensor<float>& cost) {
+
+  if (v1 >= nUsedVars_ || v2 >= nUsedVars_ || v3 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
 
   Math3D::Tensor<float> cost_copy = cost;
 
@@ -2890,8 +2947,15 @@ void AllInclusiveSepCumTRWS::add_ternary_factor(uint v1, uint v2, uint v3, const
   vars[2] = var_[v3];
 
   Storage1D<AllInclusiveSepCumTRWSPairSeparator*> seps(separators.size());
-  for (uint s=0; s < separators.size(); s++)
+  for (uint s=0; s < separators.size(); s++) {
+
+    if (separators[s] >= nUsedSeparators_) {
+      INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+      exit(1);
+    }
+
     seps[s] = separator_[separators[s]];
+  }
 
 
   add_factor(new TernaryAllInclusiveSepCumTRWSFactor(vars,seps,cost_copy));
@@ -2900,6 +2964,11 @@ void AllInclusiveSepCumTRWS::add_ternary_factor(uint v1, uint v2, uint v3, const
 void AllInclusiveSepCumTRWS::add_fourth_order_factor(uint v1, uint v2, uint v3, uint v4, const Storage1D<uint>& separators,
 						     const Storage1D<Math3D::Tensor<float> >& cost)
 {
+
+  if (v1 >= nUsedVars_ || v2 >= nUsedVars_ || v3 >= nUsedVars_ || v4 >= nUsedVars_) {
+    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    exit(1);
+  }
 
   Storage1D<Math3D::Tensor<float> > cost_copy = cost;
 
@@ -2968,8 +3037,15 @@ void AllInclusiveSepCumTRWS::add_fourth_order_factor(uint v1, uint v2, uint v3, 
   vars[3] = var_[v4];
   
   Storage1D<AllInclusiveSepCumTRWSPairSeparator*> seps(separators.size());
-  for (uint s=0; s < separators.size(); s++)
+  for (uint s=0; s < separators.size(); s++) {
+
+    if (separators[s] >= nUsedSeparators_) {
+      INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+      exit(1);
+    }
+
     seps[s] = separator_[separators[s]];
+  }
 
   add_factor(new FourthOrderAllInclusiveSepCumTRWSFactor(vars,seps,cost_copy));
 }
@@ -3052,8 +3128,11 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter)
 
     /*** forward ***/
 
+    
     double fwd_bound = 0.0;
     for (uint v=0; v < nUsedVars_; v++) {
+
+      //std::cerr << "v: " << v << std::endl;
 
       //average the separators
       const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& adj_sep = var_[v]->adjacent_separators();
@@ -3068,6 +3147,8 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter)
 	  fwd_bound += temp;
 	}
       }
+
+      //std::cerr << "now averaging var" << std::endl;
 
       //now average the var
       double temp = var_[v]->reparameterize_forward();
@@ -3106,6 +3187,7 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter)
 	  bwd_bound += temp;
 	}
       }
+
     }
 
 
@@ -3149,8 +3231,6 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
       
       while (cur_factor != 0) {
 
-        //cur_factor->print_factor();
-
         chain.push_back(cur_factor);
         if (cur_factor->end_separator() != 0) {
           out_sep.push_back(cur_factor->end_separator());
@@ -3179,8 +3259,6 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
           break;
         }
       }
-        
-      //std::cerr << "computing forward, chain length: " << chain_length << std::endl;
 
       if (backward) {
 
@@ -3190,40 +3268,16 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 	Math2D::Matrix<double> pair_backward1;
 	Math2D::Matrix<double> pair_backward2;
 
-	//double prev_bwd = 0.0;
-
 	if (chain_length > 1) {
 	  if (out_var[chain_length-2] != 0) {
 	    double offs = chain.back()->compute_forward(0,out_var.back(),out_var[chain_length-2],pair_backward2,backward2,backward1);
 	    bound += offs;
-
-	    //DEBUG
-	    // double computed = backward1.min() + offs - prev_bwd;
-	    // if (fabs(computed-chain.back()->stored_forward_) > 0.01) {
-	      
-	    //   std::cerr << "stored: " << chain.back()->stored_forward_ << ", computed: " << computed << std::endl;
-	      
-	    // }
- 	    // assert(fabs(offs-chain.back()->stored_forward_) <= 0.01);
-	    // prev_bwd = backward1.min();
-	    //END_DEBUG
 	  }
 	  else {
 	    double offs = chain.back()->compute_forward(0,out_var.back(),out_sep[chain_length-2],pair_backward2,backward2,pair_backward1);
 	    bound += offs;
 
 	    assert(offs == 0.0);
-
-	    //DEBUG
-	    // double computed = pair_backward1.min() + offs - prev_bwd;
-	    // if (fabs(computed-chain.back()->stored_forward_) > 0.01) {
-	      
-	    //   std::cerr << "stored: " << chain.back()->stored_forward_ << ", computed: " << computed << std::endl;
-	    //   std::cerr << "backward: " << pair_backward1 << std::endl;
-	    // }
-	    // assert(fabs(computed-chain.back()->stored_forward_) <= 0.01);
-	    // prev_bwd = pair_backward1.min(); 
-	    //END_DEBUG	    
 	  }
 	}
 	else {
@@ -3242,7 +3296,7 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 
 	    double offs = chain[0]->compute_forward(out_sep[k],out_var[k],in_var,last_pair_backward,last_backward,new_backward);
 	    bound += offs;
-          }
+	  }
 	  else {
 
 	    if (out_var[k-1] != 0) {
@@ -3252,7 +3306,7 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 	    else {
 	      double offs = chain[k]->compute_forward(out_sep[k],out_var[k],out_sep[k-1],last_pair_backward,last_backward,new_pair_backward);
 	      bound += offs;
-            }
+	    }
 	  }
 	}
 	
@@ -3264,6 +3318,7 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 	bound += new_backward.min();
       }
       else {
+
 
 	Math1D::NamedVector<double> forward1(MAKENAME(forward1));
 	Math1D::NamedVector<double> forward2(in_var->nLabels(),0.0,MAKENAME(forward2));
@@ -3296,7 +3351,7 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 	  else {
 	    bound += chain[k]->compute_forward(out_sep[k-1],out_var[k-1],out_sep[k],
 					       last_pair_forward,last_forward,new_pair_forward);
-          }
+	  }
 	}
 
 	Math1D::Vector<double>& new_forward = (((chain_length-1) % 2) == 0) ? forward1 : forward2;
@@ -3312,9 +3367,3 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 
   return bound;
 }
-
-
-
-/************************************************************************************************************/
-
-

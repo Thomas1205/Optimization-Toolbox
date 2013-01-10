@@ -16,6 +16,9 @@
 #include <set>
 
 
+enum VarLinkStatus {PairReuse, PairRecompute, PairIgnore};
+
+
 class AllInclusiveSepCumTRWSFactor;
 class AllInclusiveSepCumTRWSPairSeparator;
 class AllInclusiveSepCumTRWSVariable;
@@ -68,7 +71,7 @@ public:
 
   double average(uint& arg_min);
 
-  const Math1D::Vector<double>& cost();
+  const Math1D::Vector<double>& cost() const;
 
   void set_up_chains();
 
@@ -148,10 +151,12 @@ public:
 
   AllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
 			       const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators);
+
+  virtual ~AllInclusiveSepCumTRWSFactor();
   
-  const Math1D::Vector<double>& var_reparameterization(AllInclusiveSepCumTRWSVariable* var);
+  const Math1D::Vector<double>& var_reparameterization(AllInclusiveSepCumTRWSVariable* var) const;
   
-  const Math2D::Matrix<double>& pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair);
+  const Math2D::Matrix<double>& pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair) const;
 
   virtual double compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var) = 0;
 
@@ -217,6 +222,7 @@ protected:
   Storage1D<AllInclusiveSepCumTRWSPairSeparator*> adjacent_separator_;
   Storage1D<Math2D::Matrix<double> > pair_reparameterization_;
 
+  //DO WE REALLY NEED TO KEEP TRACK OF THESE??
   AllInclusiveSepCumTRWSFactor* prev_factor_;
   AllInclusiveSepCumTRWSFactor* next_factor_;
 
@@ -236,6 +242,8 @@ public:
 
   BinaryAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
                                      const Math2D::Matrix<float>& cost);
+
+  virtual ~BinaryAllInclusiveSepCumTRWSFactor();
   
   virtual double compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var);
 
@@ -262,6 +270,8 @@ public:
   TernaryAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
 				      const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators,
 				      const Math3D::Tensor<float>& cost);
+
+  virtual ~TernaryAllInclusiveSepCumTRWSFactor();
   
   virtual double compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var);
 
@@ -296,6 +306,8 @@ public:
   FourthOrderAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
                                           const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators,
                                           const Storage1D<Math3D::Tensor<float> >& cost);
+
+  virtual ~FourthOrderAllInclusiveSepCumTRWSFactor();
   
   virtual double compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var);
 
@@ -369,5 +381,7 @@ protected:
 
   bool optimize_called_;
 };
+
+
 
 #endif

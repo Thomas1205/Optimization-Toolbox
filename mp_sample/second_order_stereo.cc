@@ -282,7 +282,7 @@ double second_order_stereo_msg_passing(const Math3D::Tensor<double>& data_term,
       disparity.direct_access(k) = sepDD.labeling()[k];    
   }
   else {
-    lower_bound = sepDO.optimize(500,false);
+    lower_bound = sepDO.optimize(500,DUAL_BCA_MODE_MSD,false);
 
     for (uint k=0; k < disparity.size(); k++)
       disparity.direct_access(k) = sepDO.labeling()[k];    
