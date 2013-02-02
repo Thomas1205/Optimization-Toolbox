@@ -2160,7 +2160,7 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
       
       if (var_[v]->neighboring_factor().size() > 0) {
 
-        Math1D::Vector<double> sum(var_[v]->nLabels());
+        Math1D::Vector<double> sum(var_[v]->nLabels(),0.0);
 	  
         for (uint k=0; k < var_[v]->neighboring_factor().size(); k++) {
           sum += var_[v]->neighboring_factor()[k]->get_duals(var_[v]);
