@@ -1302,7 +1302,7 @@ double CardinalityChainDDFactorBase::compute_forward(const ChainDDVar* in_var, c
       const double val1 = - cur_param[1];
 
       rel_msg[next] = std::make_pair(val1 - val0,k);
-      offs += -cur_param[0];
+      offs += val0;
 
       next++;
     }
@@ -2038,7 +2038,13 @@ void FactorChainDualDecomposition::add_one_of_n_factor(const Math1D::Vector<uint
     add_factor(new OneOfNChainDDFactor(vars));
 }
 
-void FactorChainDualDecomposition::add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost, bool ref) {
+void FactorChainDualDecomposition::add_cardinality_factor(const Math1D::Vector<uint>& var, 
+							  const Math1D::Vector<float>& cost, bool ref) {
+
+  if (cost.size() <= var.size()) {
+    INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+    exit(1);
+  }
 
   if (var.size() == 1) {
     if (var[0] >= nUsedVars_) {
@@ -2674,21 +2680,25 @@ double FactorChainDualDecomposition::optimize(uint nIter, double start_step_size
       //re-project
       for (uint v=0; v < nUsedVars_; v++) {
 
-        if (var_[v]->neighboring_factor().size() > 0) {
+	ChainDDVar* cur_var = var_[v];
 
-          Math1D::Vector<double> sum(var_[v]->nLabels());
+	const Storage1D<ChainDDFactor*>& cur_factor_list = cur_var->neighboring_factor();
+
+        if (cur_factor_list.size() > 0) {
+
+          Math1D::Vector<double> sum(cur_var->nLabels(),0.0);
 	  
-          for (uint k=0; k < var_[v]->neighboring_factor().size(); k++) {
-            sum += var_[v]->neighboring_factor()[k]->get_duals(var_[v]);
+          for (uint k=0; k < cur_factor_list.size(); k++) {
+            sum += cur_var->neighboring_factor()[k]->get_duals(var_[v]);
           }
 	  
-          sum *= 1.0 / var_[v]->neighboring_factor().size();
+          sum *= 1.0 / cur_factor_list.size();
 	  
-          for (uint k=0; k < var_[v]->neighboring_factor().size(); k++) {
+          for (uint k=0; k < cur_factor_list.size(); k++) {
 	    
-            var_[v]->neighboring_factor()[k]->get_duals(var_[v]) -= sum;
-            for (uint l=0; l < var_[v]->nLabels(); l++)
-              assert(!isinf(var_[v]->neighboring_factor()[k]->get_duals(var_[v])[l]));
+            cur_factor_list[k]->get_duals(var_[v]) -= sum;
+            for (uint l=0; l < cur_var->nLabels(); l++)
+              assert(!isinf(cur_factor_list[k]->get_duals(var_[v])[l]));
           }
         }
       }

@@ -60,7 +60,7 @@ public:
 
   virtual ~CumTRWSFactor();
 
-  virtual double compute_reparameterization(CumTRWSVar* var) = 0;
+  virtual double compute_reparameterization(const CumTRWSVar* var) = 0;
   
   uint min_rank() const;
 
@@ -95,7 +95,7 @@ public:
 
   virtual ~GenericCumTRWSFactor();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
 protected:
   const VarDimStorage<float> cost_;
@@ -109,7 +109,7 @@ public:
 
   BinaryCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars);
 
-  double compute_reparameterization(CumTRWSVar* var, const Math2D::Matrix<float>& cost);
+  double compute_reparameterization(const CumTRWSVar* var, const Math2D::Matrix<float>& cost);
 };
 
 /*** binary factor with costs stored explicitly ***/
@@ -121,7 +121,7 @@ public:
   
   virtual ~BinaryCumTRWSFactor();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
 protected:
   const Math2D::Matrix<float> cost_;
@@ -136,7 +136,7 @@ public:
   
   virtual ~BinaryCumTRWSRefFactor();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
 protected:
   const Math2D::Matrix<float>& cost_;
@@ -151,7 +151,7 @@ public:
 
   TernaryCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars);
   
-  double compute_reparameterization(CumTRWSVar* var, const Math3D::Tensor<float>& cost);
+  double compute_reparameterization(const CumTRWSVar* var, const Math3D::Tensor<float>& cost);
 };
 
 /****************/
@@ -164,7 +164,7 @@ public:
   
   virtual ~TernaryCumTRWSFactor();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
 protected:
   const Math3D::Tensor<float> cost_;
@@ -180,7 +180,7 @@ public:
 
   virtual ~TernaryCumTRWSRefFactor();
   
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
 protected:
   const Math3D::Tensor<float>& cost_;
@@ -196,7 +196,7 @@ public:
 
   virtual ~SecondDiffCumTRWSFactor();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
 protected:
   const float lambda_;
@@ -210,7 +210,7 @@ public:
 
   FourthOrderCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars);
 
-  double compute_reparameterization(CumTRWSVar* var, const Storage1D<Math3D::Tensor<float> >& cost);
+  double compute_reparameterization(const CumTRWSVar* var, const Storage1D<Math3D::Tensor<float> >& cost);
 };
 
 /*** 4th order factor with costs stored explicitly ***/
@@ -222,7 +222,7 @@ public:
 
   virtual ~FourthOrderCumTRWSFactor();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
 protected:
   const Storage1D<Math3D::Tensor<float> > cost_;
@@ -238,7 +238,7 @@ public:
 
   virtual ~FourthOrderCumTRWSRefFactor();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
 protected:
   const Storage1D<Math3D::Tensor<float> >& cost_;
@@ -255,7 +255,7 @@ public:
 
   virtual ~OneOfNCumTRWSFactor();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 };
 
 /*****/
@@ -267,7 +267,7 @@ public:
 
   virtual ~OneOfNCumTRWSFactorWithReuse();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
   virtual void init();
 
@@ -288,7 +288,7 @@ public:
 
   CardinalityCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars);
 
-  double compute_reparameterization(CumTRWSVar* var, const Math1D::Vector<float>& cost);
+  double compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost);
 };
 
 /*****/
@@ -300,7 +300,7 @@ public:
 
   virtual ~CardinalityCumTRWSFactor();
   
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
   //protected: //DEBUG!!!
   const Math1D::Vector<float> cost_;
@@ -316,7 +316,7 @@ public:
   
   virtual ~CardinalityCumTRWSRefFactor();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
 protected:
   const Math1D::Vector<float>& cost_;
@@ -332,7 +332,7 @@ public:
 
   virtual ~CardinalityCumTRWSFactorBaseWithReuse();
 
-  double compute_reparameterization(CumTRWSVar* var, const Math1D::Vector<float>& cost);
+  double compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost);
 
   virtual void init();
 
@@ -353,7 +353,7 @@ public:
 
   virtual ~CardinalityCumTRWSFactorWithReuse();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
 protected:
   const Math1D::Vector<float> cost_;  
@@ -370,7 +370,7 @@ public:
   
   virtual ~AllPosBILPCumTRWSFactor();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
 protected:
 
@@ -389,7 +389,7 @@ public:
   
   virtual ~BILPCumTRWSFactor();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
 protected:
 
@@ -411,7 +411,7 @@ public:
   
   virtual ~BILPCumTRWSFactorWithReuse();
 
-  virtual double compute_reparameterization(CumTRWSVar* var);
+  virtual double compute_reparameterization(const CumTRWSVar* var);
 
   virtual void init();
 

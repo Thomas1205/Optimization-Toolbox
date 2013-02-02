@@ -215,7 +215,7 @@ GenericCumTRWSFactor::GenericCumTRWSFactor(const Storage1D<CumTRWSVar*>& involve
 /*virtual*/ GenericCumTRWSFactor::~GenericCumTRWSFactor() {}
 
 /*virtual*/ 
-double GenericCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
+double GenericCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var) {
 
   const uint nVars = involved_var_.size();
 
@@ -284,7 +284,7 @@ BinaryCumTRWSFactorBase::BinaryCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& i
 }
 
 
-double BinaryCumTRWSFactorBase::compute_reparameterization(CumTRWSVar* var, const Math2D::Matrix<float>& cost) {
+double BinaryCumTRWSFactorBase::compute_reparameterization(const CumTRWSVar* var, const Math2D::Matrix<float>& cost) {
 
   double offs = 0.0;
 
@@ -361,7 +361,7 @@ BinaryCumTRWSFactor::BinaryCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_
 
 /*virtual*/ BinaryCumTRWSFactor::~BinaryCumTRWSFactor() {}
 
-/*virtual*/ double BinaryCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
+/*virtual*/ double BinaryCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var) {
   
   return BinaryCumTRWSFactorBase::compute_reparameterization(var,cost_);
 }
@@ -375,7 +375,7 @@ BinaryCumTRWSRefFactor::BinaryCumTRWSRefFactor(const Storage1D<CumTRWSVar*>& inv
 
 /*virtual*/ BinaryCumTRWSRefFactor::~BinaryCumTRWSRefFactor() {}
 
-/*virtual*/ double BinaryCumTRWSRefFactor::compute_reparameterization(CumTRWSVar* var) {
+/*virtual*/ double BinaryCumTRWSRefFactor::compute_reparameterization(const CumTRWSVar* var) {
   
   assert(cost_.xDim() >= involved_var_[0]->nLabels());
   assert(cost_.yDim() >= involved_var_[1]->nLabels());
@@ -394,7 +394,7 @@ TernaryCumTRWSFactorBase::TernaryCumTRWSFactorBase(const Storage1D<CumTRWSVar*>&
   }
 }
   
-double TernaryCumTRWSFactorBase::compute_reparameterization(CumTRWSVar* var, const Math3D::Tensor<float>& cost) {
+double TernaryCumTRWSFactorBase::compute_reparameterization(const CumTRWSVar* var, const Math3D::Tensor<float>& cost) {
 
   double offs = 0.0;
 
@@ -521,7 +521,7 @@ TernaryCumTRWSFactor::TernaryCumTRWSFactor(const Storage1D<CumTRWSVar*>& involve
 
 /*virtual*/ TernaryCumTRWSFactor::~TernaryCumTRWSFactor() {}
 
-/*virtual*/ double TernaryCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) { 
+/*virtual*/ double TernaryCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var) { 
 
   return TernaryCumTRWSFactorBase::compute_reparameterization(var,cost_);
 }
@@ -533,7 +533,7 @@ TernaryCumTRWSRefFactor::TernaryCumTRWSRefFactor(const Storage1D<CumTRWSVar*>& i
 
 /*virtual*/ TernaryCumTRWSRefFactor::~TernaryCumTRWSRefFactor() {}
 
-/*virtual*/ double TernaryCumTRWSRefFactor::compute_reparameterization(CumTRWSVar* var) { 
+/*virtual*/ double TernaryCumTRWSRefFactor::compute_reparameterization(const CumTRWSVar* var) { 
 
   assert(cost_.xDim() >= involved_var_[0]->nLabels());
   assert(cost_.yDim() >= involved_var_[1]->nLabels());
@@ -555,7 +555,7 @@ SecondDiffCumTRWSFactor::SecondDiffCumTRWSFactor(const Storage1D<CumTRWSVar*>& i
 
 /*virtual*/ SecondDiffCumTRWSFactor::~SecondDiffCumTRWSFactor() {}
 
-/*virtual*/ double SecondDiffCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
+/*virtual*/ double SecondDiffCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var) {
 
   double offs = 0.0;
 
@@ -720,7 +720,7 @@ FourthOrderCumTRWSFactorBase::FourthOrderCumTRWSFactorBase(const Storage1D<CumTR
   }
 }
 
-double FourthOrderCumTRWSFactorBase::compute_reparameterization(CumTRWSVar* var, const Storage1D<Math3D::Tensor<float> >& cost) {
+double FourthOrderCumTRWSFactorBase::compute_reparameterization(const CumTRWSVar* var, const Storage1D<Math3D::Tensor<float> >& cost) {
 
   double offs = 0.0;
   
@@ -915,7 +915,7 @@ FourthOrderCumTRWSFactor::FourthOrderCumTRWSFactor(const Storage1D<CumTRWSVar*>&
 
 /*virtual*/ FourthOrderCumTRWSFactor::~FourthOrderCumTRWSFactor() {}
 
-/*virtual*/ double FourthOrderCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
+/*virtual*/ double FourthOrderCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var) {
 
   return  FourthOrderCumTRWSFactorBase::compute_reparameterization(var,cost_);
 }
@@ -929,7 +929,7 @@ FourthOrderCumTRWSRefFactor::FourthOrderCumTRWSRefFactor(const Storage1D<CumTRWS
 
 /*virtual*/ FourthOrderCumTRWSRefFactor::~FourthOrderCumTRWSRefFactor() {}
 
-/*virtual*/ double FourthOrderCumTRWSRefFactor::compute_reparameterization(CumTRWSVar* var) {
+/*virtual*/ double FourthOrderCumTRWSRefFactor::compute_reparameterization(const CumTRWSVar* var) {
 
   assert(cost_.size() >= involved_var_[0]->nLabels());
   assert(cost_[0].xDim() >= involved_var_[1]->nLabels());
@@ -954,7 +954,7 @@ OneOfNCumTRWSFactor::OneOfNCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_
 
 /*virtual*/ OneOfNCumTRWSFactor::~OneOfNCumTRWSFactor() {}
 
-/*virtual*/ double OneOfNCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
+/*virtual*/ double OneOfNCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var) {
 
   const uint nVars = involved_var_.size();
 
@@ -1023,7 +1023,7 @@ void OneOfNCumTRWSFactorWithReuse::init() {
 }
 
 /*virtual*/ 
-double OneOfNCumTRWSFactorWithReuse::compute_reparameterization(CumTRWSVar* var) {
+double OneOfNCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* var) {
 
   uint idx = MAX_UINT;
 
@@ -1246,7 +1246,7 @@ CardinalityCumTRWSFactorBase::CardinalityCumTRWSFactorBase(const Storage1D<CumTR
   }
 }
 
-double CardinalityCumTRWSFactorBase::compute_reparameterization(CumTRWSVar* var, const Math1D::Vector<float>& cost) {
+double CardinalityCumTRWSFactorBase::compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost) {
 
   assert(var->nLabels() == 2);
 
@@ -1328,7 +1328,7 @@ CardinalityCumTRWSFactor::CardinalityCumTRWSFactor(const Storage1D<CumTRWSVar*>&
 
 /*virtual*/ CardinalityCumTRWSFactor::~CardinalityCumTRWSFactor() {}
   
-/*virtual*/ double CardinalityCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
+/*virtual*/ double CardinalityCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var) {
 
   return CardinalityCumTRWSFactorBase::compute_reparameterization(var,cost_);
 }
@@ -1342,7 +1342,7 @@ CardinalityCumTRWSRefFactor::CardinalityCumTRWSRefFactor(const Storage1D<CumTRWS
 
 /*virtual*/ CardinalityCumTRWSRefFactor::~CardinalityCumTRWSRefFactor() {}
   
-/*virtual*/ double CardinalityCumTRWSRefFactor::compute_reparameterization(CumTRWSVar* var) {
+/*virtual*/ double CardinalityCumTRWSRefFactor::compute_reparameterization(const CumTRWSVar* var) {
 
   assert(cost_.size() >= involved_var_.size()+1);
 
@@ -1374,7 +1374,7 @@ void CardinalityCumTRWSFactorBaseWithReuse::init() {
   to_update_ = MAX_UINT;
 }
 
-double CardinalityCumTRWSFactorBaseWithReuse::compute_reparameterization(CumTRWSVar* var, const Math1D::Vector<float>& cost) {
+double CardinalityCumTRWSFactorBaseWithReuse::compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost) {
 
   assert(var->nLabels() == 2);
 
@@ -1498,7 +1498,7 @@ CardinalityCumTRWSFactorWithReuse::CardinalityCumTRWSFactorWithReuse(const Stora
 /*virtual*/ CardinalityCumTRWSFactorWithReuse::~CardinalityCumTRWSFactorWithReuse() {}
 
 /*virtual*/ 
-double CardinalityCumTRWSFactorWithReuse::compute_reparameterization(CumTRWSVar* var) {
+double CardinalityCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* var) {
 
   return CardinalityCumTRWSFactorBaseWithReuse::compute_reparameterization(var,cost_);
 }
@@ -1526,7 +1526,7 @@ AllPosBILPCumTRWSFactor::AllPosBILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& i
 /*virtual*/ AllPosBILPCumTRWSFactor::~AllPosBILPCumTRWSFactor() {}
 
 /*virtual*/ 
-double AllPosBILPCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
+double AllPosBILPCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var) {
 
 
   assert(var->nLabels() == 2);
@@ -1660,7 +1660,7 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
 
 /*virtual*/ BILPCumTRWSFactor::~BILPCumTRWSFactor() {}
 
-/*virtual*/ double BILPCumTRWSFactor::compute_reparameterization(CumTRWSVar* var) {
+/*virtual*/ double BILPCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var) {
 
   const uint nVars = involved_var_.size();
 
@@ -1869,7 +1869,7 @@ void BILPCumTRWSFactorWithReuse::init() {
 
 
 /*virtual*/ 
-double BILPCumTRWSFactorWithReuse::compute_reparameterization(CumTRWSVar* var) {
+double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* var) {
 
   const uint nVars = involved_var_.size();
 
@@ -2341,6 +2341,11 @@ void CumFactorTRWS::add_one_of_n_factor(const Math1D::Vector<uint>& var, bool re
 }
 
 void CumFactorTRWS::add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost, bool ref, bool reuse) {
+
+  if (cost.size() <= var.size()) {
+      INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
+      exit(1);
+  }
 
   if (var.size() == 0) {
     std::cerr << "WARNING: ignoring empty cardinality factor" << std::endl;
