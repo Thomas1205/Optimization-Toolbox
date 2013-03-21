@@ -2961,7 +2961,7 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
       sum -= label;
   }
 
-  return (sum == 0) ? 0.0 : 1e15;
+  return (sum >= rhs_lower_ && sum <= rhs_upper_) ? 0.0 : 1e30;
 }
 
 /*virtual*/ void BILPConstraintDualFactorNode::update_duals(DualBCAMode mode) {
