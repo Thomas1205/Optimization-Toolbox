@@ -1509,7 +1509,7 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
       sum -= label;
   }
 
-  return (sum == 0) ? 0.0 : 1e15;
+  return (sum >= rhs_lower_ && sum <= rhs_upper_) ? 0.0 : 1e15;
 }
 
 /*virtual*/ void BILPConstraintFactorNode::init_messages() {

@@ -1711,7 +1711,7 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
 
       uint k=v;
       if (v > idx)
-	k--;
+      	k--;
       
       for (int sum=0; sum < range_; sum++) {
 	
