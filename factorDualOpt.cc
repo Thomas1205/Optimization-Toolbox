@@ -2891,10 +2891,9 @@ double AllPosBILPConstraintDualFactorNode::compute_minimizer(Math1D::Vector<uint
 
 /**********************************/
 
-
 BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars,
                                                            const Storage1D<bool>& positive, int rhs_lower, int rhs_upper) :
-  DualFactorNode(participating_vars), positive_(positive), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper) {
+  DualFactorNode(participating_vars), /*positive_(positive),*/ rhs_lower_(rhs_lower), rhs_upper_(rhs_upper) {
 
   for (uint v=0; v < participating_vars.size(); v++) {
     if (participating_vars[v]->nLabels() != 2) {
@@ -2913,15 +2912,42 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
     exit(1);
   }
 
-  int nPositive = 0;
-  int nNegative = 0;
 
-  for (uint k=0; k < positive_.size(); k++) {
-    if (positive_[k])
-      nPositive++;
-    else
-      nNegative++;
+  Storage1D<DualVariableNode*> sorted_involved_vars(participating_vars.size());
+  uint next_pos = 0;
+
+  //pass 1 - find all positive
+  for (uint v=0; v < participating_vars.size(); v++) {
+    if (positive[v]) {
+      sorted_involved_vars[next_pos] = participating_vars[v];
+      next_pos++;
+    } 
   }
+
+  nPos_ = next_pos;
+
+  //pass 2 - find all negative
+  for (uint v=0; v < participating_vars.size(); v++) {
+    if (!positive[v]) {
+      sorted_involved_vars[next_pos] = participating_vars[v];
+      next_pos++;
+    }
+  }
+
+  participating_var_ = sorted_involved_vars;
+
+  // int nPositive = 0;
+  // int nNegative = 0;
+
+  // for (uint k=0; k < positive_.size(); k++) {
+  //   if (positive_[k])
+  //     nPositive++;
+  //   else
+  //     nNegative++;
+  // }
+
+  int nPositive = nPos_;
+  int nNegative = participating_var_.size()-nPositive;
 
   int lower_bound = -nNegative;
   int upper_bound = nPositive;
@@ -2952,16 +2978,14 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
 
   int sum = 0;
 
-  for (uint k=0; k < participating_var_.size(); k++) {
+  const uint nVars = participating_var_.size();
 
-    const int label = labels[k];
-    if (positive_[k])
-      sum += label;
-    else
-      sum -= label;
-  }
+  for (uint k=0; k < nPos_; k++)
+    sum += labels[k];
+  for (uint k=nPos_; k < nVars; k++)
+    sum -= labels[k];
 
-  return (sum >= rhs_lower_ && sum <= rhs_upper_) ? 0.0 : 1e30;
+  return (sum >= rhs_lower_ && sum <= rhs_upper_) ? 0.0 : 1e15;
 }
 
 /*virtual*/ void BILPConstraintDualFactorNode::update_duals(DualBCAMode mode) {
@@ -2982,15 +3006,8 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
       msg[v].resize(participating_var_[v]->nLabels());
   }
 
-  int nPositive = 0;
-  int nNegative = 0;
-
-  for (uint k=0; k < nVars; k++) {
-    if (positive_[k])
-      nPositive++;
-    else
-      nNegative++;
-  }
+  int nPositive = nPos_;
+  int nNegative = nVars - nPositive;
 
   int lower_bound = -nNegative;
   int upper_bound = nPositive;
@@ -3002,9 +3019,6 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
 
   const int range = upper_bound - lower_bound + 1;
   const int zero_offset = -lower_bound;
-
-  Math3D::Tensor<double> forward(range,2,nVars);
-  Math2D::Matrix<double> forward_light(range,nVars);
     
   Math2D::Matrix<double> backward_light(range,nVars);
 
@@ -3015,50 +3029,75 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
     const double inv_nVars = 1.0 / nVars;
 
     /**** forward ****/
-      
+    Math3D::Tensor<double> forward(range,2,nVars);
+    Math2D::Matrix<double> forward_light(range,nVars);
+    
     //init
     for (int sum=0; sum < range; sum++) {
       
       forward_light(sum,0) = 1e100;
       for (int l=0; l < 2; l++) {
-        forward(sum,l,0) = 1e100;
+	forward(sum,l,0) = 1e100;
       }
     }
-      
+    
     forward(zero_offset,0,0) = msg[0][0];
     forward_light(zero_offset,0) = msg[0][0];
-    const int init_mul = (positive_[0]) ? 1 : -1;
-      
-    if (int(zero_offset)+init_mul >= 0
-        && int(zero_offset)+init_mul < range ) {
-      forward(zero_offset+init_mul,1,0) = msg[0][1];
-      forward_light(zero_offset+init_mul,0) = msg[0][1];
+    const int init_val = zero_offset + ((nPos_ > 0) ? 1 : -1);
+    
+    if (init_val >= 0 && init_val < range ) {
+      forward(init_val,1,0) = msg[0][1];
+      forward_light(init_val,0) = msg[0][1];
     }
-      
+    
     //proceed
-    for (uint v=1; v < nVars; v++) {
-      
+    for (uint v=1; v < nPos_; v++) {
+
       const Math1D::Vector<double>& cur_msg = msg[v];
+
+      for (int sum=0; sum < zero_offset; sum++) {
+	for (int l=0; l < 2; l++)
+	  forward(sum,l,v) = 1e100;
+	forward_light(sum,v) = 1e100;
+      }
       
-      for (int sum=0; sum < range; sum++) {
-        
-        for (int l=0; l < 2; l++) {
+      for (int sum=zero_offset; sum < range; sum++) {
           
-          double best_prev = 1e75;
+	for (int l=0; l < 2; l++) {
+	  
+	  double best_prev = 1e75;
           
-          int move = l;
-          if (positive_[v]) //since we are tracing backward here
-            move *= -1;
-          
-          const int dest = sum + move;
-          if (dest >= 0 && dest < range) {
+	  const int dest = sum - l;
+	  if (dest >= 0) {
+              
+	    best_prev = forward_light(dest,v-1);
+	  }
             
-            best_prev = forward_light(dest,v-1);
-          }
+	  forward(sum,l,v) = best_prev + cur_msg[l];
+	}
+	forward_light(sum,v) = std::min(forward(sum,0,v), forward(sum,1,v));
+      }
+    }
+    
+    for (uint v=std::max<uint>(1,nPos_); v < nVars; v++) {
+
+      const Math1D::Vector<double>& cur_msg = msg[v];
+        
+      for (int sum=0; sum < range; sum++) {
+	  
+	for (int l=0; l < 2; l++) {
+            
+	  double best_prev = 1e75;
           
-          forward(sum,l,v) = best_prev + cur_msg[l];
-        }
-        forward_light(sum,v) = std::min(forward(sum,0,v), forward(sum,1,v));
+	  const int dest = sum + l;
+	  if (dest < range) {
+              
+	    best_prev = forward_light(dest,v-1);
+	  }
+          
+	  forward(sum,l,v) = best_prev + cur_msg[l];
+	}
+	forward_light(sum,v) = std::min(forward(sum,0,v), forward(sum,1,v));
       }
     }
     
@@ -3069,38 +3108,62 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
       backward_light(sum,last_var) = 1e100;
     
     backward_light(zero_offset,last_var) = msg[last_var][0];
-    const int end_mul = (positive_[last_var]) ? 1 : -1;
-    if (int(zero_offset)+end_mul >= 0
-        && int(zero_offset)+end_mul < range ) {
-      backward_light(zero_offset + end_mul,last_var) = msg[last_var][1];
+    const int end_val = zero_offset + ((last_var < nPos_) ? 1 : -1);
+
+    if (end_val >= 0 && end_val < range ) {
+      backward_light(end_val,last_var) = msg[last_var][1];
     }
-      
+    
     //proceed
-    for (int v=last_var-1; v >= 1; v--) {
-        
+
+    for (int v=last_var-1; v >= int(nPos_); v--) {
+
       const Math1D::Vector<double>& cur_msg = msg[v];
+
+      for (int sum=zero_offset+1; sum < range; sum++)
+	backward_light(sum,v) = 1e100;
       
+      for (int sum=0; sum <= zero_offset; sum++) {
+          
+	double best_prev = 1e75;
+          
+	for (int l=0; l < 2; l++) {
+            
+	  const int dest = sum +l;
+	  double hyp = 1e75;
+	  if (dest < range) {
+	    hyp = backward_light(dest,v+1) + cur_msg[l];
+	  }
+
+	  if (hyp < best_prev)
+	    best_prev = hyp;
+	}
+	
+	backward_light(sum,v) = best_prev;
+      }
+      
+    }
+    for (int v=std::min<int>(last_var-1,int(nPos_)-1); v >= 1; v--) {
+
+      const Math1D::Vector<double>& cur_msg = msg[v];
+        
       for (int sum=0; sum < range; sum++) {
-        
-        double best_prev = 1e75;
-        
-        for (int l=0; l < 2; l++) {
           
-          int move = l;
-          if (positive_[v]) //since we are tracing backward here
-            move *= -1;
-          
-          const int dest = sum + move;
-          double hyp = 1e75;
-          if (dest >= 0 && dest < range) {
-            hyp = backward_light(dest,v+1) + cur_msg[l];
-          }
-          
-          if (hyp < best_prev)
-            best_prev = hyp;
-        }
+	double best_prev = 1e75;
         
-        backward_light(sum,v) = best_prev;
+	for (int l=0; l < 2; l++) {
+	    
+	  const int dest = sum - l;
+	  double hyp = 1e75;
+	  if (dest >= 0) {
+	    hyp = backward_light(dest,v+1) + cur_msg[l];
+	  }
+
+	  if (hyp < best_prev)
+	    best_prev = hyp;
+	}
+	
+	backward_light(sum,v) = best_prev;
       }
     }
     
@@ -3110,92 +3173,123 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
       
       double* cur_dp = dual_ptr[v];
       const Math1D::Vector<double>& cur_msg = msg[v];
-        
+      
       for (uint l=0; l < 2; l++) {
-        
-        double min_msg = 1e300;
-        
-        for (int s=0; s < (int) range; s++) {
-            
-          double hyp = forward(s,l,v);
-          
-          if (v+1 < positive_.size()) {
-            
-            double best_bwd = 1e300;
-            
-            const int diff = (s - zero_offset);
-            
-            for (int r=rhs_lower_; r <= rhs_upper_; r++) {
-              const int other = r + zero_offset - diff; 
-              
-              if (other >= 0 && other < (int) range) {
-                
-                best_bwd = std::min(best_bwd,backward_light(other,v+1));
-              }
-            }
-            
-            hyp += best_bwd;
-          }
-          else {
-            if (s < int(rhs_lower_ + zero_offset) || s > int(rhs_upper_ + zero_offset)) 
-              hyp = 1e300;
-          }
-          
-          if (hyp < min_msg)
-            min_msg = hyp;
-        }
-        
-        assert(!isnan(min_msg));
 	
-        cur_dp[l] = min_msg * inv_nVars - cur_msg[l];
+	double min_msg = 1e300;
+        
+	for (int s=0; s < (int) range; s++) {
+            
+	  double hyp = forward(s,l,v);
+          
+	  if (v+1 < nVars) {
+              
+	    double best_bwd = 1e300;
+              
+	    const int diff = (s - zero_offset);
+              
+	    for (int r=rhs_lower_; r <= rhs_upper_; r++) {
+	      const int other = r + zero_offset - diff; 
+              
+	      if (other >= 0 && other < (int) range) {
+		
+		best_bwd = std::min(best_bwd,backward_light(other,v+1));
+	      }
+	    }
+            
+	    hyp += best_bwd;
+	  }
+	  else {
+	    if (s < int(rhs_lower_ + zero_offset) || s > int(rhs_upper_ + zero_offset)) 
+	      hyp = 1e300;
+	  }
+	  
+	  if (hyp < min_msg)
+	    min_msg = hyp;
+	}
+	
+	assert(!isnan(min_msg));
+	
+	cur_dp[l] = min_msg * inv_nVars - cur_msg[l];
       }
     }
   }
   else {
     //min sum diffusion mode
-
+    
     //a) compute backward completely (and just once)
     //init
     for (int sum=0; sum < range; sum++) 
       backward_light(sum,last_var) = 1e100;
-    
+      
     backward_light(zero_offset,last_var) = -dual_ptr[last_var][0];
-    const int end_mul = (positive_[last_var]) ? 1 : -1;
-    backward_light(zero_offset + end_mul,last_var) = -dual_ptr[last_var][1];
+    const int end_val = zero_offset + ((last_var < nPos_) ? 1 : -1);
     
+    if (end_val >= 0 && end_val < range ) 
+      backward_light(end_val,last_var) = -dual_ptr[last_var][1];
+      
     //proceed
-    for (int v=last_var-1; v >= 0; v--) {
+    for (int v=last_var-1; v >= int(nPos_); v--) {
       
       const double* cur_dp = dual_ptr[v];
       
-      for (int sum=0; sum < range; sum++) {
+      for (int sum=zero_offset+1; sum < range; sum++)
+	backward_light(sum,v) = 1e100;
+
+      for (int sum=0; sum <= zero_offset; sum++) {
+	
+	double best_prev = 1e75;
         
-        double best_prev = 1e75;
-        
-        for (int l=0; l < 2; l++) {
-          
-          int move = l;
-          if (positive_[v]) //since we are tracing backward here
-            move *= -1;
-          
-          const int dest = sum + move;
-          double hyp = 1e75;
-          if (dest >= 0 && dest < range) {
-            hyp = backward_light(dest,v+1) - cur_dp[l]; 
-          }
-          
-          if (hyp < best_prev)
-            best_prev = hyp;
-        }
-        
-        backward_light(sum,v) = best_prev;
+	for (int l=0; l < 2; l++) {
+            
+	  const int dest = sum + l;
+	  double hyp = 1e75;
+	  if (dest < range) 
+	    hyp = backward_light(dest,v+1) - cur_dp[l]; 
+	  
+	  if (hyp < best_prev)
+	    best_prev = hyp;
+	}
+	
+	backward_light(sum,v) = best_prev;
       }
     }
     
+    for (int v=std::min<int>(nPos_-1,last_var-1); v >= 0; v--) {
+
+      const double* cur_dp = dual_ptr[v];
+      
+      for (int sum=0; sum < range; sum++) {
+          
+	double best_prev = 1e75;
+          
+	for (int l=0; l < 2; l++) {
+            
+	  const int dest = sum - l;
+	  double hyp = 1e75;
+	  if (dest >= 0) 
+	    hyp = backward_light(dest,v+1) - cur_dp[l]; 
+	  
+	  if (hyp < best_prev)
+	    best_prev = hyp;
+	}
+	
+	backward_light(sum,v) = best_prev;
+      }
+      
+    }
+      
     //b) compute forward incrementally and derive messages
-      
+
+    Math2D::Matrix<double> temp_forward(range,2,1e100);
+    Math1D::Vector<double> forward_light[2];
+    forward_light[0].resize(range,1e100);
+    forward_light[1].resize(range);
+    
+    uint cur_idx = 0;
+
     for (uint v=0; v < nVars; v++) {
-      
+        
       const double* cur_dp = dual_ptr[v];
 
       Math1D::Vector<double>& cur_msg = msg[v];
@@ -3203,92 +3297,90 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
       participating_var_[v]->compute_message(this, cur_msg);
       
       if (v == 0) {
-        for (int sum=0; sum < range; sum++) {
-          
-          forward_light(sum,0) = 1e100;
-          for (int l=0; l < 2; l++) {
-            forward(sum,l,0) = 1e100;
-          }
-        }
-          
-        forward(zero_offset,0,0) = 0.0;
-        forward_light(zero_offset,0) = 0.0;
-        const int init_mul = (positive_[0]) ? 1 : -1;
-        forward(zero_offset+init_mul,1,0) = 0.0;
-        forward_light(zero_offset+init_mul,0) = 0.0;
+	
+	temp_forward(zero_offset,0) = 0.0;
+	forward_light[0][zero_offset] = 0.0;
+	const int init_val = zero_offset +( (nPos_ > 0) ? 1 : -1);
+	if (init_val >= 0 && init_val < range) { 
+	  temp_forward(init_val,1) = 0.0;
+	  forward_light[0][init_val] = 0.0;
+	}
       }
       else {
-        
-        for (int sum=0; sum < range; sum++) {
           
-          for (int l=0; l < 2; l++) {
+	const Math1D::Vector<double>& prev_forward_light = forward_light[cur_idx];
+	cur_idx = 1-cur_idx;
+
+	for (int sum=0; sum < range; sum++) {
             
-            double best_prev = 1e75;
-            
-            int move = l;
-            if (positive_[v]) //since we are tracing backward here
-              move *= -1;
-            
-            const int dest = sum + move;
-            if (dest >= 0 && dest < range) {
+	  for (int l=0; l < 2; l++) {
               
-              best_prev = forward_light(dest,v-1);
-            }
+	    double best_prev = 1e75;
             
-            forward(sum,l,v) = best_prev;
-          }
-        }
+	    int move = l;
+	    if (v < nPos_)
+	      move *= -1; //since we are tracing backward here
+	    
+	    const int dest = sum + move;
+	    if (dest >= 0 && dest < range) {
+	      
+	      best_prev = prev_forward_light[dest]; 
+	    }
+            
+	    temp_forward(sum,l) = best_prev;
+	  }
+	}
       }
-        
+
       //now compute new duals
       for (uint l=0; l < 2; l++) {
-        
-        double min_msg = 1e300;
-        
-        for (int s=0; s < (int) range; s++) {
           
-          double hyp = forward(s,l,v);
+	double min_msg = 1e300;
           
-          if (v+1 < positive_.size()) {
+	for (int s=0; s < (int) range; s++) {
             
-            double best_bwd = 1e300;
+	  double hyp = temp_forward(s,l);
+            
+	  if (v+1 < nVars) {
               
-            const int diff = (s - zero_offset);
-            
-            for (int r=rhs_lower_; r <= rhs_upper_; r++) {
-              const int other = r + zero_offset - diff; 
+	    double best_bwd = 1e300;
               
-              if (other >= 0 && other < (int) range) {
-                
-                best_bwd = std::min(best_bwd,backward_light(other,v+1));
-              }
-            }
+	    const int diff = (s - zero_offset);
             
-            hyp += best_bwd;
-          }
-          else {
-            if (s < int(rhs_lower_ + zero_offset) || s > int(rhs_upper_ + zero_offset)) 
-              hyp = 1e300;
-          }
+	    for (int r=rhs_lower_; r <= rhs_upper_; r++) {
+	      const int other = r + zero_offset - diff; 
+              
+	      if (other >= 0 && other < (int) range) {
+		
+		best_bwd = std::min(best_bwd,backward_light(other,v+1));
+	      }
+	    }
+	    
+	    hyp += best_bwd;
+	  }
+	  else {
+	    if (s < int(rhs_lower_ + zero_offset) || s > int(rhs_upper_ + zero_offset)) 
+	      hyp = 1e300;
+	  }
+	  
+	  if (hyp < min_msg)
+	    min_msg = hyp;
+	}
           
-          if (hyp < min_msg)
-            min_msg = hyp;
-        }
+	assert(!isnan(min_msg));
         
-        assert(!isnan(min_msg));
-          
-        
-        dual_ptr[v][l] = 0.5 * (min_msg - cur_msg[l]);
+	
+	dual_ptr[v][l] = 0.5 * (min_msg - cur_msg[l]);
       }
+
+      Math1D::Vector<double>& cur_forward_light = forward_light[cur_idx];
 
       //correct the freshly computed forward term
       for (int sum=0; sum < range; sum++) {
-        
-        for (uint l=0; l < 2; l++)
-          forward(sum,l,v) -= cur_dp[l]; 
-        forward_light(sum,v) = std::min(forward(sum,0,v), forward(sum,1,v));
+	cur_forward_light[sum] = std::min(temp_forward(sum,0)-cur_dp[0], temp_forward(sum,1)-cur_dp[1]);
       }
     }
+
   }
 }
 
@@ -3303,15 +3395,8 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
     dual_ptr[v] = participating_var_[v]->get_dual_vars(this);
   }
 
-  int nPositive = 0;
-  int nNegative = 0;
-
-  for (uint k=0; k < nVars; k++) {
-    if (positive_[k])
-      nPositive++;
-    else
-      nNegative++;
-  }
+  int nPositive = nPos_;
+  int nNegative = nVars - nPositive;
 
   int lower_bound = -nNegative;
   int upper_bound = nPositive;
@@ -3326,17 +3411,27 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
 
   /**** forward ****/
 
-  Math2D::Matrix<double> forward_light(range,participating_var_.size());
-  for (int sum = 0; sum < range; sum++)
-    forward_light(sum,0) = 1e100;
+  Math1D::Vector<double> forward_light[2];
+  forward_light[0].resize(range,1e100);
+  forward_light[1].resize(range);
 
   //init
-  forward_light(zero_offset,0) = - dual_ptr[0][0];
-  int init_mul = (positive_[0]) ? 1 : -1;
-  forward_light(zero_offset+init_mul,0) = - dual_ptr[0][1];
+  forward_light[0][zero_offset] = - dual_ptr[0][0];
+  int init_mul = (nPos_ > 0) ? 1 : -1;
+  forward_light[0][zero_offset+init_mul] = - dual_ptr[0][1];
+
+  uint cur_idx = 0;
 
   //proceed
   for (uint v=1; v < nVars; v++) {
+
+    const Math1D::Vector<double>& prev_forward_light = forward_light[cur_idx];
+
+    cur_idx = 1-cur_idx;
+
+    Math1D::Vector<double>& cur_forward_light = forward_light[cur_idx];
+
+    const double* cur_dp = dual_ptr[v];
 
     for (int sum=0; sum < range; sum++) {
 
@@ -3347,28 +3442,32 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
         double best_prev = 1e75;
 	
         int move = l;
-        if (positive_[v]) //since we are tracing backward here
-          move *= -1;
+	if (v < nPos_)
+          move *= -1; //since we are tracing backward here
 
         const int dest = sum + move;
         if (dest >= 0 && dest < range) {
 	  
-          best_prev = forward_light(dest,v-1);
+          best_prev = prev_forward_light[dest];
         }
 
-        const double hyp = best_prev - dual_ptr[v][l];
+        const double hyp = best_prev - cur_dp[l];
         if (hyp < best_val)
           best_val = hyp;
       }
-      forward_light(sum,v) = best_val;
+      cur_forward_light[sum] = best_val;
     }
+    
   }
 
+
+  const Math1D::Vector<double>& last_forward_light = forward_light[cur_idx];
+    
   double min_val = 1e300;
 
   for (int k=rhs_lower_; k <= rhs_upper_; k++) {
 
-    double min_msg = forward_light(zero_offset + k,nVars-1); 
+    const double min_msg = last_forward_light[zero_offset + k];
     
     if (min_msg < min_val)
       min_val = min_msg;
@@ -3379,6 +3478,7 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
 
 /*virtual*/ double BILPConstraintDualFactorNode::compute_minimizer(Math1D::Vector<uint>& min_labels) const {
 
+
   const uint nVars = participating_var_.size();
 
   NamedStorage1D<const double*> dual_ptr(nVars, MAKENAME(dual_ptr));
@@ -3387,15 +3487,8 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
     dual_ptr[v] = participating_var_[v]->get_dual_vars(this);
   }
 
-  int nPositive = 0;
-  int nNegative = 0;
-
-  for (uint k=0; k < nVars; k++) {
-    if (positive_[k])
-      nPositive++;
-    else
-      nNegative++;
-  }
+  const int nPositive = nPos_;
+  int nNegative = nVars - nPositive;
 
   int lower_bound = -nNegative;
   int upper_bound = nPositive;
@@ -3415,7 +3508,7 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
 
   //init
   forward(zero_offset,0,0) = - dual_ptr[0][0];
-  int init_mul = (positive_[0]) ? 1 : -1;
+  int init_mul = (nPos_ > 0) ? 1 : -1;
   forward(zero_offset+init_mul,1,0) = - dual_ptr[0][1];
 
   //proceed
@@ -3428,7 +3521,7 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
         double best_prev = 1e75;
 	
         int move = l;
-        if (positive_[v]) //since we are tracing backward here
+	if (v < nPos_)
           move *= -1;
 
         const int dest = sum + move;
@@ -3466,6 +3559,7 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
     }
   }
 
+
   // traceback
   min_labels[nVars-1] = best_l;
 
@@ -3473,7 +3567,7 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
 
     uint prev_k = best_k;
 
-    if (positive_[v+1])
+    if (v+1 < int(nPos_))
       best_k -= best_l;
     else
       best_k += best_l;
@@ -3487,6 +3581,7 @@ BILPConstraintDualFactorNode::BILPConstraintDualFactorNode(const Storage1D<DualV
 
   return min_val;
 }
+
 
 /**********************************/
 

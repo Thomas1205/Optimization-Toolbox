@@ -462,7 +462,9 @@ public:
   virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
 
 protected:
-  const Storage1D<bool> positive_;
+
+  uint nPos_;
+
   int rhs_lower_;
   int rhs_upper_;
 };

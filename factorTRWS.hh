@@ -393,7 +393,8 @@ public:
 
 protected:
 
-  const Storage1D<bool> positive_;
+  uint nPos_;
+
   short rhs_lower_;
   short rhs_upper_;
 

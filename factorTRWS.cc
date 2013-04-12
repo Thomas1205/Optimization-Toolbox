@@ -1600,8 +1600,7 @@ double AllPosBILPCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var
 
 BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Storage1D<bool>& positive,
                                      int rhs_lower, int rhs_upper) :
-  CumTRWSFactor(involved_vars), positive_(positive), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper) {
-
+  CumTRWSFactor(involved_vars), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper) {
 
   for (uint v=0; v < involved_vars.size(); v++) {
     if (involved_vars[v]->nLabels() != 2) {
@@ -1622,20 +1621,42 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
 
   assert(involved_vars.size() >= 2);
 
-  int nPositive = 0;
-  int nNegative = 0;
 
-  for (uint k=0; k < positive_.size(); k++) {
-    if (positive_[k])
-      nPositive++;
-    else
-      nNegative++;
+  Storage1D<CumTRWSVar*> sorted_involved_vars(involved_vars.size());
+  uint next_pos = 0;
+
+  //pass 1 - find all positive
+  for (uint v=0; v < involved_vars.size(); v++) {
+    if (positive[v]) {
+      sorted_involved_vars[next_pos] = involved_vars[v];
+      next_pos++;
+    } 
   }
 
-  int lower_bound = -nNegative;
-  int upper_bound = nPositive;
+  nPos_ = next_pos;
 
-  lower_bound = std::max(lower_bound, rhs_lower_ - nPositive);
+  //pass 2 - find all negative
+  for (uint v=0; v < involved_vars.size(); v++) {
+    if (!positive[v]) {
+      sorted_involved_vars[next_pos] = involved_vars[v];
+      next_pos++;
+    }
+  }
+
+  involved_var_ = sorted_involved_vars;
+
+  const int nPositive = nPos_;
+  const int nNegative = involved_var_.size()-nPositive;
+
+  int lower_bound = -nNegative;
+  //lower_bound = std::max(lower_bound, rhs_lower_ - nPositive);
+  
+  /*** since we process the positive vars first, we need not compute entries below rhs_lower_-1 ***/
+  /*** the offset of -1 is because we always leave one variable (the target of the message) out 
+       in the forward computation, and this variable can have a positive sign ***/
+  lower_bound = std::max(lower_bound, rhs_lower_ - 1);
+
+  int upper_bound = nPositive;
   upper_bound = std::min(upper_bound, rhs_upper_ + nNegative);
 
   const int range = upper_bound - lower_bound + 1;
@@ -1680,39 +1701,81 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
 
   assert(idx < nVars);
 
-  assert(nVars >= 2);
-
-  Math2D::Matrix<double> forward_light(range_,nVars-1);
-  
-  //init
-  for (int sum=0; sum < range_; sum++) {
     
-    forward_light(sum,0) = 1e100;
-  }
+  /*** solution based on forward ****/
+
   
+  /**** forward ****/
+  assert(nVars >= 2);
+  
+  Math1D::Vector<double> forward_vec[2];
+  forward_vec[0].resize(range_,1e100);
+  forward_vec[1].resize(range_,1e100);
+  
+  Math1D::Vector<double>& start_forward_vec = forward_vec[0];
+
   const uint start_idx = (idx != 0) ? 0 : 1;
-  
+
   const Math1D::Vector<double>& start_param = param[start_idx];
   
-  forward_light(zero_offset_,0) = -start_param[0];
-  const int init_mul = (positive_[start_idx]) ? 1 : -1;
-  if (int(zero_offset_)+init_mul >= 0
-      && int(zero_offset_)+init_mul < range_) {
-    forward_light(zero_offset_+init_mul,0) = -start_param[1];
+  start_forward_vec[zero_offset_] = -start_param[0];
+  const int init_val = zero_offset_ + ((start_idx < nPos_) ? 1 : -1);
+  if (init_val >= 0 && init_val < range_) {
+    start_forward_vec[init_val] = -start_param[1];
   }
+
+  uint cur_idx = 0;
+
+  uint start_v = (idx <= 1) ? 2 : 1;
   
-  for (uint v = (idx <= 1) ? 2 : 1; v < nVars; v++) {
+  for (uint v = start_v; v < nPos_; v++) {
+    
+    if (v != idx) {
+      
+      const Math1D::Vector<double>& cur_param = param[v];
+      
+      const Math1D::Vector<double>& prev_forward_vec = forward_vec[cur_idx];
+      
+      cur_idx = 1 - cur_idx;
+	
+      Math1D::Vector<double>& cur_forward_vec = forward_vec[cur_idx];
+      
+      for (int sum=zero_offset_; sum < std::min<int>(range_,zero_offset_+v+2); sum++) {
+        
+	double best = 1e300;
+	
+	for (int l=0; l < 2; l++) {
+	  
+	  double best_prev = 1e75;
+          
+	  const int dest = sum - l;
+	  if (dest >= 0) {
+	    
+	    best_prev = prev_forward_vec[dest]; 
+	  }
+          
+	  const double hyp = best_prev - cur_param[l];
+	  if (hyp < best)
+	    best = hyp;
+	}
+	cur_forward_vec[sum] = best;
+      }
+    }
+  }
+
+
+  for (uint v = std::max(start_v,nPos_); v < nVars; v++) {
 
     if (v != idx) {
       
       const Math1D::Vector<double>& cur_param = param[v];
-
-      const bool cur_positive = positive_[v];
-
-      uint k=v;
-      if (v > idx)
-      	k--;
       
+      const Math1D::Vector<double>& prev_forward_vec = forward_vec[cur_idx];
+      
+      cur_idx = 1 - cur_idx;
+      
+      Math1D::Vector<double>& cur_forward_vec = forward_vec[cur_idx];
+
       for (int sum=0; sum < range_; sum++) {
 	
 	double best = 1e300;
@@ -1721,62 +1784,51 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
 	  
 	  double best_prev = 1e75;
           
-	  int move = l;
-	  if (cur_positive) //since we are tracing backward here
-	    move *= -1;
-	  
-	  const int dest = sum + move;
-	  if (dest >= 0 && dest < range_) {
+	  const int dest = sum + l;
+	  if (dest < range_) {
 	    
-	    best_prev = forward_light(dest,k-1);
+	    best_prev = prev_forward_vec[dest]; 
 	  }
           
-	  double hyp = best_prev - cur_param[l];
+	  const double hyp = best_prev - cur_param[l];
 	  if (hyp < best)
 	    best = hyp;
 	}
-	forward_light(sum,k) = best; 
+	cur_forward_vec[sum] = best;
       }
     }
   }
 
-  //lastly, process the variable to be updated
-  Math2D::Matrix<double> forward(range_,2);
-  for (int sum=0; sum < range_; sum++) {
-    
-    for (int l=0; l < 2; l++) {
-      
-      double best_prev = 1e75;
-      
-      int move = l;
-      if (positive_[idx]) //since we are tracing backward here
-	move *= -1;
-      
-      const int dest = sum + move;
-      if (dest >= 0 && dest < range_) {
-	
-	best_prev = forward_light(dest,nVars-2);
-      }
-        
-      forward(sum,l) = best_prev - param[idx][l];
-    }
-  }
-  
+  const Math1D::Vector<double>& last_forward_vec = forward_vec[cur_idx];
+
   //now derive the message
   for (uint l=0; l < 2; l++) {
     
     double min_msg = 1e300;
-
+    
     for (int s = rhs_lower_ + zero_offset_; s <= rhs_upper_ + zero_offset_; s++) { 
+
+      double best_prev = 1e75;
       
-      double hyp = forward(s,l);
+      int move = l;
+      if (idx < nPos_) 
+	move *= -1; //since we are tracing backward here
+        
+      const int dest = s + move;
+      if (dest >= 0 && dest < range_) {
+	
+	best_prev = last_forward_vec[dest]; 
+      }
+      
+      double hyp = best_prev - param[idx][l];
+
       if (hyp < min_msg)
 	min_msg = hyp;
     }      
     message[l] = min_msg;
   }
 
-  double offs = message.min();
+  const double offs = message.min();
 
   if (fabs(offs) > 1e10) {
 

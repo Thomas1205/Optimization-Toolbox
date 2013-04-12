@@ -1537,7 +1537,7 @@ double AllPosBILPChainDDFactor::cost(const Math1D::Vector<uint>& labeling) const
 
 BILPChainDDFactor::BILPChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars, const Storage1D<bool>& positive,
                                      int rhs_lower, int rhs_upper) : 
-  ChainDDFactor(involved_vars), positive_(positive), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper) {
+  ChainDDFactor(involved_vars), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper) {
 
   for (uint v=0; v < involved_vars.size(); v++) {
     if (involved_vars[v]->nLabels() != 2) {
@@ -1556,20 +1556,42 @@ BILPChainDDFactor::BILPChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars
     exit(1);
   }
 
-  int nPositive = 0;
-  int nNegative = 0;
 
-  for (uint k=0; k < positive_.size(); k++) {
-    if (positive_[k])
-      nPositive++;
-    else
-      nNegative++;
+  Storage1D<ChainDDVar*> sorted_involved_vars(involved_vars.size());
+  uint next_pos = 0;
+
+  //pass 1 - find all positive
+  for (uint v=0; v < involved_vars.size(); v++) {
+    if (positive[v]) {
+      sorted_involved_vars[next_pos] = involved_vars[v];
+      next_pos++;
+    } 
   }
 
-  int lower_bound = -nNegative;
-  int upper_bound = nPositive;
+  nPos_ = next_pos;
 
-  lower_bound = std::max(lower_bound, rhs_lower_ - nPositive);
+  //pass 2 - find all negative
+  for (uint v=0; v < involved_vars.size(); v++) {
+    if (!positive[v]) {
+      sorted_involved_vars[next_pos] = involved_vars[v];
+      next_pos++;
+    }
+  }
+
+  involved_var_ = sorted_involved_vars;
+
+  int nPositive = nPos_;
+  int nNegative = involved_var_.size()-nPositive;
+
+  int lower_bound = -nNegative;
+
+  //lower_bound = std::max(lower_bound, rhs_lower_ - nPositive);
+  /*** since we process the positive vars first, we need not compute entries below rhs_lower_-1 ***/
+  /*** the offset of -1 is because we always leave one variable (the target of the message) out 
+       in the forward computation, and this variable can have a positive sign ***/
+  lower_bound = std::max(lower_bound, rhs_lower_ - 1);
+
+  int upper_bound = nPositive;
   upper_bound = std::min(upper_bound, rhs_upper_ + nNegative);
 
   const int range = upper_bound - lower_bound + 1;
@@ -1597,17 +1619,15 @@ BILPChainDDFactor::BILPChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars
 /*virtual*/ 
 double BILPChainDDFactor::cost(const Math1D::Vector<uint>& labeling) const {
 
-  short sum = 0;
-  for (uint v=0; v < involved_var_.size(); v++) {
-    if (positive_[v])
-      sum += labeling[v];
-    else
-      sum -= labeling[v];
-  }
+  int sum = 0;
+  const uint nVars = involved_var_.size();
 
-  if (sum >= rhs_lower_ && sum <= rhs_upper_)
-    return 0.0;
-  return 1e30;
+  for (uint k=0; k < nPos_; k++)
+    sum += labeling[k];
+  for (uint k=nPos_; k < nVars; k++)
+    sum -= labeling[k];
+
+  return (sum >= rhs_lower_ && sum <= rhs_upper_) ? 0.0 : 1e30;
 }
 
 /*virtual*/ 
@@ -1615,9 +1635,11 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
                                           const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward_msg, 
                                           Math2D::Matrix<uint>& trace) const {
 
+
+
   //based on [Potetz & Lee CVIU 2007]
 
-  uint nVars = involved_var_.size();
+  const uint nVars = involved_var_.size();
 
   assert(out_var != in_var);
 
@@ -1644,222 +1666,165 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
   forward_msg.resize_dirty(involved_var_[idx]->nLabels());
   trace.resize_dirty(nVars,involved_var_[idx]->nLabels());
 
-  /**** forward ****/
-    
-  Math3D::Tensor<double> forward(range_,2,idx+1);
-  Math2D::Matrix<double> forward_light(range_,idx+1);
-  Math2D::Matrix<uchar> forward_light_trace(range_,idx+1/*,255*/);
-    
-  //init
-  for (int sum=0; sum < range_; sum++) {
-      
-    forward_light(sum,0) = 1e100;
-    for (int l=0; l < 2; l++) {
-      forward(sum,l,0) = 1e100;
-    }
-  }
-    
-  forward(zero_offset_,0,0) = -param[0][0];
-  forward_light(zero_offset_,0) = -param[0][0];
+  Math2D::Matrix<uchar> forward_light_trace(range_,nVars-1/*,255*/);
+
+  Math1D::Vector<double> forward_vec[2];
+  forward_vec[0].resize(range_,1e100);
+  forward_vec[1].resize(range_,1e100);
+  
+  const uint start_idx = (idx != 0) ? 0 : 1;
+
+  uint cur_idx = 0;
+  Math1D::Vector<double>& start_forward_vec = forward_vec[0];
+  
+  start_forward_vec[zero_offset_] = -param[start_idx][0];
   forward_light_trace(zero_offset_,0) = 0;
-  const int init_mul = (positive_[0]) ? 1 : -1;
+  
+  const int init_mul = (start_idx < nPos_) ? 1 : -1;
   if (int(zero_offset_)+init_mul >= 0
       && int(zero_offset_)+init_mul < range_) {
-    forward(zero_offset_+init_mul,1,0) = -param[0][1];
-    forward_light(zero_offset_+init_mul,0) = -param[0][1];
+    start_forward_vec[zero_offset_+init_mul] = -param[start_idx][1];
     forward_light_trace(zero_offset_+init_mul,0) = 1;
   }
-    
+  
   //proceed
-  for (uint v=1; v <= idx; v++) {
+  for (uint v=(idx <= 1) ? 2 : 1; v < nPos_; v++) {
 
-    const Math1D::Vector<double>& cur_param = param[v];
+    if (v != idx) {
+
+      const Math1D::Vector<double>& cur_param = param[v];
       
-    for (int sum=0; sum < range_; sum++) {
+      uint k=v;
+      if (v > idx)
+	k--;
+      
+      const Math1D::Vector<double>& prev_forward_vec = forward_vec[cur_idx];
+      
+      cur_idx = 1 - cur_idx;
+      
+      Math1D::Vector<double>& cur_forward_vec = forward_vec[cur_idx];
+      
+      for (int sum=zero_offset_; sum < std::min<int>(range_,zero_offset_+v+2); sum++) {
         
-      for (int l=0; l < 2; l++) {
+	double best = 1e300;
+	uint arg_best = MAX_UINT;
+	
+	for (int l=0; l < 2; l++) {
+	  
+	  double best_prev = 1e75;
           
-        double best_prev = 1e75;
+	  const int dest = sum - l;
+	  if (dest >= 0) 
+	    best_prev = prev_forward_vec[dest]; 
           
-        int move = l;
-        if (positive_[v]) //since we are tracing backward here
-          move *= -1;
-        
-        const int dest = sum + move;
-        if (dest >= 0 && dest < range_) {
-          
-          best_prev = forward_light(dest,v-1);
-        }
-          
-        forward(sum,l,v) = best_prev - cur_param[l];
-      }
-      if (forward(sum,0,v) <= forward(sum,1,v)) {
-        forward_light(sum,v) = forward(sum,0,v);
-        forward_light_trace(sum,v) = 0;
-      }
-      else {
-        forward_light(sum,v) = forward(sum,1,v);
-        forward_light_trace(sum,v) = 1;
+	  double hyp = best_prev - cur_param[l];
+	  if (hyp < best) {
+	    
+	    best = hyp;
+	    arg_best = l;
+	  }
+	}
+	cur_forward_vec[sum] = best;
+	forward_light_trace(sum,k) = arg_best;
       }
     }
   }
-    
-  Math2D::Matrix<double> backward_light(range_,nVars/*,1e100*/);
-  Math2D::Matrix<uchar> backward_light_trace(range_,nVars/*,255*/);
-  
-  /**** backward ****/
-  
-  const uint last_var = nVars-1;
-  
-  //init
-  for (int sum=0; sum < range_; sum++) 
-    backward_light(sum,last_var) = 1e100;
 
-  backward_light(zero_offset_,last_var) = -param[last_var][0];
-  assert(!isinf(backward_light(zero_offset_,last_var)));
-  backward_light_trace(zero_offset_,last_var) = 0;
-  const int end_mul = (positive_[last_var]) ? 1 : -1;
-  backward_light(zero_offset_ + end_mul,last_var) = -param[last_var][1];
-  backward_light_trace(zero_offset_ + end_mul,last_var) = 1;
-  
-  if (isinf(backward_light(zero_offset_ + end_mul,last_var))) {
-    std::cerr << "last var is in var: " << (involved_var_[last_var] == in_var) << std::endl;
-    std::cerr << "dual var: " << dual_var_[last_var][1] << std::endl;
+  for (uint v=std::max<uint>((idx <= 1) ? 2 : 1,nPos_); v < nVars; v++) {
+
+    if (v != idx) {
+
+      const Math1D::Vector<double>& cur_param = param[v];
+      
+      uint k=v;
+      if (v > idx)
+	k--;
+      
+      const Math1D::Vector<double>& prev_forward = forward_vec[cur_idx];
+      
+      cur_idx = 1 - cur_idx;
+      
+      Math1D::Vector<double>& cur_forward = forward_vec[cur_idx];
+      
+      for (int sum=0; sum < range_; sum++) {
+	
+	double best = 1e300;
+	uint arg_best = MAX_UINT;
+	
+	for (int l=0; l < 2; l++) {
+	  
+	  double best_prev = 1e75;
+          
+	  const int dest = sum + l;
+	  if (dest < range_) 
+	    best_prev = prev_forward[dest]; 
+          
+	  const double hyp = best_prev - cur_param[l];
+	  if (hyp < best) {
+	    
+	    best = hyp;
+	    arg_best = l;
+	  }
+	}
+	
+	cur_forward[sum] = best;
+	forward_light_trace(sum,k) = arg_best;
+      }
+    }
   }
-    
-  assert(!isinf(backward_light(zero_offset_ + end_mul,last_var)));
 
-  //proceed
-  for (int v=last_var-1; v > int(idx); v--) {
+  const Math1D::Vector<double>& last_forward_vec = forward_vec[cur_idx];
+
+  for (uint l=0; l < 2; l++) {
+            
+    double min_msg = 1e300;
+    uint best_s = MAX_UINT;
     
-    const Math1D::Vector<double>& cur_param = param[v];
-    
-    for (int sum=0; sum < range_; sum++) {
-        
+    for (int s=int(rhs_lower_ + zero_offset_); s <= int(rhs_upper_ + zero_offset_); s++) {
+
       double best_prev = 1e75;
         
-      for (int l=0; l < 2; l++) {
-          
-        int move = l;
-        if (positive_[v]) //since we are tracing backward here
-          move *= -1;
-        
-        const int dest = sum + move;
-        double hyp = 1e75;
-        if (dest >= 0 && dest < range_) {
-          hyp = backward_light(dest,v+1) - cur_param[l];
-          if (isinf(hyp)) {
-            
-            std::cerr << "bw: " << backward_light(dest,v+1) << std::endl;
-            std::cerr << "param: " << param[v][l] << std::endl;
-            std::cerr << "v: " << v << ", nVars: " << nVars << std::endl;
-            std::cerr << "is in-var: " << (involved_var_[v] == in_var) << std::endl;
-          }
-          
-          assert(!isinf(hyp));
-        }
-        
-        if (hyp < best_prev) {
-          best_prev = hyp;
-          backward_light_trace(sum,v) = l;
-        }
+      int move = l;
+      if (idx < nPos_)
+	move *= -1;
+      
+      const int dest = s + move;
+      if (dest >= 0 && dest < range_) {
+	
+	best_prev = last_forward_vec[dest]; 
       }
       
-      backward_light(sum,v) = best_prev;
-    }
-  }
-    
-  for (uint l=0; l < 2; l++) {
-
-    //std::cerr << "l: " << l << std::endl;
-    
-    double min_msg = 1e300;
-    int best_s = 0;
-    int best_r = 0;
-    
-    for (int s=0; s < (int) range_; s++) {
+      double hyp = best_prev - param[idx][l];
       
-      double hyp = forward(s,l,idx);
-        
       assert(!isinf(hyp));
       
-      uint br = 0;
-      
-      if (idx+1 < nVars) {
-          
-        double best_bwd = 1e300;
-        
-        const int diff = (s - zero_offset_);
-        
-        for (int r=rhs_lower_; r <= rhs_upper_; r++) {
-          const int other = r + zero_offset_ - diff; 
-          
-          if (other >= 0 && other < (int) range_) {
-              
-            if (backward_light(other,idx+1) < best_bwd) {
-              best_bwd = backward_light(other,idx+1);
-              br = other;
-            }
-          }
-        }
-        
-        hyp += best_bwd;
-        assert(!isinf(hyp));
-      }
-      else {
-        if (s < int(rhs_lower_ + zero_offset_) || s > int(rhs_upper_ + zero_offset_)) 
-          hyp = 1e300;
-      }
-      
       if (hyp < min_msg) {
-        min_msg = hyp;
-        best_s = s;
-        best_r = br;
+	min_msg = hyp;
+	best_s = s;
       }
     }
-      
+    
     forward_msg[l] = min_msg;
     trace(idx,l) = l;
     
-    //a) trace backward to start
-    uint cur_l = l;
-    uint cur_sum = best_s;
-    for (int k=idx; k >= 0; k--) {
-      
-      assert(cur_l < 2);
-        
-      trace(k,l) = cur_l;
-      if (positive_[k])
-        cur_sum -= cur_l;
-      else
-        cur_sum += cur_l;
-      
-      if (k > 0)
-        cur_l = forward_light_trace(cur_sum,k-1);
-    }
+    if (idx < nPos_)
+      best_s -= l;
+    else
+      best_s += l;
     
-    //a) trace forward to end
-    if (idx + 1 < nVars) {
-      cur_sum = best_r;
-      cur_l = backward_light_trace(cur_sum,idx+1);
-      for (uint k=idx+1; k < nVars; k++) {
-        
-        if (!(cur_l < 2)) {
-          std::cerr << "k: " << k << ", nVars: " << nVars << ", cur_l: " << cur_l << std::endl;
-          std::cerr << "associated cost: " << forward_msg[l] << std::endl;
-        }
-        
-        assert(cur_l < 2);
-        
-        trace(k,l) = cur_l;
-        if (positive_[k])
-          cur_sum -= cur_l;
-        else
-          cur_sum += cur_l;
-        
-        if (k+1 < nVars)
-          cur_l = backward_light_trace(cur_sum,k+1);
-      }
+    for (int k=nVars-2; k >= 0; k--) {
+
+      uint v=k;
+      if (k >= int(idx))
+	v++;
+      
+      uint cur_l = forward_light_trace(best_s,k);
+      trace(v,l) = cur_l;
+      
+      if (v < nPos_)
+	best_s -= cur_l;
+      else
+	best_s += cur_l;
     }
   }
 
