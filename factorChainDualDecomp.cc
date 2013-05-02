@@ -1688,7 +1688,7 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
   }
   
   //proceed
-  for (uint v=(idx <= 1) ? 2 : 1; v < nPos_; v++) {
+  for (uint v = start_idx + 1; v < nPos_; v++) {
 
     if (v != idx) {
 

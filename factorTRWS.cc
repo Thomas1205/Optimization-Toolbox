@@ -1726,9 +1726,7 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
 
   uint cur_idx = 0;
 
-  uint start_v = (idx <= 1) ? 2 : 1;
-  
-  for (uint v = start_v; v < nPos_; v++) {
+  for (uint v = start_idx+1; v < nPos_; v++) {
     
     if (v != idx) {
       
@@ -1763,8 +1761,7 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
     }
   }
 
-
-  for (uint v = std::max(start_v,nPos_); v < nVars; v++) {
+  for (uint v = std::max(start_idx+1,nPos_); v < nVars; v++) {
 
     if (v != idx) {
       
