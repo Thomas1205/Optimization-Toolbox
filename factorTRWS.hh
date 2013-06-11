@@ -76,6 +76,9 @@ public:
 
   void sort_by_rank();
 
+  //by default this fails
+  virtual uint best_of_n();
+
 protected: 
 
   Storage1D<CumTRWSVar*> involved_var_;
@@ -256,9 +259,9 @@ public:
   virtual ~OneOfNCumTRWSFactor();
 
   virtual double compute_reparameterization(const CumTRWSVar* var);
-};
 
-/*****/
+  virtual uint best_of_n() const;
+};
 
 class OneOfNCumTRWSFactorWithReuse : public CumTRWSFactor {
 public:
@@ -270,6 +273,8 @@ public:
   virtual double compute_reparameterization(const CumTRWSVar* var);
 
   virtual void init();
+
+  virtual uint best_of_n() const;
 
 protected:
   double sum_;
@@ -291,8 +296,6 @@ public:
   double compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost);
 };
 
-/*****/
-
 class CardinalityCumTRWSFactor : public CardinalityCumTRWSFactorBase {
 public:
 
@@ -302,11 +305,9 @@ public:
   
   virtual double compute_reparameterization(const CumTRWSVar* var);
 
-  //protected: //DEBUG!!!
+protected: 
   const Math1D::Vector<float> cost_;
 };
-
-/*****/
 
 //as above, but storing only a reference to the cost (saves memory if you have many similar factors)
 class CardinalityCumTRWSRefFactor : public CardinalityCumTRWSFactorBase {
@@ -321,8 +322,6 @@ public:
 protected:
   const Math1D::Vector<float>& cost_;
 };
-
-/*****/
 
 /*** cardinality factor with reuse, all variables must be binary ***/
 class CardinalityCumTRWSFactorBaseWithReuse : public CumTRWSFactor {
@@ -344,7 +343,7 @@ protected:
   double offs_;
 };
 
-/*****/
+/****/
 
 class CardinalityCumTRWSFactorWithReuse : public CardinalityCumTRWSFactorBaseWithReuse {
 public:
@@ -402,7 +401,6 @@ protected:
   short zero_offset_;
 };
 
-/*****/
 
 class BILPCumTRWSFactorWithReuse : public CumTRWSFactor {
 public:
@@ -423,7 +421,7 @@ protected:
   short rhs_upper_;
   short zero_offset_;
   
-  //QUESTION: are two vectors enough? we will need to go backwards at times
+  //QUESTION: are two vectors enough? we will need to go backwards
   Math2D::Matrix<double,uint> forward_light_; 
   Math2D::Matrix<double,uint> backward_light_; //we shift everything by one as we would never need the first row
 
@@ -445,38 +443,48 @@ public:
 
   uint add_var(const Math1D::Vector<float>& cost);
   
-  void add_generic_factor(const Math1D::Vector<uint>& vars, const VarDimStorage<float>& cost);
+  uint add_generic_factor(const Math1D::Vector<uint>& vars, const VarDimStorage<float>& cost);
 
   //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
-  void add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref=false);
+  uint add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref=false);
 
   //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
-  void add_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref=false);
+  uint add_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref=false);
 
-  void add_second_diff_factor(uint var1, uint var2, uint var3, float lambda);
+  uint add_second_diff_factor(uint var1, uint var2, uint var3, float lambda);
 
   //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
-  void add_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
+  uint add_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
                                const Storage1D<Math3D::Tensor<float> >& cost, bool ref=false);
 
-  void add_one_of_n_factor(const Math1D::Vector<uint>& var, bool reuse = false);
+  uint add_one_of_n_factor(const Math1D::Vector<uint>& var, bool reuse = false);
 
   //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
-  void add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost, bool ref = false, bool reuse = false);
+  uint add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost, bool ref = false, bool reuse = false);
 
   //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
-  void add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,
+  uint add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,
                              int rhs_lower = 0, int rhs_upper = 0, bool reuse = false);
 
-  double optimize(uint nIter);
+  double optimize(uint nIter, bool quiet = false);
 
-  void set_ranks(Math1D::Vector<uint>& ranks);
+  void set_ranks(const Math1D::Vector<uint>& ranks);
 
   const Math1D::Vector<uint>& labeling();
 
+  CumTRWSVar* get_variable(uint v);
+
+  CumTRWSFactor* get_factor(uint f);
+
+  //CAUTION: the passed factor will be deleted together with all truly owned factors
+  //returns the internal number of the factor
+  uint pass_in_factor(CumTRWSFactor* new_fac);
+
+  uint best_of_n(uint fac_num) const;
+
 protected:
   
-  void add_factor(CumTRWSFactor* fac);
+  uint add_factor(CumTRWSFactor* fac);
 
   Storage1D<CumTRWSVar*> var_;
   Storage1D<CumTRWSFactor*> factor_;
@@ -490,7 +498,6 @@ protected:
 
   bool optimize_called_;
 };
-
 
 
 #endif

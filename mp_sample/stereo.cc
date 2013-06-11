@@ -9,7 +9,7 @@
 int main(int argc, char** argv) {
 
 
-  if (argc == 2 && strings_equal(argv[1],"-h")) {
+  if (argc == 1 || (argc == 2 && strings_equal(argv[1],"-h"))) {
 
     std::cerr << "USAGE: " << argv[0] << std::endl
               << " -first <pgm> : left stereo image" << std::endl

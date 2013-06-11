@@ -43,6 +43,7 @@ protected:
   const Math1D::Vector<float> cost_;
 };
 
+
 /*abstract*/ class FactorNode {
 public:
   
@@ -153,6 +154,7 @@ public:
 protected:
   float lambda_;
 };
+
 
 /*abstract*/ class TernaryFactorNodeBase : public FactorNode {
 public: 
@@ -345,7 +347,7 @@ public:
   uint add_var(const Math1D::Vector<float>& unary_cost);
 
   //NOTE: after calling this routine, owned vars can no longer be created
-  uint pass_in_var_node(VariableNode* var);
+  VariableNode* get_var_node(uint v);
 
   uint add_generic_factor(const Math1D::Vector<uint> var, VarDimStorage<float>& cost);
 
@@ -374,8 +376,10 @@ public:
   uint add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive, 
                              int rhs_lower = 0, int rhs_upper = 0);
 
-  //NOTE: after calling this routine, owned factors can no longer be created
+  //CAUTION: the factor is deleted together with all truly owned factors
   uint pass_in_factor_node(FactorNode* factor);
+
+  FactorNode* get_factor(uint f);
 
   /**** run inference ***/
 
@@ -393,10 +397,7 @@ protected:
 
   void process_labeling();
   
-  uint add_factor(FactorNode* node, bool owned = true);
-
-  uint first_shared_var_;
-  uint first_shared_factor_;
+  uint add_factor(FactorNode* node);
 
   Storage1D<VariableNode*> var_;
   Storage1D<FactorNode*> factor_;

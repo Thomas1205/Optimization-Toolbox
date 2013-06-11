@@ -58,6 +58,8 @@ public:
 
   Math1D::Vector<double>& get_duals(const ChainDDVar* var);
 
+  Math1D::Vector<double>& get_duals(uint var);
+
   ChainDDVar* prev_var() const;
 
   ChainDDVar* next_var() const;
@@ -76,6 +78,8 @@ public:
 
   const Storage1D<ChainDDVar*>& involved_vars() const;
 
+  uint var_idx(const ChainDDVar* var) const;
+
 protected:
 
   ChainDDVar* prev_var_;
@@ -85,7 +89,7 @@ protected:
   ChainDDFactor* next_factor_;
 
   Storage1D<ChainDDVar*> involved_var_;
-  Storage1D< Math1D::Vector<double> > dual_var_;
+  Storage1D<Math1D::Vector<double> > dual_var_;
 };
 
 /***************************************/
@@ -128,8 +132,9 @@ public:
   virtual ~BinaryChainDDFactor();
 
   virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward, 
-                                 Math2D::Matrix<uint>& trace) const;
+                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+				 Math2D::Matrix<uint>& trace) const;
+
 
   virtual double cost(const Math1D::Vector<uint>& labeling) const;
 
@@ -146,8 +151,8 @@ public:
   virtual ~BinaryChainDDRefFactor();
 
   virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward, 
-                                 Math2D::Matrix<uint>& trace) const;
+                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+				 Math2D::Matrix<uint>& trace) const;
 
   virtual double cost(const Math1D::Vector<uint>& labeling) const;
 
@@ -289,6 +294,8 @@ public:
                                  Math2D::Matrix<uint>& trace) const;
 
   virtual double cost(const Math1D::Vector<uint>& labeling) const;
+
+  uint best_of_n() const;
 };
 
 /******/
@@ -406,43 +413,51 @@ public:
 
   ~FactorChainDualDecomposition();
 
-  void add_var(const Math1D::Vector<float>& cost);
+  uint add_var(const Math1D::Vector<float>& cost);
 
-  void add_generic_factor(const Math1D::Vector<uint> var, const VarDimStorage<float>& cost);
-
-  //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
-  void add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref=false);
+  uint add_generic_factor(const Math1D::Vector<uint> var, const VarDimStorage<float>& cost);
 
   //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
-  void add_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref=false);
-
-  void add_second_diff_factor(uint var1, uint var2, uint var3, float lambda);
+  uint add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref=false);
 
   //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
-  void add_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
+  uint add_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref=false);
+
+  uint add_second_diff_factor(uint var1, uint var2, uint var3, float lambda);
+
+  //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
+  uint add_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
                                const Storage1D<Math3D::Tensor<float> >& cost, bool ref=false);
 
   // all variables must be binary
-  void add_one_of_n_factor(const Math1D::Vector<uint>& var);
+  uint add_one_of_n_factor(const Math1D::Vector<uint>& var);
 
   // all variables must be binary
   //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
-  void add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost, bool ref=false);
+  uint add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost, bool ref=false);
 
   // all variables must be binary
-  void add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,
+  uint add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,
                              int rhs_lower = 0, int rhs_upper = 0);
 
+  //CAUTION: the passed factor will be deleted together with all truly owned ones
+  uint pass_in_factor(ChainDDFactor* fac);
 
-  double optimize(uint nIter, double start_step_size = 1.0);
+  ChainDDVar* get_variable(uint v);
+
+  ChainDDFactor* get_factor(uint f);
+
+  double optimize(uint nIter, double start_step_size = 1.0, bool quiet = false);
 
   const Math1D::Vector<uint>& labeling();
 
 protected:
 
-  void add_factor(ChainDDFactor* fac);
+  uint add_factor(ChainDDFactor* fac);
 
   void set_up_chains();
+
+  void set_up_singleton_chains();
 
   Storage1D<ChainDDVar*> var_;
   Storage1D<ChainDDFactor*> factor_;

@@ -52,6 +52,7 @@ const Storage1D<FactorNode*>& VariableNode::neighboring_factor() const {
   return neighboring_factor_;
 }
 
+
 /*virtual*/ void VariableNode::compute_beliefs(Math1D::Vector<double>& beliefs) {
 
   Storage1D<const double*> factor_message(neighboring_factor_.size());
@@ -92,7 +93,7 @@ void VariableNode::compute_messages() {
     double min_message = 1e300;
 
     for (uint l=0; l < nLabels; l++) {
-
+      
       assert(!isnan(cost_[l]));
 
       double cur_cost = cost_[l];
@@ -508,7 +509,7 @@ void TernaryFactorNodeBase::compute_messages(const Math3D::Tensor<float>& cost) 
   double msg_min = message1_.min();
   for (uint k=0; k < message1_.size(); k++)
     message1_[k] -= msg_min;
-
+  
   //Message 2
   for (uint k=0; k < nLabels2; k++) {
 
@@ -553,8 +554,6 @@ void TernaryFactorNodeBase::compute_messages(const Math3D::Tensor<float>& cost) 
   for (uint k=0; k < message3_.size(); k++)
     message3_[k] -= msg_min;
 }
-
-
 
 
 /***********************************/
@@ -962,8 +961,6 @@ CardinalityFactorNode::CardinalityFactorNode(const Storage1D<VariableNode*>& par
     INTERNAL_ERROR << " Cardinality vector size does not match with the number of variables. Exiting." << std::endl;
     exit(1);
   }
-
-  //assert(participating_vars.size() >= 2);
 }
 
 /*virtual*/ CardinalityFactorNode::~CardinalityFactorNode() {}
@@ -1429,8 +1426,6 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
             }
           }
 	  
-          //assert(arg_best != MAX_UINT);
-
           forward(sum,l,v) = best_prev + beliefs(v,l);
           trace(sum,l,v) = arg_best;
         }
@@ -1458,7 +1453,7 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
         }
       }
     }
-
+  
     labels[participating_var_.size()-1] = label;
 
     for (int v =  int(participating_var_.size())-2; v >= 0; v--) {
@@ -1474,6 +1469,7 @@ BILPConstraintFactorNode::BILPConstraintFactorNode(const Storage1D<VariableNode*
       labels[v] = label;
     }
     
+
     return true;
   }
 
@@ -1525,26 +1521,18 @@ FactorMPBP::FactorMPBP(uint nVars, uint nFactors) : nUsedVars_(0), nUsedFactors_
 
   var_.resize(nVars,0);
   factor_.resize(nFactors,0);
-
-  first_shared_var_ = MAX_UINT;
-  first_shared_factor_ = MAX_UINT;
 }
 
 //delete all allocated owned var. and factor nodes
 FactorMPBP::~FactorMPBP() {
-  for (uint i=0; i < std::min<uint>(nUsedVars_,first_shared_var_); i++)
+  for (uint i=0; i < nUsedVars_; i++)
     delete var_[i];
 
-  for (uint i=0; i < std::min<uint>(nUsedFactors_,first_shared_factor_); i++)
+  for (uint i=0; i < nUsedFactors_; i++)
     delete factor_[i];
 }
 
 uint FactorMPBP::add_var(const Math1D::Vector<float>& unary_cost) {
-
-  if (first_shared_var_ != MAX_UINT) {
-    INTERNAL_ERROR << " cannot create generic var-nodes after external var-nodes have been passed in";
-    exit(1);
-  }
 
   VariableNode* ptr = new VariableNode(unary_cost);
 
@@ -1561,33 +1549,16 @@ uint FactorMPBP::add_var(const Math1D::Vector<float>& unary_cost) {
   return nPrevVars;
 }
 
+VariableNode* FactorMPBP::get_var_node(uint v) {
 
-uint FactorMPBP::pass_in_var_node(VariableNode* var) {
-
-  uint nPrevVars = nUsedVars_;
-
-  nUsedVars_++;
-
-  uint prev_size = var_.size();
-  if (first_shared_var_ == MAX_UINT)
-    first_shared_var_ = prev_size;
-  if (nUsedVars_ > prev_size) {
-    var_.resize(size_t(1.2*prev_size)+1,0);
+  if (v >= nUsedVars_) {
+    INTERNAL_ERROR << "variable index out of bounds. Exiting..." << std::endl;
   }
-  var_[nPrevVars] = var;
-  
-  return prev_size;
+
+  return var_[v];
 }
 
-uint FactorMPBP::add_factor(FactorNode* node, bool owned) {
-
-  if (owned && first_shared_factor_ != MAX_UINT) {
-    INTERNAL_ERROR << " cannot create owned factor nodes after external factor nodes have been passed in";
-    exit(1);
-  }
-
-  if (!owned && first_shared_factor_ == MAX_UINT)
-    first_shared_factor_ = nUsedFactors_;
+uint FactorMPBP::add_factor(FactorNode* node) {
 
   nUsedFactors_++;
 
@@ -1790,7 +1761,17 @@ uint FactorMPBP::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const St
 //NOTE: after calling this routine, owned factors can no longer be created
 uint FactorMPBP::pass_in_factor_node(FactorNode* factor) {
 
-  return add_factor(factor,false);
+  return add_factor(factor);
+}
+
+FactorNode* FactorMPBP::get_factor(uint f) {
+
+  if (f >= nUsedFactors_) {
+    INTERNAL_ERROR << "factor index out of bounds. Exiting..." << std::endl;
+    exit(1);
+  }
+
+  return factor_[f];
 }
 
 const Math1D::Vector<uint>& FactorMPBP::labeling() {
@@ -1969,8 +1950,6 @@ void FactorMPBP::mpbp(uint nIter) {
         }
       }
 
-      //std::cerr << "min-marginal cost: " << min_cost << ", arg_min: " << arg_min << std::endl;
-      
       min_best_belief = std::min(min_best_belief,min_cost);
       max_best_belief = std::max(max_best_belief,min_cost);
 

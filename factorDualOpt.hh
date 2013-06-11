@@ -413,6 +413,7 @@ protected:
   const Math1D::Vector<float>& card_cost_;
 };
 
+/**************************/
 
 /**************************/
 
@@ -485,8 +486,7 @@ public:
   //return var. number
   uint add_var(const Math1D::Vector<float>& unary_cost);
 
-  //NOTE: after calling this routine, owned vars can no longer be created
-  uint pass_in_var_node(DualVariableNode* var);
+  DualVariableNode* get_var(uint var_num);  
 
   //returns factor number
   uint add_generic_factor(const Math1D::Vector<uint> var, const VarDimStorage<float>& cost);
@@ -520,12 +520,13 @@ public:
   //returns factor number
   uint add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& card_cost, bool ref=false);
 
+
   //all participating variables must be binary
   //returns factor number
   uint add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,
                              int rhs_lower = 0, int rhs_upper = 0);
 
-  //NOTE: after calling this routine, owned factors can no longer be created
+  //CAUTION: the passed factor is deleted together with all truly owned ones.
   //returns factor number
   uint pass_in_factor_node(DualFactorNode* factor);
 
@@ -545,12 +546,11 @@ public:
 
   void icm(uint iter);
 
+  uint best_of_n(uint fac_num);
+
 protected:
 
-  uint add_factor(DualFactorNode* node, bool owned = true);
-
-  uint first_shared_var_;
-  uint first_shared_factor_;
+  uint add_factor(DualFactorNode* node);
 
   Storage1D<DualVariableNode*> var_;
   Storage1D<DualFactorNode*> factor_;

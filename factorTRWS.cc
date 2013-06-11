@@ -54,6 +54,7 @@ void CumTRWSVar::set_up_chains() {
     nChains_ = nChainlessChains;
   }
 
+
   //initialize cost
   for (uint l=0; l < cost_.size(); l++)
     cum_cost_[l] = cost_[l] / nChains_;
@@ -68,6 +69,7 @@ void CumTRWSVar::add_factor(CumTRWSFactor* factor) {
 }
 
 double CumTRWSVar::average(uint& arg_min) {
+
 
   const uint nLabels = cost_.size();
   const uint nFactors = adjacent_factor_.size();
@@ -176,6 +178,11 @@ void CumTRWSFactor::sort_by_rank() {
     }
   }
 
+}
+
+/*virtual*/ uint CumTRWSFactor::best_of_n() {
+
+  TODO("best_of_n");
 }
 
 const Storage1D<CumTRWSVar*>& CumTRWSFactor::involved_vars() const {
@@ -761,7 +768,7 @@ double FourthOrderCumTRWSFactorBase::compute_reparameterization(const CumTRWSVar
       double best = 1e300;
 
       const Math3D::Tensor<float>& cur_cost = cost[l1];
-      
+
       for (uint l3 = 0; l3 < nLabels3; l3++) {
 
         const double w3 = param2[l3];
@@ -870,7 +877,7 @@ double FourthOrderCumTRWSFactorBase::compute_reparameterization(const CumTRWSVar
         const Math3D::Tensor<float>& cur_cost = cost[l1];
 
         const double w1 = param0[l1];
-	        
+
         for (uint l3 = 0; l3 < nLabels3; l3++) {
 
           const double sum3 = w1 + param2[l3];
@@ -954,6 +961,27 @@ OneOfNCumTRWSFactor::OneOfNCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_
 
 /*virtual*/ OneOfNCumTRWSFactor::~OneOfNCumTRWSFactor() {}
 
+/*virtual*/ uint OneOfNCumTRWSFactor::best_of_n() const {
+
+  const uint nVars = involved_var_.size();
+
+  double best = 1e300;
+  uint arg_best = MAX_UINT;
+
+  for (uint k=0; k < nVars; k++) {
+
+    const double hyp = involved_var_[k]->cost()[1] - reparameterization_[k][1]
+      - involved_var_[k]->cost()[0] + reparameterization_[k][0];
+
+    if (hyp < best) {
+      best = hyp;
+      arg_best = k;
+    }
+  }
+
+  return arg_best;
+}
+
 /*virtual*/ double OneOfNCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var) {
 
   const uint nVars = involved_var_.size();
@@ -982,9 +1010,8 @@ OneOfNCumTRWSFactor::OneOfNCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_
     if (i != idx) {
       const double hyp = -param[i][1] + param[i][0];
 
-      if (hyp < best_gain) {
+      if (hyp < best_gain) 
         best_gain = hyp;
-      }
       
       sum -= param[i][0];
     }
@@ -1021,6 +1048,28 @@ void OneOfNCumTRWSFactorWithReuse::init() {
   sort_by_rank();
   to_update_ = MAX_UINT;
 }
+
+/*virtual*/ uint OneOfNCumTRWSFactorWithReuse::best_of_n() const {
+
+  const uint nVars = involved_var_.size();
+
+  double best = 1e300;
+  uint arg_best = MAX_UINT;
+
+  for (uint k=0; k < nVars; k++) {
+
+    const double hyp = involved_var_[k]->cost()[1] - reparameterization_[k][1]
+      - involved_var_[k]->cost()[0] + reparameterization_[k][0];
+
+    if (hyp < best) {
+      best = hyp;
+      arg_best = k;
+    }
+  }
+
+  return arg_best;
+}
+
 
 /*virtual*/ 
 double OneOfNCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* var) {
@@ -1059,43 +1108,6 @@ double OneOfNCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar
 
           best_ = hyp;
           status = DidUpdate;
-
-          //DEBUG
-          // Storage1D<Math1D::Vector<double> > param = reparameterization_;
-          // for (uint k=0; k < nVars; k++) {
-          //   if (k != idx)
-          //     param[k] -= involved_var_[k]->cost();
-          // }
-          
-          // double check_best = 1e300;
-          // double check_second_best = 1e300;
-          // uint check_arg_best = MAX_UINT;
-          // uint check_arg_second_best = MAX_UINT;
-          
-          // for (uint i=0; i < nVars; i++) {
-            
-          //   if (i != idx) {
-          //     const double hyp = -param[i][1] + param[i][0];
-              
-          //     if (hyp < check_best) {
-          //       check_second_best = check_best;
-          //       check_arg_second_best = check_arg_best;
-                
-          //       check_best = hyp;
-          //       check_arg_best = i;
-          //     }
-          //     else if (hyp < check_second_best) {
-          //       check_second_best = hyp;
-          //       check_arg_second_best = i;
-          //     }
-          //   }
-          // }
-
-          // assert(idx == arg_best_ || check_best == best_);
-
-          // //std::cerr << "check_second_best: " << check_second_best << ", second_best_: " << second_best_ << std::endl;
-          // assert(idx == arg_second_best_ || idx == arg_best_ || check_second_best == second_best_);
-          //END_DEBUG
         }
         else
           status = Recompute;
@@ -1153,7 +1165,6 @@ double OneOfNCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar
             }
           }
         }
-
       }
       else if (status == Update) {
 
@@ -1286,7 +1297,6 @@ double CardinalityCumTRWSFactorBase::compute_reparameterization(const CumTRWSVar
   }
 
   std::sort(rel_param.direct_access(), rel_param.direct_access() + nVars-1);
-
 
   double cum_sum = 0.0;
 
@@ -1505,7 +1515,6 @@ double CardinalityCumTRWSFactorWithReuse::compute_reparameterization(const CumTR
 
 /********************/
 
-
 AllPosBILPCumTRWSFactor::AllPosBILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, 
                                                  int rhs_lower, int rhs_upper)
   : CumTRWSFactor(involved_vars), rhs_lower_(std::max(0,rhs_lower)), rhs_upper_(std::min<int>(involved_vars.size(),rhs_upper)) {
@@ -1602,6 +1611,7 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
                                      int rhs_lower, int rhs_upper) :
   CumTRWSFactor(involved_vars), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper) {
 
+
   for (uint v=0; v < involved_vars.size(); v++) {
     if (involved_vars[v]->nLabels() != 2) {
       INTERNAL_ERROR << "instantiation of an BILP factor with non-binary variables. Exiting." << std::endl;
@@ -1649,7 +1659,6 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
   const int nNegative = involved_var_.size()-nPositive;
 
   int lower_bound = -nNegative;
-  //lower_bound = std::max(lower_bound, rhs_lower_ - nPositive);
   
   /*** since we process the positive vars first, we need not compute entries below rhs_lower_-1 ***/
   /*** the offset of -1 is because we always leave one variable (the target of the message) out 
@@ -1701,10 +1710,9 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
 
   assert(idx < nVars);
 
-    
   /*** solution based on forward ****/
 
-  
+
   /**** forward ****/
   assert(nVars >= 2);
   
@@ -1713,9 +1721,9 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
   forward_vec[1].resize(range_,1e100);
   
   Math1D::Vector<double>& start_forward_vec = forward_vec[0];
-
+  
   const uint start_idx = (idx != 0) ? 0 : 1;
-
+  
   const Math1D::Vector<double>& start_param = param[start_idx];
   
   start_forward_vec[zero_offset_] = -start_param[0];
@@ -1723,11 +1731,11 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
   if (init_val >= 0 && init_val < range_) {
     start_forward_vec[init_val] = -start_param[1];
   }
-
+  
   uint cur_idx = 0;
 
   for (uint v = start_idx+1; v < nPos_; v++) {
-    
+
     if (v != idx) {
       
       const Math1D::Vector<double>& cur_param = param[v];
@@ -1735,48 +1743,48 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
       const Math1D::Vector<double>& prev_forward_vec = forward_vec[cur_idx];
       
       cur_idx = 1 - cur_idx;
-	
+      
       Math1D::Vector<double>& cur_forward_vec = forward_vec[cur_idx];
       
       for (int sum=zero_offset_; sum < std::min<int>(range_,zero_offset_+v+2); sum++) {
         
 	double best = 1e300;
-	
+
 	for (int l=0; l < 2; l++) {
 	  
 	  double best_prev = 1e75;
           
-	  const int dest = sum - l;
-	  if (dest >= 0) {
-	    
-	    best_prev = prev_forward_vec[dest]; 
-	  }
-          
-	  const double hyp = best_prev - cur_param[l];
-	  if (hyp < best)
-	    best = hyp;
+            const int dest = sum - l;
+            if (dest >= 0) {
+	      
+              best_prev = prev_forward_vec[dest]; 
+            }
+            
+            const double hyp = best_prev - cur_param[l];
+            if (hyp < best)
+              best = hyp;
 	}
 	cur_forward_vec[sum] = best;
       }
     }
   }
-
+  
   for (uint v = std::max(start_idx+1,nPos_); v < nVars; v++) {
 
     if (v != idx) {
       
       const Math1D::Vector<double>& cur_param = param[v];
-      
+	
       const Math1D::Vector<double>& prev_forward_vec = forward_vec[cur_idx];
       
       cur_idx = 1 - cur_idx;
       
       Math1D::Vector<double>& cur_forward_vec = forward_vec[cur_idx];
-
+      
       for (int sum=0; sum < range_; sum++) {
 	
 	double best = 1e300;
-	
+
 	for (int l=0; l < 2; l++) {
 	  
 	  double best_prev = 1e75;
@@ -1800,17 +1808,17 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
 
   //now derive the message
   for (uint l=0; l < 2; l++) {
-    
+      
     double min_msg = 1e300;
-    
-    for (int s = rhs_lower_ + zero_offset_; s <= rhs_upper_ + zero_offset_; s++) { 
 
+    for (int s = rhs_lower_ + zero_offset_; s <= rhs_upper_ + zero_offset_; s++) { 
+      
       double best_prev = 1e75;
       
       int move = l;
       if (idx < nPos_) 
 	move *= -1; //since we are tracing backward here
-        
+      
       const int dest = s + move;
       if (dest >= 0 && dest < range_) {
 	
@@ -1818,7 +1826,7 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
       }
       
       double hyp = best_prev - param[idx][l];
-
+      
       if (hyp < min_msg)
 	min_msg = hyp;
     }      
@@ -1937,7 +1945,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
       //need to update forward
 
       if (to_update_ == 0) {
-        
+
         forward_light_(zero_offset_,0) = -prev_param[0];
         const int init_mul = (positive_[0]) ? 1 : -1;
         if (int(zero_offset_)+init_mul >= 0
@@ -2029,13 +2037,13 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
     }
     
     assert(idx < nVars);
-    
+
     //init
     for (int sum=0; sum < range; sum++) {
       
       forward_light_(sum,0) = 1e100;
     }
-    
+
     forward_light_(zero_offset_,0) = -param[0][0];
     const int init_mul = (positive_[0]) ? 1 : -1;
     if (int(zero_offset_)+init_mul >= 0
@@ -2045,7 +2053,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
     
     //proceed
     for (uint v=1; v <= idx; v++) {
-      
+    
       for (int sum=0; sum < range; sum++) {
         
         double best = 1e300;
@@ -2200,7 +2208,7 @@ CumFactorTRWS::~CumFactorTRWS() {
     delete factor_[f];
 }
 
-void CumFactorTRWS::set_ranks(Math1D::Vector<uint>& ranks) {
+void CumFactorTRWS::set_ranks(const Math1D::Vector<uint>& ranks) {
 
   if (ranks.size() != nUsedVars_) {
     std::cerr << "setting ranks is currently only possible for all variables at once." << std::endl;
@@ -2241,7 +2249,33 @@ uint CumFactorTRWS::add_var(const Math1D::Vector<float>& cost) {
   return nUsedVars_-1;
 }
 
-void CumFactorTRWS::add_factor(CumTRWSFactor* fac) {
+CumTRWSVar* CumFactorTRWS::get_variable(uint v) {
+
+  if (v >= nUsedVars_) {
+    INTERNAL_ERROR << "variable index out of bounds. Exiting. " << std::endl;
+    exit(1);
+  }
+
+  return var_[v];
+}
+
+CumTRWSFactor* CumFactorTRWS::get_factor(uint f) {
+
+  if (f >= nUsedFactors_) {
+    INTERNAL_ERROR << "factor index out of bounds. Exiting. " << std::endl;
+    exit(1);
+  }
+
+  return factor_[f];
+}
+
+//CAUTION: the passed factor will be deleted together with all truly owned factors
+uint CumFactorTRWS::pass_in_factor(CumTRWSFactor* new_fac) {
+
+  return add_factor(new_fac);
+}
+
+uint CumFactorTRWS::add_factor(CumTRWSFactor* fac) {
 
   assert(!optimize_called_);
 
@@ -2250,9 +2284,11 @@ void CumFactorTRWS::add_factor(CumTRWSFactor* fac) {
 
   factor_[nUsedFactors_] = fac;
   nUsedFactors_++;
+
+  return nUsedFactors_-1;
 }
   
-void CumFactorTRWS::add_generic_factor(const Math1D::Vector<uint>& var, const VarDimStorage<float>& cost) {
+uint CumFactorTRWS::add_generic_factor(const Math1D::Vector<uint>& var, const VarDimStorage<float>& cost) {
 
   Storage1D<CumTRWSVar*> vars(var.size());
 
@@ -2265,10 +2301,10 @@ void CumFactorTRWS::add_generic_factor(const Math1D::Vector<uint>& var, const Va
     vars[k] = var_[var[k]];
   }
 
-  add_factor(new GenericCumTRWSFactor(vars,cost));
+  return add_factor(new GenericCumTRWSFactor(vars,cost));
 }
 
-void CumFactorTRWS::add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref) {
+uint CumFactorTRWS::add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref) {
 
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_) {
     INTERNAL_ERROR << "out of range. Exiting." << std::endl;
@@ -2286,10 +2322,10 @@ void CumFactorTRWS::add_binary_factor(uint var1, uint var2, const Math2D::Matrix
   else
     newFac = new BinaryCumTRWSFactor(vars,cost);
       
-  add_factor(newFac);
+  return add_factor(newFac);
 }
 
-void CumFactorTRWS::add_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref) {
+uint CumFactorTRWS::add_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref) {
 
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_ || var3 >= nUsedVars_) {
     INTERNAL_ERROR << "out of range. Exiting." << std::endl;
@@ -2308,10 +2344,10 @@ void CumFactorTRWS::add_ternary_factor(uint var1, uint var2, uint var3, const Ma
   else
     new_fac = new TernaryCumTRWSRefFactor(vars,cost);
 
-  add_factor(new_fac);
+  return add_factor(new_fac);
 }
 
-void CumFactorTRWS::add_second_diff_factor(uint var1, uint var2, uint var3, float lambda) {
+uint CumFactorTRWS::add_second_diff_factor(uint var1, uint var2, uint var3, float lambda) {
 
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_ || var3 >= nUsedVars_) {
     INTERNAL_ERROR << "out of range. Exiting." << std::endl;
@@ -2323,10 +2359,10 @@ void CumFactorTRWS::add_second_diff_factor(uint var1, uint var2, uint var3, floa
   vars[1] = var_[var2];
   vars[2] = var_[var3];
 
-  add_factor(new SecondDiffCumTRWSFactor(vars,lambda));
+  return add_factor(new SecondDiffCumTRWSFactor(vars,lambda));
 }
 
-void CumFactorTRWS::add_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
+uint CumFactorTRWS::add_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
                                             const Storage1D<Math3D::Tensor<float> >& cost, bool ref) {
 
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_ || var3 >= nUsedVars_ || var4 >= nUsedVars_) {
@@ -2347,10 +2383,10 @@ void CumFactorTRWS::add_fourth_order_factor(uint var1, uint var2, uint var3, uin
   else
     newFac = new FourthOrderCumTRWSFactor(vars,cost);
 
-  add_factor(newFac);
+  return add_factor(newFac);
 }
 
-void CumFactorTRWS::add_one_of_n_factor(const Math1D::Vector<uint>& var, bool reuse) {
+uint CumFactorTRWS::add_one_of_n_factor(const Math1D::Vector<uint>& var, bool reuse) {
 
   Storage1D<CumTRWSVar*> vars(var.size());
   
@@ -2372,6 +2408,8 @@ void CumFactorTRWS::add_one_of_n_factor(const Math1D::Vector<uint>& var, bool re
 
   if (var.size() == 0) {
     std::cerr << "WARNING: ignoring empty 1-of-N factor" << std::endl;
+
+    return MAX_UINT;
   }
   else if (var.size() == 1) {
 
@@ -2380,32 +2418,37 @@ void CumFactorTRWS::add_one_of_n_factor(const Math1D::Vector<uint>& var, bool re
     cost[1] = 0.0;
 
     vars[0]->add_cost(cost);
+
+    return MAX_UINT;
   }
   else {
     if (!reuse)
-      add_factor(new OneOfNCumTRWSFactor(vars));
+      return add_factor(new OneOfNCumTRWSFactor(vars));
     else
-      add_factor(new OneOfNCumTRWSFactorWithReuse(vars));
+      return add_factor(new OneOfNCumTRWSFactorWithReuse(vars));
   }
 }
 
-void CumFactorTRWS::add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost, bool ref, bool reuse) {
-
-  if (cost.size() <= var.size()) {
-      INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
-      exit(1);
-  }
+uint CumFactorTRWS::add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost, bool ref, bool reuse) {
 
   if (var.size() == 0) {
     std::cerr << "WARNING: ignoring empty cardinality factor" << std::endl;
+
+    return MAX_UINT;
   }
   else if (var.size() == 1) {
     if (var[0] >= nUsedVars_) {
       INTERNAL_ERROR << "out of range. Exiting." << std::endl;
       exit(1);
     }
+    if (var_[var[0]]->nLabels() != 2) {
+      INTERNAL_ERROR << " variables of cardinality nodes must be binary. Exiting..." << std::endl;
+      exit(1);
+    }
 
     var_[var[0]]->add_cost(cost);
+
+    return MAX_UINT;
   }
   else {
 
@@ -2427,16 +2470,16 @@ void CumFactorTRWS::add_cardinality_factor(const Math1D::Vector<uint>& var, cons
 
     if (!reuse) {
       if (!ref)
-        add_factor(new CardinalityCumTRWSFactor(vars,cost));
+        return add_factor(new CardinalityCumTRWSFactor(vars,cost));
       else
-        add_factor(new CardinalityCumTRWSRefFactor(vars,cost));
+        return add_factor(new CardinalityCumTRWSRefFactor(vars,cost));
     }
     else
-      add_factor(new CardinalityCumTRWSFactorWithReuse(vars,cost));
+      return add_factor(new CardinalityCumTRWSFactorWithReuse(vars,cost));
   }
 }
 
-void CumFactorTRWS::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,
+uint CumFactorTRWS::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,
                                           int rhs_lower, int rhs_upper, bool reuse) {
 
   uint nUseful = 0;
@@ -2481,7 +2524,6 @@ void CumFactorTRWS::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
   if (nUseful != 0 && rhs_lower <= -nNeg && rhs_upper >= nPos)
     nUseful = 0; //constraint is always true
 
-
   if (nUseful != 0) {
 
     assert(nUseful >= 2);
@@ -2503,22 +2545,36 @@ void CumFactorTRWS::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
     assert(next == nUseful);
 
     if (nNeg == 0 && !reuse) 
-      add_factor(new AllPosBILPCumTRWSFactor(vars,rhs_lower,rhs_upper));
+      return add_factor(new AllPosBILPCumTRWSFactor(vars,rhs_lower,rhs_upper));
     else {
       if (reuse)
-        add_factor(new BILPCumTRWSFactorWithReuse(vars,reduced_positive,rhs_lower,rhs_upper));
+        return add_factor(new BILPCumTRWSFactorWithReuse(vars,reduced_positive,rhs_lower,rhs_upper));
       else
-        add_factor(new BILPCumTRWSFactor(vars,reduced_positive,rhs_lower,rhs_upper));
+        return add_factor(new BILPCumTRWSFactor(vars,reduced_positive,rhs_lower,rhs_upper));
     }
   }
   else {
     std::cerr << "WARNING: removed superfluous constraint factor" << std::endl;
+
+    return MAX_UINT;
   }
 }
 
-double CumFactorTRWS::optimize(uint nIter) {
+uint CumFactorTRWS::best_of_n(uint fac_num) const {
 
-  std::cerr << "efficient Cum-scheme" << std::endl;
+  if (fac_num >= nUsedFactors_) {
+
+    INTERNAL_ERROR << "factor index out of bounds. Exiting..." << std::endl;
+    exit(1);
+  }
+
+  return factor_[fac_num]->best_of_n();
+}
+
+double CumFactorTRWS::optimize(uint nIter, bool quiet) {
+
+  if (!quiet)
+    std::cerr << "efficient Cum-scheme" << std::endl;
 
   if (!optimize_called_) {
     size_t max_order = 0;
@@ -2528,7 +2584,8 @@ double CumFactorTRWS::optimize(uint nIter) {
       max_order = std::max(max_order,factor_[f]->involved_vars().size());
     }
     
-    std::cerr << "maximal order of all factors: " << max_order << std::endl;
+    if (!quiet)
+      std::cerr << "maximal order of all factors: " << max_order << std::endl;
     
     for (uint v=0; v < nUsedVars_; v++) {
       var_[v]->set_up_chains();
@@ -2540,7 +2597,7 @@ double CumFactorTRWS::optimize(uint nIter) {
 
   double bound = 1e300;
 
-  {
+  if (!quiet) {
     size_t message_effort = 0;
     for (uint f=0; f < nUsedFactors_; f++) {
       message_effort += 2* (factor_[f]->involved_vars().size()-1) * (factor_[f]->involved_vars().size());
@@ -2554,7 +2611,8 @@ double CumFactorTRWS::optimize(uint nIter) {
 
   for (uint iter=1; iter <= nIter; iter++) {
 
-    std::cerr << "******* iteration " << iter << " *********" << std::endl;
+    if (!quiet)
+      std::cerr << "******* iteration " << iter << " *********" << std::endl;
 
     //forward
     double forward_lower = 0.0;
@@ -2569,7 +2627,7 @@ double CumFactorTRWS::optimize(uint nIter) {
       Storage1D<CumTRWSFactor*> adj_factors = cur_var->adjacent_factor();
       
       for (uint k=0; k < adj_factors.size(); k++) {
-
+	
         if (i != adj_factors[k]->min_rank()) {
 
           double cur_offs = adj_factors[k]->compute_reparameterization(cur_var);
@@ -2608,17 +2666,21 @@ double CumFactorTRWS::optimize(uint nIter) {
       labeling_[i] = arg_min;
     }
 
-    std::cerr << "bwd bound: " << backward_lower << std::endl;
+    if (!quiet)
+      std::cerr << "bwd bound: " << backward_lower << std::endl;
 
     bound = backward_lower;
   }
 
-  size_t message_effort = 0;
-  for (uint f=0; f < nUsedFactors_; f++) {
-    message_effort += 2* (factor_[f]->involved_vars().size()-1) * (factor_[f]->involved_vars().size());
-  } 
-  message_effort *= nIter;
-  std::cerr << "message effort: " << message_effort << std::endl;
+  if (!quiet) {
+
+    size_t message_effort = 0;
+    for (uint f=0; f < nUsedFactors_; f++) {
+      message_effort += 2* (factor_[f]->involved_vars().size()-1) * (factor_[f]->involved_vars().size());
+    } 
+    message_effort *= nIter;
+    std::cerr << "message effort: " << message_effort << std::endl;
+  }
 
   return bound;
 }
@@ -2626,5 +2688,3 @@ double CumFactorTRWS::optimize(uint nIter) {
 const Math1D::Vector<uint>& CumFactorTRWS::labeling() {
   return labeling_;
 }
-
-
