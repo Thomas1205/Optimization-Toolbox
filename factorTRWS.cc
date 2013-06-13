@@ -2597,6 +2597,8 @@ double CumFactorTRWS::optimize(uint nIter, bool quiet) {
 
   double bound = 1e300;
 
+  std::cerr.precision(8);
+
   if (!quiet) {
     size_t message_effort = 0;
     for (uint f=0; f < nUsedFactors_; f++) {
