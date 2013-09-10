@@ -2237,8 +2237,10 @@ uint CumFactorTRWS::add_var(const Math1D::Vector<float>& cost) {
 
   assert(!optimize_called_);
 
-  if (nUsedVars_ == var_.size())
+  if (nUsedVars_ == var_.size()) {
     var_.resize(uint(nUsedVars_*1.2)+4);
+    rank2var_.resize(uint(nUsedVars_*1.2)+4);
+  }
 
   assert(nUsedVars_ < var_.size());
   var_[nUsedVars_] = new CumTRWSVar(cost,nUsedVars_);
@@ -2294,7 +2296,7 @@ uint CumFactorTRWS::add_generic_factor(const Math1D::Vector<uint>& var, const Va
 
   for (uint k=0; k < var.size(); k++) {
     if (var[k] >= nUsedVars_) {
-      INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+      INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
       exit(1);
     }
 
@@ -2307,7 +2309,7 @@ uint CumFactorTRWS::add_generic_factor(const Math1D::Vector<uint>& var, const Va
 uint CumFactorTRWS::add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref) {
 
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_) {
-    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
     exit(1);
   }
 
@@ -2328,7 +2330,7 @@ uint CumFactorTRWS::add_binary_factor(uint var1, uint var2, const Math2D::Matrix
 uint CumFactorTRWS::add_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref) {
 
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_ || var3 >= nUsedVars_) {
-    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
     exit(1);
   }
 
@@ -2350,7 +2352,7 @@ uint CumFactorTRWS::add_ternary_factor(uint var1, uint var2, uint var3, const Ma
 uint CumFactorTRWS::add_second_diff_factor(uint var1, uint var2, uint var3, float lambda) {
 
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_ || var3 >= nUsedVars_) {
-    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
     exit(1);
   }
 
@@ -2366,7 +2368,7 @@ uint CumFactorTRWS::add_fourth_order_factor(uint var1, uint var2, uint var3, uin
                                             const Storage1D<Math3D::Tensor<float> >& cost, bool ref) {
 
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_ || var3 >= nUsedVars_ || var4 >= nUsedVars_) {
-    INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+    INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
     exit(1);
   }
 
@@ -2393,7 +2395,7 @@ uint CumFactorTRWS::add_one_of_n_factor(const Math1D::Vector<uint>& var, bool re
   for (uint k=0; k < var.size(); k++) {
    
     if (var[k] >= nUsedVars_) {
-      INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+      INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
       exit(1);
     }
 
@@ -2438,7 +2440,7 @@ uint CumFactorTRWS::add_cardinality_factor(const Math1D::Vector<uint>& var, cons
   }
   else if (var.size() == 1) {
     if (var[0] >= nUsedVars_) {
-      INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+      INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
       exit(1);
     }
     if (var_[var[0]]->nLabels() != 2) {
@@ -2456,7 +2458,7 @@ uint CumFactorTRWS::add_cardinality_factor(const Math1D::Vector<uint>& var, cons
   
     for (uint k=0; k < var.size(); k++) {
       if (var[k] >= nUsedVars_) {
-        INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+        INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
         exit(1);
       }
 
@@ -2488,7 +2490,7 @@ uint CumFactorTRWS::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
   for (uint k=0; k < var.size(); k++) {
     
     if (var[k] >= nUsedVars_) {
-      INTERNAL_ERROR << "out of range. Exiting." << std::endl;
+      INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
       exit(1);
     }
 
@@ -2543,6 +2545,9 @@ uint CumFactorTRWS::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
     }
 
     assert(next == nUseful);
+
+    if (nUseful == 2)
+      reuse = false;
 
     if (nNeg == 0 && !reuse) 
       return add_factor(new AllPosBILPCumTRWSFactor(vars,rhs_lower,rhs_upper));
