@@ -1865,7 +1865,6 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
 
 /********************/
 
-
 BILPCumTRWSFactorWithReuse::BILPCumTRWSFactorWithReuse(const Storage1D<CumTRWSVar*>& involved_vars, const Storage1D<bool>& positive,
                                                        int rhs_lower, int rhs_upper) :
   CumTRWSFactor(involved_vars), positive_(positive), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper) {
@@ -1911,14 +1910,14 @@ BILPCumTRWSFactorWithReuse::BILPCumTRWSFactorWithReuse(const Storage1D<CumTRWSVa
 
   zero_offset_ = zero_offset;
 
-  forward_light_.resize(range,nVars-1);
-  backward_light_.resize(range,nVars-1);
+  fwdbwd_light_.resize(range,nVars);
 
   to_update_ = MAX_UINT;
 }
 
 /*virtual*/ BILPCumTRWSFactorWithReuse::~BILPCumTRWSFactorWithReuse() {}
 
+  
 /*virtual*/ 
 void BILPCumTRWSFactorWithReuse::init() {
   sort_by_rank();
@@ -1932,7 +1931,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
 
   uint idx = MAX_UINT;
 
-  const int range = forward_light_.xDim();
+  const int range = fwdbwd_light_.xDim();
 
   if (to_update_ != MAX_UINT) {
     Math1D::Vector<double> prev_param = reparameterization_[to_update_];
@@ -1946,12 +1945,12 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
 
       if (to_update_ == 0) {
 
-        forward_light_(zero_offset_,0) = -prev_param[0];
+        fwdbwd_light_(zero_offset_,0) = -prev_param[0];
         const int init_mul = (positive_[0]) ? 1 : -1;
         if (int(zero_offset_)+init_mul >= 0
             && int(zero_offset_)+init_mul < range) {
-          forward_light_(zero_offset_+init_mul,0) = -prev_param[1];
-        }        
+	  fwdbwd_light_(zero_offset_+init_mul,0) = -prev_param[1];
+        }
       }
       else {
                 
@@ -1970,7 +1969,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
             const int dest = sum + move;
             if (dest >= 0 && dest < range) {
               
-              best_prev = forward_light_(dest,to_update_-1);
+	      best_prev = fwdbwd_light_(dest,to_update_-1);
             }
             
             double forward = best_prev - prev_param[l];
@@ -1978,7 +1977,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
               best = forward;
           }
 
-          forward_light_(sum,to_update_) = best;
+	  fwdbwd_light_(sum,to_update_) = best;
         }
       }
     }
@@ -1988,11 +1987,13 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
       //need to update backward_light
       if (to_update_ == nVars-1) {
 
-        backward_light_(zero_offset_,to_update_-1) = -prev_param[0];
+        fwdbwd_light_(zero_offset_,to_update_) = -prev_param[0];
+
         const int end_mul = (positive_[to_update_]) ? 1 : -1;
         if (int(zero_offset_) + end_mul >= 0
-            && int(zero_offset_) + end_mul < range)
-          backward_light_(zero_offset_ + end_mul,to_update_-1) = -prev_param[1];
+            && int(zero_offset_) + end_mul < range) {
+	  fwdbwd_light_(zero_offset_ + end_mul,to_update_) = -prev_param[1];
+	}
       }
       else {
 
@@ -2009,14 +2010,14 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
             const int dest = sum + move;
             double hyp = 1e75;
             if (dest >= 0 && dest < range) {
-              hyp = backward_light_(dest,to_update_) - prev_param[l];
+	      hyp = fwdbwd_light_(dest,to_update_+1) - prev_param[l];
             }
             
             if (hyp < best_prev)
               best_prev = hyp;
           }
           
-          backward_light_(sum,to_update_-1) = best_prev;
+          fwdbwd_light_(sum,to_update_) = best_prev;
         }
       }
     }
@@ -2041,14 +2042,14 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
     //init
     for (int sum=0; sum < range; sum++) {
       
-      forward_light_(sum,0) = 1e100;
+      fwdbwd_light_(sum,0) = 1e100;
     }
 
-    forward_light_(zero_offset_,0) = -param[0][0];
+    fwdbwd_light_(zero_offset_,0) = -param[0][0];
     const int init_mul = (positive_[0]) ? 1 : -1;
     if (int(zero_offset_)+init_mul >= 0
         && int(zero_offset_)+init_mul < range) {
-      forward_light_(zero_offset_+init_mul,0) = -param[0][1];
+      fwdbwd_light_(zero_offset_+init_mul,0) = -param[0][1];
     }
     
     //proceed
@@ -2069,7 +2070,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
           const int dest = sum + move;
           if (dest >= 0 && dest < range) {
             
-            best_prev = forward_light_(dest,v-1);
+	    best_prev = fwdbwd_light_(dest,v-1);
           }
           
           double forward = best_prev - param[v][l];
@@ -2077,21 +2078,23 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
           if (forward < best)
             best = forward;
         }
-        forward_light_(sum,v) = best;
+        fwdbwd_light_(sum,v) = best;
       }
     }
     
     const uint last_var = nVars-1;
     
     //init
-    for (int sum=0; sum < range; sum++) 
-      backward_light_(sum,last_var-1) = 1e100;
-    
-    backward_light_(zero_offset_,last_var-1) = -param[last_var][0];
+    for (int sum=0; sum < range; sum++) {
+      fwdbwd_light_(sum,last_var) = 1e100;
+    }    
+
+    fwdbwd_light_(zero_offset_,last_var) = -param[last_var][0];
     const int end_mul = (positive_[last_var]) ? 1 : -1;
     if (int(zero_offset_) + end_mul >= 0
-        && int(zero_offset_) + end_mul < range)
-      backward_light_(zero_offset_ + end_mul,last_var-1) = -param[last_var][1];
+        && int(zero_offset_) + end_mul < range) {
+      fwdbwd_light_(zero_offset_ + end_mul,last_var) = -param[last_var][1];
+    }
 
     //proceed
     for (int v=last_var-1; v > int(idx); v--) {
@@ -2109,14 +2112,14 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
           const int dest = sum + move;
           double hyp = 1e75;
           if (dest >= 0 && dest < range) {
-            hyp = backward_light_(dest,v) - param[v][l];
+	    hyp = fwdbwd_light_(dest,v+1) - param[v][l];
           }
           
           if (hyp < best_prev)
             best_prev = hyp;
         }
         
-        backward_light_(sum,v-1) = best_prev;
+        fwdbwd_light_(sum,v) = best_prev;
       }
     }
   }
@@ -2148,7 +2151,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
         
         const int dest = s + move;
         if (dest >= 0 && dest < range) {
-          forward = forward_light_(dest,idx-1);
+          forward = fwdbwd_light_(dest,idx-1);
         }
       }
 
@@ -2165,7 +2168,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
           
           if (other >= 0 && other < (int) range) {
             
-            best_bwd = std::min(best_bwd,backward_light_(other,idx));
+	    best_bwd = std::min(best_bwd,fwdbwd_light_(other,idx+1));
           }
         }
         
@@ -2183,7 +2186,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
     message[l] = min_msg;
   }
 
-  double offs = message.min();
+  const double offs = message.min();
 
   for (uint k=0; k < 2; k++)
     message[k] -= offs;
@@ -2192,6 +2195,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
 
   return offs;
 }
+
 
 
 /********************/
@@ -2484,6 +2488,13 @@ uint CumFactorTRWS::add_cardinality_factor(const Math1D::Vector<uint>& var, cons
 uint CumFactorTRWS::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,
                                           int rhs_lower, int rhs_upper, bool reuse) {
 
+
+  if (rhs_lower > rhs_upper) {
+    INTERNAL_ERROR << " INFEASIBLE CONSTRAINT" << std::endl;
+    exit(1);
+  }
+
+
   uint nUseful = 0;
   int nPos = 0;
   int nNeg = 0;
@@ -2526,42 +2537,79 @@ uint CumFactorTRWS::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
   if (nUseful != 0 && rhs_lower <= -nNeg && rhs_upper >= nPos)
     nUseful = 0; //constraint is always true
 
-  if (nUseful != 0) {
+  if (nUseful == 0) {
 
-    assert(nUseful >= 2);
+    std::cerr << "WARNING: removed superfluous constraint factor" << std::endl;
     
-    Storage1D<CumTRWSVar*> vars(nUseful);
-    Storage1D<bool> reduced_positive(nUseful);
+    return MAX_UINT;
+  }
   
-    uint next = 0;
+
+  if (rhs_upper < -nNeg || rhs_lower > nPos) {
+
+    INTERNAL_ERROR << " INFEASIBLE CONSTRAINT" << std::endl;
+    exit(1);
+  }
+
+  Storage1D<CumTRWSVar*> vars(nUseful);
+  Storage1D<bool> reduced_positive(nUseful);
     
-    for (uint k=0; k < var.size(); k++) {
+  uint next = 0;
     
-      if (fabs(var_[var[k]]->cost()[0] - var_[var[k]]->cost()[1]) < 1e10) {
-        vars[next] = var_[var[k]];
-        reduced_positive[next] = positive[k];
-        next++;
-      }
+  for (uint k=0; k < var.size(); k++) {
+    
+    if (fabs(var_[var[k]]->cost()[0] - var_[var[k]]->cost()[1]) < 1e10) {
+      vars[next] = var_[var[k]];
+      reduced_positive[next] = positive[k];
+      next++;
     }
+  }
 
-    assert(next == nUseful);
+  assert(next == nUseful);
 
+  
+  if (nUseful == 1) {
+    
+    std::cerr << "only one remaining var" << std::endl;
+    
+    if (nPos == 0) {
+      
+      //invert the constraint
+      
+      double temp_lower = rhs_lower;
+	rhs_lower = -rhs_upper;
+	rhs_upper = -temp_lower;
+    }
+    
+    Math1D::Vector<float> add_cost(2,0.0);
+    
+    if (rhs_lower == 1) {
+      add_cost[0] = 10000.0;
+    }
+    else if (rhs_upper == 0) {
+      add_cost[1] = 10000.0;
+    }
+    else {
+      INTERNAL_ERROR << "STRANGE CONSTRAINT. exiting" << std::endl;
+      exit(1);
+    }
+    
+    vars[0]->add_cost(add_cost);
+    return MAX_UINT;
+  }
+  else {
+    
     if (nUseful == 2)
       reuse = false;
-
+    
     if (nNeg == 0 && !reuse) 
       return add_factor(new AllPosBILPCumTRWSFactor(vars,rhs_lower,rhs_upper));
     else {
       if (reuse)
-        return add_factor(new BILPCumTRWSFactorWithReuse(vars,reduced_positive,rhs_lower,rhs_upper));
+	return add_factor(new BILPCumTRWSFactorWithReuse(vars,reduced_positive,rhs_lower,rhs_upper));
       else
-        return add_factor(new BILPCumTRWSFactor(vars,reduced_positive,rhs_lower,rhs_upper));
+	return add_factor(new BILPCumTRWSFactor(vars,reduced_positive,rhs_lower,rhs_upper));
     }
-  }
-  else {
-    std::cerr << "WARNING: removed superfluous constraint factor" << std::endl;
-
-    return MAX_UINT;
   }
 }
 
