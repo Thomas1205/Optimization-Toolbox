@@ -1910,7 +1910,9 @@ BILPCumTRWSFactorWithReuse::BILPCumTRWSFactorWithReuse(const Storage1D<CumTRWSVa
 
   zero_offset_ = zero_offset;
 
-  fwdbwd_light_.resize(range,nVars);
+  //just one matrix for forward and backward, as we only need to entries up to the current var.
+  // since the current var does not itself require storage we can save one column
+  fwdbwd_light_.resize(range,nVars-1); 
 
   to_update_ = MAX_UINT;
 }
@@ -1945,6 +1947,11 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
 
       if (to_update_ == 0) {
 
+	//if we save one entry we must reset forward here
+	for (int s=0; s < range; s++)
+	  fwdbwd_light_(s,0) = 1e100;
+
+        
         fwdbwd_light_(zero_offset_,0) = -prev_param[0];
         const int init_mul = (positive_[0]) ? 1 : -1;
         if (int(zero_offset_)+init_mul >= 0
@@ -1987,12 +1994,16 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
       //need to update backward_light
       if (to_update_ == nVars-1) {
 
-        fwdbwd_light_(zero_offset_,to_update_) = -prev_param[0];
+	//if we save one entry we must reset backward here
+	for (int s=0; s < range; s++)
+	  fwdbwd_light_(s,to_update_-1) = 1e100;
+
+        fwdbwd_light_(zero_offset_,to_update_-1) = -prev_param[0];
 
         const int end_mul = (positive_[to_update_]) ? 1 : -1;
         if (int(zero_offset_) + end_mul >= 0
             && int(zero_offset_) + end_mul < range) {
-	  fwdbwd_light_(zero_offset_ + end_mul,to_update_) = -prev_param[1];
+	  fwdbwd_light_(zero_offset_ + end_mul,to_update_-1) = -prev_param[1];
 	}
       }
       else {
@@ -2010,14 +2021,14 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
             const int dest = sum + move;
             double hyp = 1e75;
             if (dest >= 0 && dest < range) {
-	      hyp = fwdbwd_light_(dest,to_update_+1) - prev_param[l];
+	      hyp = fwdbwd_light_(dest,to_update_) - prev_param[l];
             }
             
             if (hyp < best_prev)
               best_prev = hyp;
           }
           
-          fwdbwd_light_(sum,to_update_) = best_prev;
+          fwdbwd_light_(sum,to_update_-1) = best_prev;
         }
       }
     }
@@ -2044,7 +2055,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
       
       fwdbwd_light_(sum,0) = 1e100;
     }
-
+    
     fwdbwd_light_(zero_offset_,0) = -param[0][0];
     const int init_mul = (positive_[0]) ? 1 : -1;
     if (int(zero_offset_)+init_mul >= 0
@@ -2053,8 +2064,8 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
     }
     
     //proceed
-    for (uint v=1; v <= idx; v++) {
-    
+    for (uint v=1; v < idx; v++) {
+      
       for (int sum=0; sum < range; sum++) {
         
         double best = 1e300;
@@ -2086,14 +2097,14 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
     
     //init
     for (int sum=0; sum < range; sum++) {
-      fwdbwd_light_(sum,last_var) = 1e100;
+      fwdbwd_light_(sum,last_var-1) = 1e100;
     }    
 
-    fwdbwd_light_(zero_offset_,last_var) = -param[last_var][0];
+    fwdbwd_light_(zero_offset_,last_var-1) = -param[last_var][0];
     const int end_mul = (positive_[last_var]) ? 1 : -1;
     if (int(zero_offset_) + end_mul >= 0
         && int(zero_offset_) + end_mul < range) {
-      fwdbwd_light_(zero_offset_ + end_mul,last_var) = -param[last_var][1];
+      fwdbwd_light_(zero_offset_ + end_mul,last_var-1) = -param[last_var][1];
     }
 
     //proceed
@@ -2112,14 +2123,14 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
           const int dest = sum + move;
           double hyp = 1e75;
           if (dest >= 0 && dest < range) {
-	    hyp = fwdbwd_light_(dest,v+1) - param[v][l];
+	    hyp = fwdbwd_light_(dest,v) - param[v][l];
           }
           
           if (hyp < best_prev)
             best_prev = hyp;
         }
         
-        fwdbwd_light_(sum,v) = best_prev;
+        fwdbwd_light_(sum,v-1) = best_prev;
       }
     }
   }
@@ -2155,6 +2166,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
         }
       }
 
+
       double hyp = forward; 
       
       if (idx+1 < nVars) {
@@ -2168,7 +2180,7 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
           
           if (other >= 0 && other < (int) range) {
             
-	    best_bwd = std::min(best_bwd,fwdbwd_light_(other,idx+1));
+	    best_bwd = std::min(best_bwd,fwdbwd_light_(other,idx));
           }
         }
         
@@ -2195,8 +2207,6 @@ double BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* 
 
   return offs;
 }
-
-
 
 /********************/
 
