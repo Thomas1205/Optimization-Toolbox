@@ -45,6 +45,11 @@ void AllInclusiveSepCumTRWSVariable::add_factor(AllInclusiveSepCumTRWSFactor* ad
   adjacent_factor_.resize(nFac+1);
   adjacent_factor_[nFac] = adjacent_fac;
 }
+
+void AllInclusiveSepCumTRWSVariable::add_cost(const Math1D::Vector<float>& cost) {
+
+  cost_ += cost;
+}
   
 void AllInclusiveSepCumTRWSVariable::add_pair_separator(AllInclusiveSepCumTRWSPairSeparator* adjacent_sep) {
 
@@ -3050,6 +3055,13 @@ void AllInclusiveSepCumTRWS::add_fourth_order_factor(uint v1, uint v2, uint v3, 
   add_factor(new FourthOrderAllInclusiveSepCumTRWSFactor(vars,seps,cost_copy));
 }
 
+AllInclusiveSepCumTRWSVariable* AllInclusiveSepCumTRWS::get_variable(uint v) {
+
+  if (v < nUsedVars_)
+    return var_[v];
+  return 0;
+}
+
 double AllInclusiveSepCumTRWS::optimize(uint nIter)
 {
 
@@ -3202,6 +3214,7 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter)
 const Math1D::Vector<uint>& AllInclusiveSepCumTRWS::labeling() const {
   return labeling_;
 }
+
 
 double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 
