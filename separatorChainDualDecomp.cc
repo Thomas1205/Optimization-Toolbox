@@ -1433,6 +1433,8 @@ void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint 
 #if 1
   if (v1 > v2) {
 
+    //std::cerr << "v1-v2 1." << std::endl;
+
     if (var_[v1]->nLabels() != var_[v2]->nLabels())
       TODO("non-standard variable order with heterogeneous number of labels");
 
@@ -1446,6 +1448,8 @@ void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint 
   }
   if (v2 > v3) {
 
+    //std::cerr << "v2-v3" << std::endl;
+
     if (var_[v2]->nLabels() != var_[v3]->nLabels())
       TODO("non-standard variable order with heterogeneous number of labels");
 
@@ -1457,6 +1461,8 @@ void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint 
     std::swap(v2,v3);
   }
   if (v1 > v2) {
+
+    //std::cerr << "v1-v2 2." << std::endl;
 
     if (var_[v1]->nLabels() != var_[v2]->nLabels())
       TODO("non-standard variable order with heterogeneous number of labels");
@@ -1577,6 +1583,13 @@ void SeparatorChainDualDecomposition::add_fourth_order_factor(uint v1, uint v2, 
   }
 
   add_factor(new FourthOrderSepChainDDFactor(vars,seps,cost_copy));
+}
+
+SepChainDDVar* SeparatorChainDualDecomposition::get_variable(uint v) {
+
+  if (v < nUsedVars_)
+    return var_[v];
+  return 0;
 }
 
 const Math1D::Vector<uint>& SeparatorChainDualDecomposition::labeling() {
@@ -1915,16 +1928,18 @@ void SeparatorChainDualDecomposition::set_up_chains() {
 
 }
 
-double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_size) {
+double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_size, bool quiet) {
 
   std::cerr.precision(10);
 
   std::cerr << "subgradient optimization" << std::endl;
-  std::cerr << nUsedFactors_ << " factors" << std::endl;
+  if (!quiet)
+    std::cerr << nUsedFactors_ << " factors" << std::endl;
 
   if (!optimize_called_) {
     set_up_chains();
-    std::cerr << "chains created" << std::endl;
+    if (!quiet)
+      std::cerr << "chains created" << std::endl;
     
     for (uint v=0; v < nUsedVars_; v++)
       var_[v]->set_up_chains();
@@ -1967,8 +1982,6 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
     double cur_bound = 0.0;
 
     for (uint f=0; f < nUsedFactors_; f++) {
-
-      //std::cerr << "f: " << f << std::endl;
 
       if (factor_[f]->prev_var() == 0 && factor_[f]->prev_sep() == 0) {
 
@@ -2040,7 +2053,7 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
 
           Math2D::Matrix<double>& last_pair_forward = ((k % 2) == 1) ? pair_forward1 : pair_forward2;
           Math2D::Matrix<double>& new_pair_forward = ((k % 2) == 0) ? pair_forward1 : pair_forward2;
-
+          
           if (out_var[k] != 0) 
             cur_bound += chain[k]->compute_forward(out_sep[k-1],out_var[k-1],out_var[k],
                                                    last_pair_forward,last_forward,new_forward,var_trace[k]);
@@ -2113,8 +2126,6 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
 
     std::cerr << "iter " << iter << ", cur bound: " << cur_bound << ", best ever: " << best_dual << std::endl;
 
-    //std::cerr << "go in grad. direction" << std::endl;
-
     //take the next step in subgradient direction
 
     for (uint f=0; f < nUsedFactors_; f++) {
@@ -2134,7 +2145,7 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
 
         const SepChainDDVar* v1 = cur_sep->var1();
         const SepChainDDVar* v2 = cur_sep->var2();
-
+        
         uint l1 = MAX_UINT;
         uint l2 = MAX_UINT;
         
@@ -2152,8 +2163,6 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
         assert(!isinf(factor_[f]->get_pair_duals(cur_sep)(l1,l2)));
       }
     }
-
-    //std::cerr << "re-project" << std::endl;
 
     //re-project
     for (uint v=0; v < nUsedVars_; v++) {
@@ -2208,18 +2217,21 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
   }
 
 
-  size_t message_effort = 0;
-    
-  for (uint f=0; f < nUsedFactors_; f++) {
-    
-    uint var_size = factor_[f]->involved_vars().size();
-    uint sep_size = factor_[f]->involved_separators().size();
-    
-    message_effort += (var_size + sep_size);
-  }
-  message_effort *= nIter;
+  if (!quiet) {
 
-  std::cerr << "message effort: " << message_effort << std::endl;
+    size_t message_effort = 0;
+    
+    for (uint f=0; f < nUsedFactors_; f++) {
+      
+      uint var_size = factor_[f]->involved_vars().size();
+      uint sep_size = factor_[f]->involved_separators().size();
+      
+      message_effort += (var_size + sep_size);
+    }
+    message_effort *= nIter;
+    
+    std::cerr << "message effort: " << message_effort << std::endl;
+  }
 
   return best_dual;
 }

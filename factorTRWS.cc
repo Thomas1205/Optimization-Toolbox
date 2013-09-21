@@ -2689,16 +2689,19 @@ double CumFactorTRWS::optimize(uint nIter, bool quiet) {
       
       CumTRWSVar* cur_var = var_[rank2var_[i]];
       
-      Storage1D<CumTRWSFactor*> adj_factors = cur_var->adjacent_factor();
-      
-      for (uint k=0; k < adj_factors.size(); k++) {
-	
-        if (i != adj_factors[k]->min_rank()) {
+      const Storage1D<CumTRWSFactor*>& adj_factors = cur_var->adjacent_factor();
 
-          double cur_offs = adj_factors[k]->compute_reparameterization(cur_var);
+      for (uint k=0; k < adj_factors.size(); k++) {
+
+	CumTRWSFactor* cur_fac = adj_factors[k];
+
+        if (i != cur_fac->min_rank()) {
+
+          double cur_offs = cur_fac->compute_reparameterization(cur_var);
 	
-	  if (i == adj_factors[k]->max_rank())
+	  if (i == cur_fac->max_rank()) {	    
 	    forward_lower += cur_offs;
+	  }
         }
       }
 
@@ -2715,14 +2718,16 @@ double CumFactorTRWS::optimize(uint nIter, bool quiet) {
       
       CumTRWSVar* cur_var = var_[rank2var_[i]];
 
-      Storage1D<CumTRWSFactor*> adj_factors = cur_var->adjacent_factor();
+      const Storage1D<CumTRWSFactor*>& adj_factors = cur_var->adjacent_factor();
       
       for (uint k=0; k < adj_factors.size(); k++) {
 
-        if (i != int(adj_factors[k]->max_rank())) {	
-          double cur_offs = adj_factors[k]->compute_reparameterization(cur_var);
+	CumTRWSFactor* cur_fac = adj_factors[k];
+
+        if (i != int(cur_fac->max_rank())) {	
+          double cur_offs = cur_fac->compute_reparameterization(cur_var);
 	
-          if (i == int(adj_factors[k]->min_rank()))
+          if (i == int(cur_fac->min_rank()))
             backward_lower += cur_offs;
         }
       }
