@@ -363,7 +363,7 @@ public:
 
   AllInclusiveSepCumTRWSVariable* get_variable(uint v);
 
-  double optimize(uint nIter);
+  double optimize(uint nIter, bool quiet = false);
 
   const Math1D::Vector<uint>& labeling() const;
 
