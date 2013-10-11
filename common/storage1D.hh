@@ -30,9 +30,17 @@ public:
   
   virtual const std::string& name() const;
   
-  OPTINLINE T& operator[](ST i) const;
+  OPTINLINE const T& operator[](ST i) const;
+
+  OPTINLINE T& operator[](ST i);
 
   void operator=(const Storage1D<T,ST>& toCopy);
+
+#ifdef SAFE_MODE
+  //for some reason g++ allows to assign an object of type T, but this does NOT produce the effect one would expect
+  // => define this operator in safe mode, only to check that such an assignment is not made
+  void operator=(const T& invalid_object);
+#endif
 
   //maintains the values of existing positions, new ones are undefined 
   void resize(ST new_size);
@@ -96,6 +104,60 @@ bool operator!=(const Storage1D<T,ST>& v1, const Storage1D<T,ST>& v2);
 
 template<typename T,typename ST>
 bool operator<(const Storage1D<T,ST>& v1, const Storage1D<T,ST>& v2); 
+
+template<typename T,typename ST>
+bool operator<=(const Storage1D<T,ST>& v1, const Storage1D<T,ST>& v2); 
+
+template<typename T,typename ST>
+bool operator>(const Storage1D<T,ST>& v1, const Storage1D<T,ST>& v2); 
+
+template<typename T,typename ST>
+bool operator>=(const Storage1D<T,ST>& v1, const Storage1D<T,ST>& v2); 
+
+namespace Makros {
+
+
+  template<typename T, typename ST>
+  class Typename<Storage1D<T,ST> > {
+  public:
+
+    std::string name() const {
+
+      return "Storage1D<" + Makros::Typename<T>() + "," + Makros::Typename<ST>() + "> ";
+    }
+  };
+
+  template<typename T>
+  class Typename<Storage1D<T> > {
+  public:
+
+    std::string name() const {
+
+      return "Storage1D<" + Makros::Typename<T>() + "> ";
+    }
+  };
+
+  template<typename T, typename ST>
+  class Typename<NamedStorage1D<T,ST> > {
+  public:
+
+    std::string name() const {
+
+      return "NamedStorage1D<" + Makros::Typename<T>() + "," + Makros::Typename<ST>() + "> ";
+    }
+  };
+
+  template<typename T>
+  class Typename<NamedStorage1D<T> > {
+  public:
+
+    std::string name() const {
+
+      return "NamedStorage1D<" + Makros::Typename<T>() + "> ";
+    }
+  };
+  
+}
 
 /***********************/
 
@@ -278,17 +340,36 @@ inline T Storage1D<T,ST>::direct_access(ST i) const {
 }
 
 template<typename T,typename ST>
-OPTINLINE T& Storage1D<T,ST>::operator[](ST i) const {
+OPTINLINE const T& Storage1D<T,ST>::operator[](ST i) const {
 #ifdef SAFE_MODE
   if (i >= size_) {
+
     INTERNAL_ERROR << "    invalid access on element " << i 
-		   << " for Storage1D " <<  "\"" << this->name() << "\" of type " << typeid(T).name()
+		   << " for Storage1D " <<  "\"" << this->name() << "\" of type " 
+		   << Makros::Typename<T>()
 		   << " with " << size_ << " elements. exiting." << std::endl;
     exit(1);  
   }
 #endif
   return data_[i];
 }
+
+
+template<typename T,typename ST>
+OPTINLINE T& Storage1D<T,ST>::operator[](ST i) {
+#ifdef SAFE_MODE
+  if (i >= size_) {
+
+    INTERNAL_ERROR << "    invalid access on element " << i 
+		   << " for Storage1D \"" << this->name() << "\" of type " 
+		   << Makros::Typename<T>()
+		   << " with " << size_ << " elements. exiting." << std::endl;
+    exit(1);  
+  }
+#endif
+  return data_[i];
+}
+
 
 template<typename T,typename ST>
 void Storage1D<T,ST>::operator=(const Storage1D<T,ST>& toCopy) {
@@ -309,6 +390,18 @@ void Storage1D<T,ST>::operator=(const Storage1D<T,ST>& toCopy) {
   //this is faster for basic types but it fails for complex types where e.g. arrays have to be copied
   //memcpy(data_,toCopy.direct_access(),size_*sizeof(T));
 }
+
+#ifdef SAFE_MODE
+    //for some reason g++ allows to assign an object of type T, but this does NOT produce the effect one would expect
+    // => define this operator in safe mode, only to check that such an assignment is not made
+template<typename T,typename ST>
+void Storage1D<T,ST>::operator=(const T& invalid_object) {
+  INTERNAL_ERROR << "assignment of an atomic entity to Storage1D \"" << this->name() << "\" of type " 
+		   << Makros::Typename<T>()
+		   << " with " << size_ << " elements. exiting." << std::endl;
+}
+#endif
+
 
 template<>
 void Storage1D<uint>::operator=(const Storage1D<uint>& toCopy);
@@ -500,6 +593,29 @@ bool operator<(const Storage1D<T,ST>& v1, const Storage1D<T,ST>& v2) {
   return (v1.size() < v2.size());
 }
 
+template<typename T,typename ST>
+bool operator<=(const Storage1D<T,ST>& v1, const Storage1D<T,ST>& v2) {
+
+  for (ST k=0; k < std::min(v1.size(),v2.size()); k++) {
+    if (v1[k] != v2[k])
+      return (v1[k] < v2[k]);
+  }
+  
+  return (v1.size() <= v2.size());
+}
+
+template<typename T,typename ST>
+bool operator>(const Storage1D<T,ST>& v1, const Storage1D<T,ST>& v2) {
+
+  return !operator<=(v1,v2);
+}
+
+template<typename T,typename ST>
+bool operator>=(const Storage1D<T,ST>& v1, const Storage1D<T,ST>& v2) {
+
+  return !operator<(v1,v2);
+}
+
 /******* implementation of FlexibleStorage1D *********/
 
 template<typename T, typename ST>
@@ -679,7 +795,8 @@ OPTINLINE T& FlexibleStorage1D<T,ST>::operator[](ST i) const {
 #ifdef SAFE_MODE
   if (i >= size_) {
     INTERNAL_ERROR << "    invalid access on element " << i 
-		   << " for FlexibleStorage1D " <<  "\"" << this->name() << "\" of type " << typeid(T).name()
+		   << " for FlexibleStorage1D " <<  "\"" << this->name() << "\" of type " 
+		   << Makros::Typename<T>()
 		   << " with " << size_ << " (valid) elements. exiting." << std::endl;
     exit(1);  
   }

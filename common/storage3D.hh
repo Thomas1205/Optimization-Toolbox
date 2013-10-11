@@ -4,6 +4,9 @@
  *** and the University of Düsseldorf, Germany 2010 - 2012 **/
 /*** if you desire the checked version, make sure your compiler defines the option SAFE_MODE on the command line ***/
 
+#ifndef STORAGE_3D_HH
+#define STORAGE_3D_HH
+
 #include "makros.hh"
 
 template<typename T, typename ST=size_t>
@@ -21,7 +24,9 @@ public:
 
   ~Storage3D();
 
-  OPTINLINE T& operator()(ST x, ST y, ST z) const;
+  OPTINLINE const T& operator()(ST x, ST y, ST z) const;
+
+  OPTINLINE T& operator()(ST x, ST y, ST z);
 
   virtual const std::string& name() const;
 
@@ -42,6 +47,12 @@ public:
   inline T direct_access(ST i) const;
 
   void operator=(const Storage3D<T,ST>& toCopy);
+
+#ifdef SAFE_MODE
+  //for some reason g++ allows to assign an object of type T, but this does NOT produce the effect one would expect
+  // => define this operator in safe mode, only to check that such an assignment is not made
+  void operator=(const T& invalid_object);
+#endif
 
   //existing positions are copied, new ones are uninitialized
   void resize(ST newxDim, ST newyDim, ST newzDim);
@@ -91,6 +102,52 @@ bool operator==(const Storage3D<T,ST>& v1, const Storage3D<T,ST>& v2);
 
 template<typename T, typename ST>
 bool operator!=(const Storage3D<T,ST>& v1, const Storage3D<T,ST>& v2);
+
+
+namespace Makros {
+
+  template<typename T, typename ST>
+  class Typename<Storage3D<T,ST> > {
+  public:
+
+    std::string name() const {
+
+      return "Storage3D<" + Makros::Typename<T>() + "," + Makros::Typename<ST>() + "> ";
+    }
+  };
+
+  template<typename T>
+  class Typename<Storage3D<T> > {
+  public:
+
+    std::string name() const {
+
+      return "Storage3D<" + Makros::Typename<T>() + "> ";
+    }
+  };
+
+
+  template<typename T, typename ST>
+  class Typename<NamedStorage3D<T,ST> > {
+  public:
+
+    std::string name() const {
+
+      return "NamedStorage3D<" + Makros::Typename<T>() + "," + Makros::Typename<ST>() + "> ";
+    }
+  };
+
+  template<typename T>
+  class Typename<NamedStorage3D<T> > {
+  public:
+
+    std::string name() const {
+
+      return "NamedStorage3D<" + Makros::Typename<T>() + "> ";
+    }
+  };
+  
+}
 
 
 /******************************************** implementation **************************************************/
@@ -148,11 +205,32 @@ Storage3D<T,ST>::~Storage3D() {
 }
 
 template<typename T, typename ST>
-OPTINLINE T& Storage3D<T,ST>::operator()(ST x, ST y, ST z) const {
+OPTINLINE const T& Storage3D<T,ST>::operator()(ST x, ST y, ST z) const {
 #ifdef SAFE_MODE
   if (x >= xDim_ || y >= yDim_ || z >= zDim_) {
+      
     INTERNAL_ERROR << "     invalid access on element (" << x << "," << y << "," << z << ") of 3D-storage \"" 
-		   << this->name() << "\" of type " << typeid(T).name() << ":" << std::endl;
+		   << this->name() << "\" of type " 
+		   << Makros::Typename<T>()
+      //<< Makros::get_typename(typeid(T).name()) 
+		   << ":" << std::endl;
+    std::cerr << "     dimensions " << xDim_ << "x" << yDim_ << "x" << zDim_ << " exceeded. Exiting..." << std::endl;
+    exit(1);
+  }
+#endif
+  return data_[(y*xDim_+x)*zDim_+z];
+}
+
+template<typename T, typename ST>
+OPTINLINE T& Storage3D<T,ST>::operator()(ST x, ST y, ST z) {
+#ifdef SAFE_MODE
+  if (x >= xDim_ || y >= yDim_ || z >= zDim_) {
+
+    INTERNAL_ERROR << "     invalid access on element (" << x << "," << y << "," << z << ") of 3D-storage \"" 
+		   << this->name() << "\" of type " 
+		   << Makros::Typename<T>()
+      //<< Makros::get_typename(typeid(T).name()) 
+		   << ":" << std::endl;
     std::cerr << "     dimensions " << xDim_ << "x" << yDim_ << "x" << zDim_ << " exceeded. Exiting..." << std::endl;
     exit(1);
   }
@@ -228,6 +306,17 @@ void Storage3D<T,ST>::operator=(const Storage3D<T,ST>& toCopy) {
   //this is faster for basic types but it fails for complex types where e.g. arrays have to be copied
   //memcpy(data_,toCopy.direct_access(),size_*sizeof(T));
 }
+
+#ifdef SAFE_MODE
+    //for some reason g++ allows to assign an object of type T, but this does NOT produce the effect one would expect
+    // => define this operator in safe mode, only to check that such an assignment is not made
+template<typename T,typename ST>
+void Storage3D<T,ST>::operator=(const T& invalid_object) {
+  INTERNAL_ERROR << "assignment of an atomic entity to Storage1D \"" << this->name() << "\" of type " 
+		   << Makros::Typename<T>()
+		   << " with " << size_ << " elements. exiting." << std::endl;
+}
+#endif
 
 
 //existing positions are copied, new ones are uninitialized
@@ -311,7 +400,6 @@ void Storage3D<T,ST>::resize_dirty(ST newxDim, ST newyDim, ST newzDim) {
   }
 }
 
-
 /***********************/
 
 template<typename T, typename ST>
@@ -362,3 +450,5 @@ template<typename T, typename ST>
 bool operator!=(const Storage3D<T,ST>& v1, const Storage3D<T,ST>& v2) {
   return !operator==(v1,v2);
 }
+
+#endif

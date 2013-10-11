@@ -42,9 +42,17 @@ public:
   void set_constant(T new_constant);
 
   //access on an element
-  OPTINLINE T& operator()(ST x, ST y) const;
+  OPTINLINE const T& operator()(ST x, ST y) const;
+
+  OPTINLINE T& operator()(ST x, ST y);
 
   void operator=(const Storage2D<T,ST>& toCopy);
+
+#ifdef SAFE_MODE
+  //for some reason g++ allows to assign an object of type T, but this does NOT produce the effect one would expect
+  // => define this operator in safe mode, only to check that such an assignment is not made
+  void operator=(const T& invalid_object);
+#endif
 
   inline T* direct_access();
 
@@ -100,6 +108,53 @@ bool operator==(const Storage2D<T,ST>& v1, const Storage2D<T,ST>& v2);
 
 template<typename T, typename ST>
 bool operator!=(const Storage2D<T,ST>& v1, const Storage2D<T,ST>& v2);
+
+
+namespace Makros {
+
+  template<typename T, typename ST>
+  class Typename<Storage2D<T,ST> > {
+  public:
+
+    std::string name() const {
+
+      return "Storage2D<" + Typename<T>() + "," + Typename<ST>() + "> ";
+    }
+  };
+
+  template<typename T>
+  class Typename<Storage2D<T> > {
+  public:
+
+    std::string name() const {
+
+      return "Storage2D<" + Typename<T>() + "> ";
+    }
+  };
+
+
+  template<typename T, typename ST>
+  class Typename<NamedStorage2D<T,ST> > {
+  public:
+
+    std::string name() const {
+
+      return "NamedStorage2D<" + Typename<T>() + "," + Typename<ST>() + "> ";
+    }
+  };
+
+  template<typename T>
+  class Typename<NamedStorage2D<T> > {
+  public:
+
+    std::string name() const {
+
+      return "NamedStorage2D<" + Typename<T>() + "> ";
+    }
+  };
+  
+}
+
 
 
 /**************************** implementation **************************************/
@@ -196,17 +251,38 @@ template<typename T, typename ST>
 inline ST Storage2D<T,ST>::size() const { return size_; }
 
 template <typename T, typename ST>
-OPTINLINE T& Storage2D<T,ST>::operator()(ST x, ST y) const {
+OPTINLINE const T& Storage2D<T,ST>::operator()(ST x, ST y) const {
 #ifdef SAFE_MODE
   if (x >= xDim_ || y >= yDim_) {
     INTERNAL_ERROR << "    access on element(" << x << "," << y 
 		   << ") exceeds storage dimensions of (" << xDim_ << "," << yDim_ << ")" << std::endl;
-    std::cerr << "   in 2Dstorage \"" << this->name() << "\" of type " << typeid(T).name() << ". exiting." << std::endl;  
+    std::cerr << "      in 2Dstorage \"" << this->name() << "\" of type " 
+	      << Makros::Typename<T>()
+      //<< Makros::get_typename(typeid(T).name()) 
+	      << ". Exiting." << std::endl;
     exit(1);
   }
 #endif
   return data_[y*xDim_+x];
 }
+
+
+template <typename T, typename ST>
+OPTINLINE T& Storage2D<T,ST>::operator()(ST x, ST y) {
+#ifdef SAFE_MODE
+  if (x >= xDim_ || y >= yDim_) {
+    INTERNAL_ERROR << "    access on element(" << x << "," << y 
+		   << ") exceeds storage dimensions of (" << xDim_ << "," << yDim_ << ")" << std::endl;
+    std::cerr << "   in 2Dstorage \"" << this->name() << "\" of type " 
+	      << Makros::Typename<T>()
+      //<< Makros::get_typename(typeid(T).name()) 
+	      << ". exiting." << std::endl;
+    exit(1);
+  }
+#endif
+  return data_[y*xDim_+x];
+}
+
 
 template <typename T, typename ST>
 void Storage2D<T,ST>::operator=(const Storage2D<T,ST>& toCopy) {
@@ -231,6 +307,19 @@ void Storage2D<T,ST>::operator=(const Storage2D<T,ST>& toCopy) {
   //this is faster for basic types but it fails for complex types where e.g. arrays have to be copied
   //memcpy(data_,toCopy.direct_access(),size_*sizeof(T));
 }
+
+
+#ifdef SAFE_MODE
+    //for some reason g++ allows to assign an object of type T, but this does NOT produce the effect one would expect
+    // => define this operator in safe mode, only to check that such an assignment is not made
+template<typename T,typename ST>
+void Storage2D<T,ST>::operator=(const T& invalid_object) {
+  INTERNAL_ERROR << "assignment of an atomic entity to Storage2D \"" << this->name() << "\" of type " 
+		 << Makros::Typename<T>()
+		 << " with " << size_ << " elements. exiting." << std::endl;
+}
+#endif
+
 
 template<>
 void Storage2D<int>::operator=(const Storage2D<int>& toCopy);
