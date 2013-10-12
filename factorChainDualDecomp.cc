@@ -2147,8 +2147,6 @@ uint FactorChainDualDecomposition::add_binary_ilp_factor(const Math1D::Vector<ui
           rhs_upper++;
         }
       }
-      assert(var_[var[k]]->cost()[0] < var_[var[k]]->cost()[1]); 
-      //otherwise need to adjust rhs_lower and upper (currently not implemented)
     }
   }
 
