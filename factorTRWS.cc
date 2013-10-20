@@ -1899,13 +1899,14 @@ const Math1D::Vector<double>& BILPCumTRWSFactor::compute_reparameterization(cons
 
   assert(idx < nVars);
 
+
   /**** forward ****/
   assert(nVars >= 2);
   
   Math1D::Vector<double> forward_vec[2];
   forward_vec[0].resize(range_,1e100);
   forward_vec[1].resize(range_,1e100);
-  
+    
   Math1D::Vector<double>& start_forward_vec = forward_vec[0];
   
   const uint start_idx = (idx != 0) ? 0 : 1;
@@ -1917,13 +1918,13 @@ const Math1D::Vector<double>& BILPCumTRWSFactor::compute_reparameterization(cons
   if (init_val >= 0 && init_val < range_) {
     start_forward_vec[init_val] = -start_param[1];
   }
-  
+
   uint cur_idx = 0;
   
   for (uint v = start_idx+1; v < nPos_; v++) {
-
+    
     if (v != idx) {
-      
+
       const Math1D::Vector<double>& cur_param = param[v];
       
       const Math1D::Vector<double>& prev_forward_vec = forward_vec[cur_idx];
@@ -1933,30 +1934,28 @@ const Math1D::Vector<double>& BILPCumTRWSFactor::compute_reparameterization(cons
       Math1D::Vector<double>& cur_forward_vec = forward_vec[cur_idx];
       
       for (int sum=zero_offset_; sum < std::min<int>(range_,zero_offset_+v+2); sum++) {
-	
+        
 	double best = 1e100;
 	
 	for (int l=0; l < 2; l++) {
 	    
-	  double hyp = 1e100;
-	  
 	  const int dest = sum - l;
 	  if (dest >= 0) {
 	    
-	    hyp = prev_forward_vec[dest] - cur_param[l];
+	    double hyp = prev_forward_vec[dest] - cur_param[l];
+            
+	    if (hyp < best)
+	      best = hyp;
 	  }
-          
-	  if (hyp < best)
-	    best = hyp;
 	}
 	cur_forward_vec[sum] = best;
       }
     }
   }
-  
-  
-  for (uint v = std::max(start_idx+1,nPos_); v < nVars; v++) {
 
+
+  for (uint v = std::max(start_idx+1,nPos_); v < nVars; v++) {
+    
     if (v != idx) {
       
       const Math1D::Vector<double>& cur_param = param[v];
@@ -1970,37 +1969,32 @@ const Math1D::Vector<double>& BILPCumTRWSFactor::compute_reparameterization(cons
       for (int sum=0; sum < range_; sum++) {
 	
 	double best = 1e100;
-	  
+	
 	for (int l=0; l < 2; l++) {
 	  
-	  double hyp = 1e100;
-            
 	  const int dest = sum + l;
 	  if (dest < range_) {
 	    
-	    hyp = prev_forward_vec[dest] - cur_param[l]; 
+	    double hyp = prev_forward_vec[dest] - cur_param[l]; 
+            
+	    if (hyp < best)
+	      best = hyp;
 	  }
-	  
-	  if (hyp < best)
-	    best = hyp;
 	}
 	cur_forward_vec[sum] = best;
       }
+      
     }
   }
-  
+
   const Math1D::Vector<double>& last_forward_vec = forward_vec[cur_idx];
 
   //now derive the message
   for (uint l=0; l < 2; l++) {
     
-    //std::cerr << "l: " << l << std::endl;
-    
     double min_msg = 1e100;
-    
-    for (int s = rhs_lower_ + zero_offset_; s <= rhs_upper_ + zero_offset_; s++) { 
 
-      double hyp = 1e100;
+    for (int s = rhs_lower_ + zero_offset_; s <= rhs_upper_ + zero_offset_; s++) { 
       
       int move = l;
       if (idx < nPos_) 
@@ -2009,11 +2003,11 @@ const Math1D::Vector<double>& BILPCumTRWSFactor::compute_reparameterization(cons
       const int dest = s + move;
       if (dest >= 0 && dest < range_) {
 	
-	hyp = last_forward_vec[dest]; 
+	double hyp = last_forward_vec[dest]; 
+        
+	if (hyp < min_msg)
+	  min_msg = hyp;
       }
-      
-      if (hyp < min_msg)
-	min_msg = hyp;
     }      
     message[l] = min_msg;
   }
@@ -2044,6 +2038,7 @@ const Math1D::Vector<double>& BILPCumTRWSFactor::compute_reparameterization(cons
 
   for (uint k=0; k < 2; k++)
     message[k] -= offs;
+
 
   return message;
 }
@@ -2139,16 +2134,16 @@ const Math1D::Vector<double>& BILPCumTRWSFactorWithReuse::compute_reparameteriza
 
       if (to_update_ == 0) {
 
+
 	//if we save one entry we must reset forward here
 	for (int s=0; s < range; s++)
 	  fwdbwd_light_(s,0) = 1e100;
 
         
         fwdbwd_light_(zero_offset_,0) = -prev_param[0];
-        const int init_mul = (positive_[0]) ? 1 : -1;
-        if (int(zero_offset_)+init_mul >= 0
-            && int(zero_offset_)+init_mul < range) {
-	  fwdbwd_light_(zero_offset_+init_mul,0) = -prev_param[1];
+        const int init_mul = zero_offset_ + ((positive_[0]) ? 1 : -1);
+        if (init_mul >= 0 && init_mul < range) {
+	  fwdbwd_light_(init_mul,0) = -prev_param[1];
         }
       }
       else {
@@ -2193,10 +2188,9 @@ const Math1D::Vector<double>& BILPCumTRWSFactorWithReuse::compute_reparameteriza
         fwdbwd_light_(zero_offset_,to_update_-1) = -prev_param[0];
 
 
-        const int end_mul = (positive_[to_update_]) ? 1 : -1;
-        if (int(zero_offset_) + end_mul >= 0
-            && int(zero_offset_) + end_mul < range) {
-	  fwdbwd_light_(zero_offset_ + end_mul,to_update_-1) = -prev_param[1];
+        const int end_mul = zero_offset_ + ((positive_[to_update_]) ? 1 : -1);
+        if (end_mul >= 0 && end_mul < range) {
+	  fwdbwd_light_(end_mul,to_update_-1) = -prev_param[1];
 	}
       }
       else {
@@ -2257,14 +2251,13 @@ const Math1D::Vector<double>& BILPCumTRWSFactorWithReuse::compute_reparameteriza
       
       fwdbwd_light_(sum,0) = 1e100;
     }
-    
+
     fwdbwd_light_(zero_offset_,0) = -param[0][0];
-    const int init_mul = (positive_[0]) ? 1 : -1;
-    if (int(zero_offset_)+init_mul >= 0
-        && int(zero_offset_)+init_mul < range) {
-      fwdbwd_light_(zero_offset_+init_mul,0) = -param[0][1];
+    const int init_mul = zero_offset_ + ((positive_[0]) ? 1 : -1);
+    if (init_mul >= 0 && init_mul < range) {
+      fwdbwd_light_(init_mul,0) = -param[0][1];
     }
-    
+
     //proceed
     for (uint v=1; v < idx; v++) {
     
@@ -2302,11 +2295,11 @@ const Math1D::Vector<double>& BILPCumTRWSFactorWithReuse::compute_reparameteriza
       fwdbwd_light_(sum,last_var-1) = 1e100;
     }    
 
+
     fwdbwd_light_(zero_offset_,last_var-1) = -param[last_var][0];
-    const int end_mul = (positive_[last_var]) ? 1 : -1;
-    if (int(zero_offset_) + end_mul >= 0
-        && int(zero_offset_) + end_mul < range) {
-      fwdbwd_light_(zero_offset_ + end_mul,last_var-1) = -param[last_var][1];
+    const int end_mul = zero_offset_ + ((positive_[last_var]) ? 1 : -1);
+    if (end_mul >= 0 && end_mul < range) {
+      fwdbwd_light_(end_mul,last_var-1) = -param[last_var][1];
     }
 
     //proceed

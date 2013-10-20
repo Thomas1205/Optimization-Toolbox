@@ -1709,6 +1709,7 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
   forward_msg.resize_dirty(involved_var_[idx]->nLabels());
   trace.resize_dirty(nVars,involved_var_[idx]->nLabels());
 
+
   Math2D::Matrix<uchar> forward_light_trace(range_,nVars-1/*,255*/);
 
   Math1D::Vector<double> forward_vec[2];
@@ -1716,7 +1717,7 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
   forward_vec[1].resize(range_,1e100);
   
   const uint start_idx = (idx != 0) ? 0 : 1;
-  
+
   uint cur_idx = 0;
   Math1D::Vector<double>& start_forward_vec = forward_vec[0];
   
@@ -1729,42 +1730,41 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
     start_forward_vec[zero_offset_+init_mul] = -param[start_idx][1];
     forward_light_trace(zero_offset_+init_mul,0) = 1;
   }
-    
+  
   //proceed
   for (uint v= start_idx + 1; v < nPos_; v++) {
-
+    
+    //std::cerr << "v: " << v << std::endl;
+    
     if (v != idx) {
-
+      
       const Math1D::Vector<double>& cur_param = param[v];
       
       uint k=v;
       if (v > idx)
 	k--;
-
+      
       const Math1D::Vector<double>& prev_forward_vec = forward_vec[cur_idx];
-
+      
       cur_idx = 1 - cur_idx;
-	
+      
       Math1D::Vector<double>& cur_forward_vec = forward_vec[cur_idx];
-	
+
       for (int sum=zero_offset_; sum < std::min<int>(range_,zero_offset_+v+2); sum++) {
         
 	double best = 1e300;
 	uint arg_best = MAX_UINT;
 	
 	for (int l=0; l < 2; l++) {
-	  
-	  double best_prev = 1e75;
           
 	  const int dest = sum - l;
-	  if (dest >= 0) 
-	    best_prev = prev_forward_vec[dest]; 
-          
-	  double hyp = best_prev - cur_param[l];
-	  if (hyp < best) {
+	  if (dest >= 0) {
 	    
-	    best = hyp;
-	    arg_best = l;
+	    double hyp = prev_forward_vec[dest] - cur_param[l];
+	    if (hyp < best) {
+	      best = hyp;
+	      arg_best = l;
+	    }
 	  }
 	}
 	cur_forward_vec[sum] = best;
@@ -1772,42 +1772,38 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
       }
     }
   }
-
+  
   for (uint v=std::max<uint>((idx <= 1) ? 2 : 1,nPos_); v < nVars; v++) {
-
-
+    
     if (v != idx) {
-      
+
       const Math1D::Vector<double>& cur_param = param[v];
       
       uint k=v;
       if (v > idx)
 	k--;
-      
+
       const Math1D::Vector<double>& prev_forward = forward_vec[cur_idx];
       
       cur_idx = 1 - cur_idx;
       
       Math1D::Vector<double>& cur_forward = forward_vec[cur_idx];
-
+      
       for (int sum=0; sum < range_; sum++) {
-        
+	
 	double best = 1e300;
 	uint arg_best = MAX_UINT;
 	
 	for (int l=0; l < 2; l++) {
 	  
-	  double best_prev = 1e75;
-          
 	  const int dest = sum + l;
-	  if (dest < range_) 
-	    best_prev = prev_forward[dest]; 
-          
-	  const double hyp = best_prev - cur_param[l];
-	  if (hyp < best) {
+	  if (dest < range_) {
 	    
-	    best = hyp;
-	    arg_best = l;
+	    double hyp = prev_forward[dest] - cur_param[l];
+	    if (hyp < best) {
+	      best = hyp;
+	      arg_best = l;
+	    }
 	  }
 	}
 	
@@ -1816,20 +1812,22 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
       }
     }
   }
-
+  
   //std::cerr << "trace back" << std::endl;
 
   const Math1D::Vector<double>& last_forward_vec = forward_vec[cur_idx];
 
+  const Math1D::Vector<double>& idx_param = param[idx];
+  
   for (uint l=0; l < 2; l++) {
+    
+    //std::cerr << "l: " << l << std::endl;
       
     double min_msg = 1e300;
     uint best_s = MAX_UINT;
     
     for (int s=int(rhs_lower_ + zero_offset_); s <= int(rhs_upper_ + zero_offset_); s++) {
-	
-      double best_prev = 1e75;
-        
+      
       int move = l;
       if (idx < nPos_)
 	move *= -1;
@@ -1837,31 +1835,33 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
       const int dest = s + move;
       if (dest >= 0 && dest < range_) {
 	
-	best_prev = last_forward_vec[dest]; 
-      }
-      
-      double hyp = best_prev - param[idx][l];
+	double hyp = last_forward_vec[dest] - idx_param[l]; 
         
-      assert(!isinf(hyp));
-      
-      if (hyp < min_msg) {
-	min_msg = hyp;
-	best_s = s;
+	assert(!isinf(hyp));
+	
+	if (hyp < min_msg) {
+	  min_msg = hyp;
+	  best_s = s;
+	}
       }
     }
-      
+    
     forward_msg[l] = min_msg;
     trace(idx,l) = l;
-
+    
     if (min_msg >= 1e50) //the variable cannot have this label, traceback might violate some bounds
       continue;
 
+    //std::cerr << "best_s: " << best_s << ", msg: " << min_msg << std::endl;
+    
     if (idx < nPos_)
       best_s -= l;
     else
       best_s += l;
     
     for (int k=nVars-2; k >= 0; k--) {
+
+      //std::cerr << "k: " << k << std::endl;
       
       uint v=k;
       if (k >= int(idx))
@@ -1876,7 +1876,7 @@ double BILPChainDDFactor::compute_forward(const ChainDDVar* in_var, const ChainD
 	best_s += cur_l;
     }
   }
-
+  
   return 0.0; //currently not subtracting an offest
 }
 
