@@ -3,7 +3,7 @@ COMPILER = g++ -c
 LINKER = g++ 
 DEBUGFLAGS =  -ansi -Wall -Wextra -pedantic -malign-double -g -fPIC
 DEVELFLAGS =  -ansi -Wall -Wextra -pedantic -malign-double -fPIC
-OPTFLAGS =  -ansi -Wall -Wextra -pedantic -malign-double -O5 -DNDEBUG -fPIC
+OPTFLAGS =  -ansi -Wall -Wextra -pedantic -malign-double -O5 -DNDEBUG -fPIC -march=native
 LINKSFLAGS = -lpthread
 DEBUGDIR = debug/
 OPTDIR = opt/
