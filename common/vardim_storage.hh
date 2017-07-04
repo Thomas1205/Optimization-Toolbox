@@ -25,6 +25,8 @@ public:
 
   const Math1D::Vector<size_t>& dim_vector() const;
 
+  void set_constant(T fill);
+
   const T& operator()(Math1D::Vector<size_t>& pos) const;
 
   T& operator()(Math1D::Vector<size_t>& pos);
@@ -66,8 +68,7 @@ VarDimStorage<T>::VarDimStorage(const Math1D::Vector<size_t>& dim, T fill) : dim
 
   data_ = new T[size_];
 
-  for (size_t k=0; k < dim.size(); k++) 
-    data_[k] = fill;
+  std::fill_n(data_,data_+size_,fill);
 }
 
 template <typename T>
@@ -90,6 +91,12 @@ VarDimStorage<T>::~VarDimStorage() {
 template <typename T>
 size_t VarDimStorage<T>::size() const {
   return size_;
+}
+
+template <typename T>
+void VarDimStorage<T>::set_constant(T fill) {
+
+  std::fill_n(data_,data_+size_,fill);
 }
 
 
