@@ -1,4 +1,4 @@
-/************** written by Thomas Schoenemann at the University of Bonn, 2007. 
+/************** written by Thomas Schoenemann at the University of Bonn, 2007.
 Slightly adapted later at Lund University, Sweden, 2010 ********/
 
 
@@ -9,11 +9,13 @@ BinFunction::BinFunction(int order) : order_(order) {}
 
 BinFunction::~BinFunction() {}
 
-/*virtual*/ int BinFunction::order() {
+/*virtual*/ int BinFunction::order()
+{
   return order_;
 }
 
-/*virtual*/ double BinFunction::value(const Math1D::Vector<int>& arg) { // first entry in arg means lowest bit, etc...
+/*virtual*/ double BinFunction::value(const Math1D::Vector<int>& arg)   // first entry in arg means lowest bit, etc...
+{
 
   /*** compute integer argument ***/
   int int_arg = 0;
@@ -32,7 +34,8 @@ BinFunction::~BinFunction() {}
 }
 
 
-ExplicitBinFunction::ExplicitBinFunction(int order) : BinFunction(order) {
+ExplicitBinFunction::ExplicitBinFunction(int order) : BinFunction(order)
+{
 
   int size = 1;
   size = size << order;
@@ -41,7 +44,8 @@ ExplicitBinFunction::ExplicitBinFunction(int order) : BinFunction(order) {
 }
 
 //read function values from file, file contains lines of form bit1...bitn <value>
-void ExplicitBinFunction::read(std::string filename) {
+void ExplicitBinFunction::read(std::string filename)
+{
 
   std::ifstream file(filename.c_str());
 
@@ -57,29 +61,32 @@ void ExplicitBinFunction::read(std::string filename) {
     int arg = 0;
     for (int i=0; i < order_; i++) {
       if (i != 0)
-	base *= 2;
+        base *= 2;
 
       if (bit_pattern[i] == '1')
-	arg += base;
+        arg += base;
       else
-	assert(bit_pattern[i] == '0');
+        assert(bit_pattern[i] == '0');
     }
-    value_[arg] = val;	
+    value_[arg] = val;
   }
 }
 
-/*virtual*/ double ExplicitBinFunction::value(int arg) {
+/*virtual*/ double ExplicitBinFunction::value(int arg)
+{
 
   assert(arg < (int) value_.size());
   return value_[arg];
 }
 
-void ExplicitBinFunction::set_val(int arg, double value) {
+void ExplicitBinFunction::set_val(int arg, double value)
+{
   value_[arg] = value;
 }
 
-double ExplicitBinFunction::multilinear_coefficient(std::vector<size_t> one_bits) {
-    
+double ExplicitBinFunction::multilinear_coefficient(std::vector<size_t> one_bits)
+{
+
   int clique_order = one_bits.size();
 #if 0
   double result = 0.0;
@@ -93,8 +100,8 @@ double ExplicitBinFunction::multilinear_coefficient(std::vector<size_t> one_bits
 
     for (int i=0; i < clique_order; i++) {
       if (clique_arg & (1 << i)) {
-	sign *= -1;
-	arg += 1 << one_bits[i];
+        sign *= -1;
+        arg += 1 << one_bits[i];
       }
     }
 
@@ -114,8 +121,8 @@ double ExplicitBinFunction::multilinear_coefficient(std::vector<size_t> one_bits
 
       std::vector<size_t> v;
       for (int i = 0; i < order_; i++) {
-	if (arg & (1 << i))
-	  v.push_back(i);
+        if (arg & (1 << i))
+          v.push_back(i);
       }
       result -= multilinear_coefficient(v);
     }

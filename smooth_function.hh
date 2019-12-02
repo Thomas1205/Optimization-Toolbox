@@ -18,7 +18,7 @@ public:
   void set_backtracking_factor(double backtrack_factor);
 
   void set_cutoff_factor(double cutoff_factor);
-  
+
   void set_cutoff_sqr_grad_norm(double cutoff_sqr_grad_norm);
 
   //returns the computed function value

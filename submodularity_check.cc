@@ -1,11 +1,12 @@
-/************** written by Thomas Schoenemann at the University of Bonn, 2007. 
+/************** written by Thomas Schoenemann at the University of Bonn, 2007.
 Slightly adapted later in Lund University, Sweden, 2010 ********/
 
 
 #include "submodularity_check.hh"
 
 
-bool is_submodular(BinFunction& bin_func) {
+bool is_submodular(BinFunction& bin_func)
+{
 
   int order = bin_func.order();
 
@@ -39,7 +40,8 @@ bool is_submodular(BinFunction& bin_func) {
   return true;
 }
 
-bool satisfies_freedman_conditions(BinFunction& bin_func) {
+bool satisfies_freedman_conditions(BinFunction& bin_func)
+{
 
   int order = bin_func.order();
 
@@ -49,10 +51,10 @@ bool satisfies_freedman_conditions(BinFunction& bin_func) {
 
       int arg = (1 << c1) + (1 << c2);
       double val = bin_func.value(arg) + bin_func.value(0)
-        - bin_func.value(1 << c1) - bin_func.value(1 << c2);
+                   - bin_func.value(1 << c1) - bin_func.value(1 << c2);
 
       if (val > 0.0) {
-        std::cerr << "freedman condition violated for pairwise clique " << c1 << "," << c2 
+        std::cerr << "freedman condition violated for pairwise clique " << c1 << "," << c2
                   << ": value " << val << " is positive" << std::endl;
         return false;
       }
@@ -75,18 +77,18 @@ bool satisfies_freedman_conditions(BinFunction& bin_func) {
     if (nBitsSet >= 3) {
       //std::cerr << "clique_val: " << clique_val << std::endl;
 
-      int init_sign = (nBitsSet % 2 == 0) ? 1 : -1; 
+      int init_sign = (nBitsSet % 2 == 0) ? 1 : -1;
 
       for (int val =0; val < bound; val++) {
-		
+
         if ((val & clique_val) == val) {
           int sign = init_sign;
-		    
+
           for (int i=0; i < order; i++) {
             if (val & (1 << i))
               sign *= -1;
           }
-		    
+
           sum += sign * bin_func.value(val);
           //std::cerr << "intermediate result: " << result << std::endl;
         }
@@ -94,18 +96,19 @@ bool satisfies_freedman_conditions(BinFunction& bin_func) {
 
       //std::cerr << "result: " << result << std::endl;
       if (sum > 0.0) {
-        std::cerr << "function violates Freedman-condition for order " << nBitsSet 
+        std::cerr << "function violates Freedman-condition for order " << nBitsSet
                   << ": clique-val " << clique_val << " has positive sum: " << sum << std::endl;
         return false;
       }
     }
-	
+
   }
-    
+
   return true;
 }
 
-bool is_supermodular(BinFunction& bin_func) {
+bool is_supermodular(BinFunction& bin_func)
+{
 
   int order = bin_func.order();
 
@@ -140,7 +143,8 @@ bool is_supermodular(BinFunction& bin_func) {
 }
 
 
-bool is_posimodular(BinFunction& bin_func) {
+bool is_posimodular(BinFunction& bin_func)
+{
 
   int order = bin_func.order();
 
@@ -190,7 +194,8 @@ bool is_posimodular(BinFunction& bin_func) {
 }
 
 
-bool is_negimodular(BinFunction& bin_func) {
+bool is_negimodular(BinFunction& bin_func)
+{
 
   int order = bin_func.order();
 

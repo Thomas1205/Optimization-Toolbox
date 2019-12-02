@@ -8,11 +8,12 @@
 #include <set>
 #include <fstream>
 #include "makros.hh"
+#include "stl_util.hh"
 
 enum ParamType {
   flag,
   mandWithValue,
-  optWithValue, 
+  optWithValue,
   mandInFilename,
   optInFilename,
   mandOutFilename,
@@ -21,7 +22,7 @@ enum ParamType {
 
 
 struct ParamDescr {
-  std::string name_;  
+  std::string name_;
   ParamType type_;
   bool default_given_;
   std::string  default_value_;
@@ -35,15 +36,15 @@ public:
   ~Application();
 
   bool is_set(std::string name);
-    
+
   std::string getParam(std::string name);
 
 protected:
   std::map<std::string,std::string> param_value_;
   std::set<std::string> flags_;
-    
+
   std::set<std::string> known_flags_;
-  std::set<std::string> known_params_;    
+  std::set<std::string> known_params_;
 
   uint nParams_;
   ParamDescr* param_list_;

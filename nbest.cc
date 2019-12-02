@@ -15,7 +15,7 @@ struct NBestState {
   Storage1D<uint> output_;
 };
 
-NBestState::NBestState(DAGNode* node, double cost, NBestState* prev, const Storage1D<uint>& output) : 
+NBestState::NBestState(DAGNode* node, double cost, NBestState* prev, const Storage1D<uint>& output) :
   node_(node), cost_(cost), prev_(prev), output_(output) {}
 
 struct QueueEntry {
@@ -27,7 +27,8 @@ struct QueueEntry {
 
 QueueEntry::QueueEntry(NBestState* s) : s_(s) {}
 
-bool operator<(const QueueEntry& s1, const QueueEntry& s2) {
+bool operator<(const QueueEntry& s1, const QueueEntry& s2)
+{
 
   double p1 = s1.s_->cost_ + s1.s_->node_->forward_potential_;
   double p2 = s2.s_->cost_ + s2.s_->node_->forward_potential_;
@@ -37,7 +38,8 @@ bool operator<(const QueueEntry& s1, const QueueEntry& s2) {
 
 DAGNode::DAGNode(double forward) : forward_potential_(forward), nVisits_(0) {}
 
-void DAGNode::add_edge(DAGEdge* edge) {
+void DAGNode::add_edge(DAGEdge* edge)
+{
 
   assert(edge->to_ == this);
 
@@ -48,20 +50,23 @@ void DAGNode::add_edge(DAGEdge* edge) {
 
 /************/
 
-DAGEdge::DAGEdge(DAGNode* from, DAGNode* to, double weight, const Storage1D<uint>& output) : 
-  from_(from), to_(to), weight_(weight), output_(output) {
+DAGEdge::DAGEdge(DAGNode* from, DAGNode* to, double weight, const Storage1D<uint>& output) :
+  from_(from), to_(to), weight_(weight), output_(output)
+{
   to_->add_edge(this);
 }
 
 
 /************/
 
-DAG::DAG(uint nNodes, uint nEdges) : nUsedNodes_(0), nUsedEdges_(0) {
+DAG::DAG(uint nNodes, uint nEdges) : nUsedNodes_(0), nUsedEdges_(0)
+{
   node_.resize(nNodes,0);
   edge_.resize(nEdges,0);
 }
 
-DAG::~DAG() {
+DAG::~DAG()
+{
 
   for (uint e=0; e < nUsedEdges_; e++) {
     if (edge_[e] != 0)
@@ -74,7 +79,8 @@ DAG::~DAG() {
   }
 }
 
-void DAG::clear() {
+void DAG::clear()
+{
 
   for (uint e=0; e < nUsedEdges_; e++) {
     if (edge_[e] != 0)
@@ -91,7 +97,8 @@ void DAG::clear() {
 }
 
 
-uint DAG::add_node(double forward_potential) {
+uint DAG::add_node(double forward_potential)
+{
 
   if (nUsedNodes_ == node_.size()) {
     node_.resize((node_.size()+1) * 1.8,0);
@@ -104,7 +111,8 @@ uint DAG::add_node(double forward_potential) {
   return (nUsedNodes_-1);
 }
 
-void DAG::add_edge(uint from, uint to, double weight, const Storage1D<uint>& output) {
+void DAG::add_edge(uint from, uint to, double weight, const Storage1D<uint>& output)
+{
 
   if(nUsedEdges_ == edge_.size()) {
     edge_.resize((edge_.size()+1)*1.8);
@@ -115,14 +123,16 @@ void DAG::add_edge(uint from, uint to, double weight, const Storage1D<uint>& out
   nUsedEdges_++;
 }
 
-DAGNode* DAG::node(uint num) {
+DAGNode* DAG::node(uint num)
+{
   return node_[num];
 }
 
 
 //note: this assumes that accurate forward potentials have been set
 void DAG::nbest(uint N, uint start_node, uint end_node,
-                std::vector<Storage1D<uint> >& sequence, std::vector<double>* score) {
+                std::vector<Storage1D<uint> >& sequence, std::vector<double>* score)
+{
 
   //std::cerr << "A" << std::endl;
 
@@ -144,7 +154,7 @@ void DAG::nbest(uint N, uint start_node, uint end_node,
 
   double last_found = -1e300;
 
-  while (!queue.empty()) { 
+  while (!queue.empty()) {
 
     //std::cerr << "next iter" << std::endl;
 
@@ -173,7 +183,7 @@ void DAG::nbest(uint N, uint start_node, uint end_node,
 
         const Storage1D<uint>& out = cur_state->output_;
 
-        if (out.size() != 0) { 
+        if (out.size() != 0) {
           for (uint j=0; j < out.size(); j++)
             cur_sequence.push_back(out[j]);
         }
@@ -195,18 +205,18 @@ void DAG::nbest(uint N, uint start_node, uint end_node,
 
     if (cur_node->nVisits_ <= N) {
       for (uint k=0; k < cur_node->incoming_edge_.size(); k++) {
-	
+
         DAGNode* from = cur_node->incoming_edge_[k]->from_;
         double edge_weight = cur_node->incoming_edge_[k]->weight_;
-	
-        states.push_back( new NBestState(from,cur_score + edge_weight, cur_state, 
+
+        states.push_back( new NBestState(from,cur_score + edge_weight, cur_state,
                                          cur_node->incoming_edge_[k]->output_) );
-	
+
         queue.push(QueueEntry(states.back()));
       }
     }
   }
-  
+
   //cleanup
   for (uint k=0; k < states.size(); k++) {
     delete states[k];

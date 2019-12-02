@@ -8,10 +8,10 @@
 #include "vector.hh"
 #include "matrix.hh"
 #include "tensor.hh"
-#include <algorithm>
 
 template<typename T>
-inline void negate(Math1D::Vector<T>& vec) {
+inline void negate(Math1D::Vector<T>& vec)
+{
 
   const size_t size = vec.size();
   for (size_t k=0; k < size; k++)
@@ -19,7 +19,8 @@ inline void negate(Math1D::Vector<T>& vec) {
 }
 
 template<typename T>
-inline void negate(Math2D::Matrix<T>& mat) {
+inline void negate(Math2D::Matrix<T>& mat)
+{
 
   const size_t size = mat.size();
   for (size_t k=0; k < size; k++)
@@ -27,7 +28,8 @@ inline void negate(Math2D::Matrix<T>& mat) {
 }
 
 template<typename T>
-inline void negate(Math3D::Tensor<T>& ten) {
+inline void negate(Math3D::Tensor<T>& ten)
+{
 
   const size_t size = ten.size();
   for (size_t k=0; k < size; k++)
@@ -36,19 +38,22 @@ inline void negate(Math3D::Tensor<T>& ten) {
 
 
 template<typename T>
-inline void sort_storage1D(Storage1D<T>& stor) {
+inline void sort_storage1D(Storage1D<T>& stor)
+{
 
   std::sort(stor.direct_access(),stor.direct_access()+stor.size());
 }
 
 template<typename T, typename ST>
-inline ST find_in_storage1D(const Storage1D<T,ST>& stor, T element) {
+inline ST find_in_storage1D(const Storage1D<T,ST>& stor, T element)
+{
 
   return std::find(stor.direct_access(),stor.direct_access()+stor.size(),element) - stor.direct_access();
 }
 
 template<typename T, typename ST>
-inline bool contains(const Storage1D<T,ST>& stor, T element) {
+inline bool contains(const Storage1D<T,ST>& stor, T element)
+{
 
   T* end = stor.direct_access()+stor.size();
 

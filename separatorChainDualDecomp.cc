@@ -8,48 +8,56 @@
 SepChainDDVar::SepChainDDVar(const Math1D::Vector<float>& cost) :
   cost_(cost) {}
 
-void SepChainDDVar::add_cost(const Math1D::Vector<float>& cost) {
+void SepChainDDVar::add_cost(const Math1D::Vector<float>& cost)
+{
   cost_ += cost;
 }
-  
-void SepChainDDVar::add_factor(SepChainDDFactor* factor) {
+
+void SepChainDDVar::add_factor(SepChainDDFactor* factor)
+{
 
   uint size = neighboring_factor_.size();
 
   neighboring_factor_.resize(size+1);
   neighboring_factor_[size] = factor;
 }
-  
-void SepChainDDVar::add_separator(SepChainDDPairSeparator* sep) {
+
+void SepChainDDVar::add_separator(SepChainDDPairSeparator* sep)
+{
 
   uint size = neighboring_separator_.size();
-  
+
   neighboring_separator_.resize(size+1);
   neighboring_separator_[size] = sep;
 }
 
-const Math1D::Vector<float>& SepChainDDVar::cost() const {
+const Math1D::Vector<float>& SepChainDDVar::cost() const
+{
   return cost_;
 }
-  
-uint SepChainDDVar::nLabels() const {
+
+uint SepChainDDVar::nLabels() const
+{
   return cost_.size();
 }
 
-const Storage1D<SepChainDDFactor*>& SepChainDDVar::neighboring_factor() const {
+const Storage1D<SepChainDDFactor*>& SepChainDDVar::neighboring_factor() const
+{
   return neighboring_factor_;
 }
 
-uint SepChainDDVar::nChains() const {
+uint SepChainDDVar::nChains() const
+{
   TODO("");
 }
 
-void SepChainDDVar::set_up_chains() {
+void SepChainDDVar::set_up_chains()
+{
 
   uint nChains = 0;
 
   for (uint f=0; f < neighboring_factor_.size(); f++) {
-    
+
     SepChainDDPairSeparator* prev_sep = neighboring_factor_[f]->prev_sep();
 
     if (neighboring_factor_[f]->prev_var() != this
@@ -65,44 +73,52 @@ void SepChainDDVar::set_up_chains() {
 /***********************************/
 
 SepChainDDPairSeparator::SepChainDDPairSeparator(SepChainDDVar* var1, SepChainDDVar* var2) :
-  var1_(var1), var2_(var2) {
+  var1_(var1), var2_(var2)
+{
   var1->add_separator(this);
   var2->add_separator(this);
 }
 
-SepChainDDVar* SepChainDDPairSeparator::var1() {
+SepChainDDVar* SepChainDDPairSeparator::var1()
+{
   return var1_;
 }
 
-SepChainDDVar* SepChainDDPairSeparator::var2() {
+SepChainDDVar* SepChainDDPairSeparator::var2()
+{
   return var2_;
 }
 
-const SepChainDDVar* SepChainDDPairSeparator::var1() const {
+const SepChainDDVar* SepChainDDPairSeparator::var1() const
+{
   return var1_;
 }
 
-const SepChainDDVar* SepChainDDPairSeparator::var2() const {
+const SepChainDDVar* SepChainDDPairSeparator::var2() const
+{
   return var2_;
 }
 
-void SepChainDDPairSeparator::add_factor(SepChainDDFactor* factor) {
+void SepChainDDPairSeparator::add_factor(SepChainDDFactor* factor)
+{
 
   uint size = neighboring_factor_.size();
   neighboring_factor_.resize(size+1);
   neighboring_factor_[size] = factor;
 }
 
-Storage1D<SepChainDDFactor*> SepChainDDPairSeparator::neighboring_factor() const {
+Storage1D<SepChainDDFactor*> SepChainDDPairSeparator::neighboring_factor() const
+{
   return neighboring_factor_;
 }
 
 /***********************************/
 
-SepChainDDFactor::SepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars, 
+SepChainDDFactor::SepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars,
                                    const Storage1D<SepChainDDPairSeparator*>& separators) :
-  prev_var_(0), next_var_(0), prev_sep_(0), next_sep_(0), prev_factor_(0), next_factor_(0), 
-  involved_var_(involved_vars), involved_separator_(separators) {
+  prev_var_(0), next_var_(0), prev_sep_(0), next_sep_(0), prev_factor_(0), next_factor_(0),
+  involved_var_(involved_vars), involved_separator_(separators)
+{
 
   dual_var_.resize(involved_vars.size());
 
@@ -122,39 +138,48 @@ SepChainDDFactor::SepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_var
 
 /*virtual*/ SepChainDDFactor::~SepChainDDFactor() {}
 
-SepChainDDVar* SepChainDDFactor::prev_var() const {
+SepChainDDVar* SepChainDDFactor::prev_var() const
+{
   return prev_var_;
 }
 
-SepChainDDVar* SepChainDDFactor::next_var() const {
+SepChainDDVar* SepChainDDFactor::next_var() const
+{
   return next_var_;
 }
 
-SepChainDDPairSeparator* SepChainDDFactor::prev_sep() const {
+SepChainDDPairSeparator* SepChainDDFactor::prev_sep() const
+{
   return prev_sep_;
 }
 
-SepChainDDPairSeparator* SepChainDDFactor::next_sep() const {
+SepChainDDPairSeparator* SepChainDDFactor::next_sep() const
+{
   return next_sep_;
 }
 
-void SepChainDDFactor::set_prev_var(SepChainDDVar* var) {
+void SepChainDDFactor::set_prev_var(SepChainDDVar* var)
+{
   prev_var_ = var;
 }
 
-void SepChainDDFactor::set_next_var(SepChainDDVar* var) {
+void SepChainDDFactor::set_next_var(SepChainDDVar* var)
+{
   next_var_ = var;
 }
 
-void SepChainDDFactor::set_prev_sep(SepChainDDPairSeparator* sep) {
+void SepChainDDFactor::set_prev_sep(SepChainDDPairSeparator* sep)
+{
   prev_sep_ = sep;
 }
 
-void SepChainDDFactor::set_next_sep(SepChainDDPairSeparator* sep) {
+void SepChainDDFactor::set_next_sep(SepChainDDPairSeparator* sep)
+{
   next_sep_ = sep;
 }
 
-Math1D::Vector<double>& SepChainDDFactor::get_duals(const SepChainDDVar* var) {
+Math1D::Vector<double>& SepChainDDFactor::get_duals(const SepChainDDVar* var)
+{
 
   for (uint k=0; k < involved_var_.size(); k++) {
 
@@ -166,10 +191,11 @@ Math1D::Vector<double>& SepChainDDFactor::get_duals(const SepChainDDVar* var) {
   return dual_var_[0];
 }
 
-Math2D::Matrix<double>& SepChainDDFactor::get_pair_duals(const SepChainDDPairSeparator* sep) {
+Math2D::Matrix<double>& SepChainDDFactor::get_pair_duals(const SepChainDDPairSeparator* sep)
+{
 
   for (uint s=0; s < involved_separator_.size(); s++) {
-    
+
     if (involved_separator_[s] == sep)
       return dual_pair_var_[s];
   }
@@ -178,38 +204,45 @@ Math2D::Matrix<double>& SepChainDDFactor::get_pair_duals(const SepChainDDPairSep
   return dual_pair_var_[0];
 }
 
-SepChainDDFactor* SepChainDDFactor::prev_factor() const {
+SepChainDDFactor* SepChainDDFactor::prev_factor() const
+{
   return prev_factor_;
 }
 
-SepChainDDFactor* SepChainDDFactor::next_factor() const {
+SepChainDDFactor* SepChainDDFactor::next_factor() const
+{
   return next_factor_;
 }
 
-void SepChainDDFactor::set_prev_factor(SepChainDDFactor* factor) {
+void SepChainDDFactor::set_prev_factor(SepChainDDFactor* factor)
+{
   prev_factor_ = factor;
 }
 
-void SepChainDDFactor::set_next_factor(SepChainDDFactor* factor) {
+void SepChainDDFactor::set_next_factor(SepChainDDFactor* factor)
+{
   next_factor_ = factor;
 }
 
-const Storage1D<SepChainDDVar*>& SepChainDDFactor::involved_vars() const {
+const Storage1D<SepChainDDVar*>& SepChainDDFactor::involved_vars() const
+{
   return involved_var_;
 }
 
-const Storage1D<SepChainDDPairSeparator*>& SepChainDDFactor::involved_separators() const {
+const Storage1D<SepChainDDPairSeparator*>& SepChainDDFactor::involved_separators() const
+{
   return involved_separator_;
 }
 
 /***********************************/
 
 BinarySepChainDDFactor::BinarySepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars,
-                                               const Math2D::Matrix<float>& cost) :
-  SepChainDDFactor(involved_vars,Storage1D<SepChainDDPairSeparator*>()), cost_(cost) {
+    const Math2D::Matrix<float>& cost) :
+  SepChainDDFactor(involved_vars,Storage1D<SepChainDDPairSeparator*>()), cost_(cost)
+{
 
   if (involved_vars.size() != 2) {
-    INTERNAL_ERROR << " attempt to instantiate binary factor with " << involved_vars.size() 
+    INTERNAL_ERROR << " attempt to instantiate binary factor with " << involved_vars.size()
                    << " variables. Exiting." << std::endl;
     exit(1);
   }
@@ -223,12 +256,13 @@ BinarySepChainDDFactor::BinarySepChainDDFactor(const Storage1D<SepChainDDVar*>& 
 /*virtual*/ BinarySepChainDDFactor::~BinarySepChainDDFactor() {}
 
 /*virtual */
-double BinarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
-                                               const SepChainDDVar* outgoing_var,
-                                               const Math2D::Matrix<double>& /*prev_pair_forward*/, 
-					       const Math1D::Vector<double>& prev_var_forward, 
-                                               Math1D::Vector<double>& forward, 
-                                               Math2D::Matrix<uint>& trace) const {
+double BinarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var,
+    const SepChainDDVar* outgoing_var,
+    const Math2D::Matrix<double>& /*prev_pair_forward*/,
+    const Math1D::Vector<double>& prev_var_forward,
+    Math1D::Vector<double>& forward,
+    Math2D::Matrix<uint>& trace) const
+{
 
   assert(incoming_var != outgoing_var);
 
@@ -264,9 +298,9 @@ double BinarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* in
   }
 
   assert(var_idx != MAX_UINT);
-  
+
   if (var_idx == 0) {
-    
+
     forward.resize_dirty(nLabels1);
     trace.resize_dirty(nLabels1,2);
 
@@ -276,7 +310,7 @@ double BinarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* in
       uint best2 = 0;
 
       for (uint l2=0; l2 < nLabels2; l2++) {
-      
+
         double hyp = cost_(l1,l2) - param[1][l2];
 
         if (hyp < best) {
@@ -305,7 +339,7 @@ double BinarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* in
       for (uint l1=0; l1 < nLabels1; l1++) {
 
         double hyp = cost_(l1,l2) - param[0][l1];
-        
+
         if (hyp < best) {
           best = hyp;
           best1 = l1;
@@ -322,12 +356,13 @@ double BinarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* in
 }
 
 /*virtual*/
-double BinarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* /*incoming_sep*/, const SepChainDDVar* /*incoming_var*/, 
-                                               const SepChainDDPairSeparator* /*outgoing_sep*/,
-                                               const Math2D::Matrix<double>& /*prev_pair_forward*/, 
-					       const Math1D::Vector<double>& /*prev_var_forward*/, 
-                                               Math2D::Matrix<double>& /*forward*/, 
-                                               Math3D::Tensor<uint>& /*trace*/) const {
+double BinarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* /*incoming_sep*/, const SepChainDDVar* /*incoming_var*/,
+    const SepChainDDPairSeparator* /*outgoing_sep*/,
+    const Math2D::Matrix<double>& /*prev_pair_forward*/,
+    const Math1D::Vector<double>& /*prev_var_forward*/,
+    Math2D::Matrix<double>& /*forward*/,
+    Math3D::Tensor<uint>& /*trace*/) const
+{
 
   //this routine should never be called
   assert(false);
@@ -337,18 +372,19 @@ double BinarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* /*
 
 /***********************************/
 
-TernarySepChainDDFactor::TernarySepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars, 
-                                                 Storage1D<SepChainDDPairSeparator*>& separators,
-                                                 const Math3D::Tensor<float>& cost) :
-  SepChainDDFactor(involved_vars,separators), cost_(cost) {
+TernarySepChainDDFactor::TernarySepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars,
+    Storage1D<SepChainDDPairSeparator*>& separators,
+    const Math3D::Tensor<float>& cost) :
+  SepChainDDFactor(involved_vars,separators), cost_(cost)
+{
 
   if (involved_vars.size() != 3) {
-    INTERNAL_ERROR << " attempt to instantiate ternary factor with " 
+    INTERNAL_ERROR << " attempt to instantiate ternary factor with "
                    << involved_vars.size() << " variables. Exiting." << std::endl;
     exit(1);
   }
 
-  if (cost.xDim() < involved_vars[0]->nLabels() || cost.yDim() < involved_vars[1]->nLabels() 
+  if (cost.xDim() < involved_vars[0]->nLabels() || cost.yDim() < involved_vars[1]->nLabels()
       || cost.zDim() < involved_vars[2]->nLabels()) {
     INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
     exit(1);
@@ -358,12 +394,13 @@ TernarySepChainDDFactor::TernarySepChainDDFactor(const Storage1D<SepChainDDVar*>
 
 /*virtual*/ TernarySepChainDDFactor::~TernarySepChainDDFactor() {}
 
-/*virtual*/ 
-double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
-                                                const SepChainDDVar* outgoing_var,
-                                                const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
-                                                Math1D::Vector<double>& forward, 
-                                                Math2D::Matrix<uint>& trace) const {
+/*virtual*/
+double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var,
+    const SepChainDDVar* outgoing_var,
+    const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward,
+    Math1D::Vector<double>& forward,
+    Math2D::Matrix<uint>& trace) const
+{
 
   assert(incoming_var != outgoing_var);
 
@@ -405,14 +442,14 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
   for (uint s=0; s < nSeps; s++) {
 
     if (involved_separator_[s] == incoming_sep) {
-      pair_param[s] -= prev_pair_forward; 
+      pair_param[s] -= prev_pair_forward;
     }
   }
 
   assert(var_idx != MAX_UINT);
-  
+
   if (var_idx == 0) {
-    
+
     forward.resize_dirty(nLabels1);
     trace.resize_dirty(nLabels1,3);
 
@@ -427,12 +464,12 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
         const double w2 = param[1][l2];
 
         for (uint l3=0; l3 < nLabels3; l3++) {
-      
+
           double hyp = cost_(l1,l2,l3) - w2 - param[2][l3];
 
           for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
-          
+
           if (hyp < best) {
             best = hyp;
             best2 = l2;
@@ -468,7 +505,7 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
 
           for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
-          
+
           if (hyp < best) {
             best = hyp;
             best1 = l1;
@@ -505,7 +542,7 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
 
           for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
-          
+
           if (hyp < best) {
             best = hyp;
             best1 = l1;
@@ -525,12 +562,13 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
 }
 
 
-/*virtual*/ 
-double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
-                                                const SepChainDDPairSeparator* outgoing_sep,
-                                                const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
-                                                Math2D::Matrix<double>& forward, 
-                                                Math3D::Tensor<uint>& trace) const {
+/*virtual*/
+double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var,
+    const SepChainDDPairSeparator* outgoing_sep,
+    const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward,
+    Math2D::Matrix<double>& forward,
+    Math3D::Tensor<uint>& trace) const
+{
 
   assert(incoming_sep != outgoing_sep);
 
@@ -567,7 +605,7 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
   for (uint s=0; s < nSeps; s++) {
 
     if (involved_separator_[s] == incoming_sep) {
-      pair_param[s] -= prev_pair_forward; 
+      pair_param[s] -= prev_pair_forward;
     }
     else if (involved_separator_[s] == outgoing_sep) {
       pair_idx = s;
@@ -592,11 +630,11 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
 
           double best = 1e300;
           uint arg_best = 0;
-          
+
           for (uint l3 = 0; l3 < nLabels3; l3++) {
 
             double hyp = cost_(l1,l2,l3) - param[2][l3];
-            
+
             for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,pair_param);
 
@@ -626,11 +664,11 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
 
           double best = 1e300;
           uint arg_best = 0;
-          
+
           for (uint l2 = 0; l2 < nLabels2; l2++) {
 
             double hyp = cost_(l1,l2,l3) - param[1][l2];
-            
+
             for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,pair_param);
 
@@ -650,21 +688,21 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
   }
   else {
     assert(v1 == involved_var_[1]);
-    
+
     forward.resize_dirty(nLabels2,nLabels3);
     trace.resize_dirty(nLabels2,nLabels3,3);
-    
+
     for (uint l2=0; l2 < nLabels2; l2++) {
-      
+
       for (uint l3 = 0; l3 < nLabels3; l3++) {
-        
+
         double best = 1e300;
         uint arg_best = 0;
-        
+
         for (uint l1 = 0; l1 < nLabels1; l1++) {
-          
+
           double hyp = cost_(l1,l2,l3) - param[0][l1];
-          
+
           for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
 
@@ -673,7 +711,7 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
             arg_best = l1;
           }
         }
-        
+
         forward(l2,l3) = best - param[1][l2] - param[2][l3];
         trace(l2,l3,0) = arg_best;
         trace(l2,l3,1) = l2;
@@ -681,21 +719,22 @@ double TernarySepChainDDFactor::compute_forward(const SepChainDDPairSeparator* i
       }
     }
   }
-  
+
   return 0.0; //presently not subtracting an offset
 }
 
-double TernarySepChainDDFactor::eval_pair(uint s, uint x, uint y, uint z, const Storage1D< Math2D::Matrix<double> >& pair_param) const {
+double TernarySepChainDDFactor::eval_pair(uint s, uint x, uint y, uint z, const Storage1D< Math2D::Matrix<double> >& pair_param) const
+{
 
   SepChainDDVar* v1 = involved_separator_[s]->var1();
   SepChainDDVar* v2 = involved_separator_[s]->var2();
-  
+
   uint a=MAX_UINT;
   uint b=MAX_UINT;
-  
+
   if (involved_var_[0] == v1)
     a = x;
-  else { 
+  else {
     assert(involved_var_[1] == v1);
     a = y;
   }
@@ -706,24 +745,25 @@ double TernarySepChainDDFactor::eval_pair(uint s, uint x, uint y, uint z, const 
     assert(involved_var_[2] == v2);
     b = z;
   }
-  
+
   return pair_param[s](a,b);
 }
 
 /***********************************/
 
-FourthOrderSepChainDDFactor::FourthOrderSepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars, 
-                                                         Storage1D<SepChainDDPairSeparator*>& separators,
-                                                         const Storage1D<Math3D::Tensor<float> >& cost) 
-  : SepChainDDFactor(involved_vars,separators), cost_(cost) {
+FourthOrderSepChainDDFactor::FourthOrderSepChainDDFactor(const Storage1D<SepChainDDVar*>& involved_vars,
+    Storage1D<SepChainDDPairSeparator*>& separators,
+    const Storage1D<Math3D::Tensor<float> >& cost)
+  : SepChainDDFactor(involved_vars,separators), cost_(cost)
+{
 
   if (involved_vars.size() != 4) {
-    INTERNAL_ERROR << " attempt to instantiate ternary factor with " 
+    INTERNAL_ERROR << " attempt to instantiate ternary factor with "
                    << involved_vars.size() << " variables. Exiting." << std::endl;
     exit(1);
   }
 
-  if (cost.size() < involved_vars[0]->nLabels() || cost[0].xDim() < involved_vars[1]->nLabels() 
+  if (cost.size() < involved_vars[0]->nLabels() || cost[0].xDim() < involved_vars[1]->nLabels()
       || cost[0].yDim() < involved_vars[2]->nLabels() || cost[0].zDim() < involved_vars[3]->nLabels()) {
     INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
     exit(1);
@@ -734,12 +774,13 @@ FourthOrderSepChainDDFactor::FourthOrderSepChainDDFactor(const Storage1D<SepChai
 /*virtual*/ FourthOrderSepChainDDFactor::~FourthOrderSepChainDDFactor() {}
 
 /*virtual */
-double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
-                                                    const SepChainDDVar* outgoing_var,
-                                                    const Math2D::Matrix<double>& prev_pair_forward, 
-                                                    const Math1D::Vector<double>& prev_var_forward, 
-                                                    Math1D::Vector<double>& forward, 
-                                                    Math2D::Matrix<uint>& trace) const {
+double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var,
+    const SepChainDDVar* outgoing_var,
+    const Math2D::Matrix<double>& prev_pair_forward,
+    const Math1D::Vector<double>& prev_var_forward,
+    Math1D::Vector<double>& forward,
+    Math2D::Matrix<uint>& trace) const
+{
 
   assert(incoming_var != outgoing_var);
 
@@ -782,14 +823,14 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
   for (uint s=0; s < nSeps; s++) {
 
     if (involved_separator_[s] == incoming_sep) {
-      pair_param[s] -= prev_pair_forward; 
+      pair_param[s] -= prev_pair_forward;
     }
   }
 
   assert(var_idx != MAX_UINT);
-  
+
   if (var_idx == 0) {
-    
+
     forward.resize_dirty(nLabels1);
     trace.resize_dirty(nLabels1,4);
 
@@ -805,18 +846,18 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
       for (uint l2=0; l2 < nLabels2; l2++) {
 
         const double w2 = param[1][l2];
-        
+
         for (uint l3=0; l3 < nLabels3; l3++) {
 
           const double w3 = w2 + param[2][l3];
 
           for (uint l4=0; l4 < nLabels4; l4++) {
-          
+
             double hyp = cur_cost(l2,l3,l4) - w3 - param[3][l4];
 
             for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-          
+
             if (hyp < best) {
               best = hyp;
               best2 = l2;
@@ -862,7 +903,7 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
 
             for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-            
+
             if (hyp < best) {
               best = hyp;
               best1 = l1;
@@ -908,7 +949,7 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
 
             for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-            
+
             if (hyp < best) {
               best = hyp;
               best1 = l1;
@@ -954,13 +995,13 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
 
             for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-            
+
             if (hyp < best) {
               best = hyp;
               best1 = l1;
               best2 = l2;
               best3 = l3;
-            }            
+            }
           }
         }
       }
@@ -969,20 +1010,21 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
       trace(l4,0) = best1;
       trace(l4,1) = best2;
       trace(l4,2) = best3;
-      trace(l4,3) = l4;      
+      trace(l4,3) = l4;
     }
   }
 
   return 0.0;
 }
 
-/*virtual*/ 
-double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var, 
-                                                    const SepChainDDPairSeparator* outgoing_sep,
-                                                    const Math2D::Matrix<double>& prev_pair_forward, 
-                                                    const Math1D::Vector<double>& prev_var_forward, 
-                                                    Math2D::Matrix<double>& forward, 
-                                                    Math3D::Tensor<uint>& trace) const {
+/*virtual*/
+double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparator* incoming_sep, const SepChainDDVar* incoming_var,
+    const SepChainDDPairSeparator* outgoing_sep,
+    const Math2D::Matrix<double>& prev_pair_forward,
+    const Math1D::Vector<double>& prev_var_forward,
+    Math2D::Matrix<double>& forward,
+    Math3D::Tensor<uint>& trace) const
+{
 
   assert(incoming_sep != outgoing_sep);
 
@@ -1020,7 +1062,7 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
   for (uint s=0; s < nSeps; s++) {
 
     if (involved_separator_[s] == incoming_sep) {
-      pair_param[s] -= prev_pair_forward; 
+      pair_param[s] -= prev_pair_forward;
     }
     else if (involved_separator_[s] == outgoing_sep) {
       pair_idx = s;
@@ -1049,7 +1091,7 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
           double best = 1e300;
           uint arg_best3 = 0;
           uint arg_best4 = 0;
-          
+
           for (uint l3 = 0; l3 < nLabels3; l3++) {
 
             const double w3 = param[2][l3];
@@ -1057,10 +1099,10 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
             for (uint l4 = 0; l4 < nLabels4; l4++) {
 
               double hyp = cur_cost(l2,l3,l4) - w3 - param[3][l4];
-            
+
               for (uint s=0; s < nSeps; s++)
                 hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-              
+
               if (hyp < best) {
                 best = hyp;
                 arg_best3 = l3;
@@ -1068,7 +1110,7 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
               }
             }
           }
-           
+
           forward(l1,l2) = best - param[0][l1] - param[1][l2];
           trace(l1,l2,0) = l1;
           trace(l1,l2,1) = l2;
@@ -1092,7 +1134,7 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
           double best = 1e300;
           uint arg_best2 = 0;
           uint arg_best4 = 0;
-          
+
           for (uint l2 = 0; l2 < nLabels2; l2++) {
 
             const double w2 = param[1][l2];
@@ -1100,10 +1142,10 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
             for (uint l4 = 0; l4 < nLabels4; l4++) {
 
               double hyp = cur_cost(l2,l3,l4) - w2 - param[3][l4];
-              
+
               for (uint s=0; s < nSeps; s++)
                 hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-              
+
               if (hyp < best) {
                 best = hyp;
                 arg_best2 = l2;
@@ -1145,10 +1187,10 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
             for (uint l3 = 0; l3 < nLabels3; l3++) {
 
               double hyp = cur_cost(l2,l3,l4) - w2 - param[2][l3];
-              
+
               for (uint s=0; s < nSeps; s++)
                 hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-              
+
               if (hyp < best) {
                 best = hyp;
                 arg_best2 = l2;
@@ -1161,39 +1203,39 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
           trace(l1,l4,0) = l1;
           trace(l1,l4,1) = arg_best2;
           trace(l1,l4,2) = arg_best3;
-          trace(l1,l4,3) = l4;          
+          trace(l1,l4,3) = l4;
         }
       }
     }
   }
   else if (v1 == involved_var_[1]) {
-    
+
     if (v2 == involved_var_[2]) {
 
       forward.resize_dirty(nLabels2,nLabels3);
       trace.resize_dirty(nLabels2,nLabels3,4);
-      
+
       for (uint l2=0; l2 < nLabels2; l2++) {
-        
+
         for (uint l3 = 0; l3 < nLabels3; l3++) {
-          
+
           double best = 1e300;
           uint arg_best1 = 0;
           uint arg_best4 = 0;
-          
+
           for (uint l1 = 0; l1 < nLabels1; l1++) {
-            
+
             const Math3D::Tensor<float>& cur_cost = cost_[l1];
 
             const double w1 = param[0][l1];
 
             for (uint l4 = 0; l4 < nLabels4; l4++) {
-              
+
               double hyp = cur_cost(l2,l3,l4) - w1 - param[3][l4];
-              
+
               for (uint s=0; s < nSeps; s++)
                 hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-              
+
               if (hyp < best) {
                 best = hyp;
                 arg_best1 = l1;
@@ -1201,7 +1243,7 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
               }
             }
           }
-          
+
           forward(l2,l3) = best - param[1][l2] - param[2][l3];
           trace(l2,l3,0) = arg_best1;
           trace(l2,l3,1) = l2;
@@ -1218,26 +1260,26 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
       trace.resize_dirty(nLabels2,nLabels4,4);
 
       for (uint l2=0; l2 < nLabels2; l2++) {
-        
+
         for (uint l4 = 0; l4 < nLabels4; l4++) {
-          
+
           double best = 1e300;
           uint arg_best1 = 0;
           uint arg_best3 = 0;
 
           for (uint l1 = 0; l1 < nLabels1; l1++) {
-            
+
             const Math3D::Tensor<float>& cur_cost = cost_[l1];
 
             const double w1 = param[0][l1];
 
             for (uint l3 = 0; l3 < nLabels3; l3++) {
-              
+
               double hyp = cur_cost(l2,l3,l4) - w1 - param[2][l3];
-              
+
               for (uint s=0; s < nSeps; s++)
                 hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-              
+
               if (hyp < best) {
                 best = hyp;
                 arg_best1 = l1;
@@ -1264,26 +1306,26 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
     trace.resize_dirty(nLabels3,nLabels4,4);
 
     for (uint l3=0; l3 < nLabels3; l3++) {
-        
+
       for (uint l4 = 0; l4 < nLabels4; l4++) {
-        
+
         double best = 1e300;
         uint arg_best1 = 0;
         uint arg_best2 = 0;
-        
+
         for (uint l1 = 0; l1 < nLabels1; l1++) {
-            
+
           const Math3D::Tensor<float>& cur_cost = cost_[l1];
 
           const double w1 = param[0][l1];
 
           for (uint l2 = 0; l2 < nLabels2; l2++) {
-              
+
             double hyp = cur_cost(l2,l3,l4) - w1 - param[1][l2];
-              
+
             for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-            
+
             if (hyp < best) {
               best = hyp;
               arg_best1 = l1;
@@ -1291,7 +1333,7 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
             }
           }
         }
-        
+
         forward(l3,l4) = best - param[2][l3] - param[3][l4];
         trace(l3,l4,0) = arg_best1;
         trace(l3,l4,1) = arg_best2;
@@ -1300,19 +1342,20 @@ double FourthOrderSepChainDDFactor::compute_forward(const SepChainDDPairSeparato
       }
     }
   }
-    
+
   return 0.0; //presently not subtracting an offset
 }
 
-double FourthOrderSepChainDDFactor::eval_pair(uint s, uint x, uint y, uint z, uint w, 
-                                              const Storage1D< Math2D::Matrix<double> >& pair_param) const {
+double FourthOrderSepChainDDFactor::eval_pair(uint s, uint x, uint y, uint z, uint w,
+    const Storage1D< Math2D::Matrix<double> >& pair_param) const
+{
 
   SepChainDDVar* v1 = involved_separator_[s]->var1();
   SepChainDDVar* v2 = involved_separator_[s]->var2();
-  
+
   uint a=MAX_UINT;
   uint b=MAX_UINT;
-  
+
   if (involved_var_[0] == v1)
     a = x;
   else if (involved_var_[1] == v1) {
@@ -1332,7 +1375,7 @@ double FourthOrderSepChainDDFactor::eval_pair(uint s, uint x, uint y, uint z, ui
     assert(involved_var_[3] == v2);
     b = w;
   }
-  
+
   return pair_param[s](a,b);
 
 }
@@ -1341,15 +1384,17 @@ double FourthOrderSepChainDDFactor::eval_pair(uint s, uint x, uint y, uint z, ui
 /***********************************/
 
 SeparatorChainDualDecomposition::SeparatorChainDualDecomposition(uint nVars, uint nSeparators, uint nFactors) :
-  nUsedVars_(0), nUsedSeparators_(0), nUsedFactors_(0), optimize_called_(false) {
-  
+  nUsedVars_(0), nUsedSeparators_(0), nUsedFactors_(0), optimize_called_(false)
+{
+
   var_.resize(nVars);
   separator_.resize(nSeparators);
   factor_.resize(nFactors);
 }
 
 
-SeparatorChainDualDecomposition::~SeparatorChainDualDecomposition() {
+SeparatorChainDualDecomposition::~SeparatorChainDualDecomposition()
+{
   for (uint v=0; v < nUsedVars_; v++)
     delete var_[v];
   for (uint s=0; s < nUsedSeparators_; s++)
@@ -1358,7 +1403,8 @@ SeparatorChainDualDecomposition::~SeparatorChainDualDecomposition() {
     delete factor_[f];
 }
 
-uint SeparatorChainDualDecomposition::add_var(const Math1D::Vector<float>& cost) {
+uint SeparatorChainDualDecomposition::add_var(const Math1D::Vector<float>& cost)
+{
 
   assert(!optimize_called_);
 
@@ -1372,7 +1418,8 @@ uint SeparatorChainDualDecomposition::add_var(const Math1D::Vector<float>& cost)
   return (nUsedVars_-1);
 }
 
-uint SeparatorChainDualDecomposition::add_pair_separator(uint var1, uint var2) {
+uint SeparatorChainDualDecomposition::add_pair_separator(uint var1, uint var2)
+{
 
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_) {
     INTERNAL_ERROR << "out of range. Exiting." << std::endl;
@@ -1394,10 +1441,11 @@ uint SeparatorChainDualDecomposition::add_pair_separator(uint var1, uint var2) {
   return nUsedSeparators_-1;
 }
 
-void SeparatorChainDualDecomposition::add_factor(SepChainDDFactor* fac) {
+void SeparatorChainDualDecomposition::add_factor(SepChainDDFactor* fac)
+{
 
   assert(!optimize_called_);
-  
+
   if (nUsedFactors_ == factor_.size())
     factor_.resize(uint(1.2*nUsedFactors_)+4);
 
@@ -1405,7 +1453,8 @@ void SeparatorChainDualDecomposition::add_factor(SepChainDDFactor* fac) {
   nUsedFactors_++;
 }
 
-void SeparatorChainDualDecomposition::add_binary_factor(uint v1, uint v2, const Math2D::Matrix<float>& cost) {
+void SeparatorChainDualDecomposition::add_binary_factor(uint v1, uint v2, const Math2D::Matrix<float>& cost)
+{
 
   if (v1 >= nUsedVars_ || v2 >= nUsedVars_) {
     INTERNAL_ERROR << "out of range. Exiting." << std::endl;
@@ -1419,9 +1468,10 @@ void SeparatorChainDualDecomposition::add_binary_factor(uint v1, uint v2, const 
   add_factor(new BinarySepChainDDFactor(vars,cost));
 }
 
-void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint v3, 
-                                                         const Storage1D<uint>& separators, 
-                                                         const Math3D::Tensor<float>& cost) {
+void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint v3,
+    const Storage1D<uint>& separators,
+    const Math3D::Tensor<float>& cost)
+{
 
   if (v1 >= nUsedVars_ || v2 >= nUsedVars_ || v3 >= nUsedVars_) {
     INTERNAL_ERROR << "out of range. Exiting." << std::endl;
@@ -1457,7 +1507,7 @@ void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint 
       for (uint y=0; y < var_[v2]->nLabels(); y++)
         for (uint z=y+1; z < var_[v3]->nLabels(); z++)
           std::swap(cost_copy(x,y,z),cost_copy(x,z,y));
-    
+
     std::swap(v2,v3);
   }
   if (v1 > v2) {
@@ -1498,9 +1548,10 @@ void SeparatorChainDualDecomposition::add_ternary_factor(uint v1, uint v2, uint 
   add_factor(new TernarySepChainDDFactor(vars,seps,cost_copy));
 }
 
-void SeparatorChainDualDecomposition::add_fourth_order_factor(uint v1, uint v2, uint v3, uint v4, 
-                                                              const Storage1D<uint>& separators, 
-                                                              const Storage1D<Math3D::Tensor<float> >& cost) {
+void SeparatorChainDualDecomposition::add_fourth_order_factor(uint v1, uint v2, uint v3, uint v4,
+    const Storage1D<uint>& separators,
+    const Storage1D<Math3D::Tensor<float> >& cost)
+{
 
   if (v1 >= nUsedVars_ || v2 >= nUsedVars_ || v3 >= nUsedVars_ || v4 >= nUsedVars_) {
     INTERNAL_ERROR << "out of range. Exiting." << std::endl;
@@ -1585,18 +1636,21 @@ void SeparatorChainDualDecomposition::add_fourth_order_factor(uint v1, uint v2, 
   add_factor(new FourthOrderSepChainDDFactor(vars,seps,cost_copy));
 }
 
-SepChainDDVar* SeparatorChainDualDecomposition::get_variable(uint v) {
+SepChainDDVar* SeparatorChainDualDecomposition::get_variable(uint v)
+{
 
   if (v < nUsedVars_)
     return var_[v];
   return 0;
 }
 
-const Math1D::Vector<uint>& SeparatorChainDualDecomposition::labeling() {
+const Math1D::Vector<uint>& SeparatorChainDualDecomposition::labeling()
+{
   return labeling_;
 }
 
-void SeparatorChainDualDecomposition::set_up_chains() {
+void SeparatorChainDualDecomposition::set_up_chains()
+{
 
   uint nChains = 0;
   uint nAtLeast5 = 0;
@@ -1606,20 +1660,20 @@ void SeparatorChainDualDecomposition::set_up_chains() {
   for (uint pass=0; pass < 2; pass++) {
 
     for (uint f=0; f < nUsedFactors_; f++) {
-      
+
       //std::cerr << "factor #" << f << "/" << nUsedFactors_ << std::endl;
-      
+
       if (factor_[f]->prev_var() == 0 && factor_[f]->prev_sep() == 0
           && factor_[f]->next_var() == 0 && factor_[f]->next_sep() == 0) {
-        
+
         uint length = 1;
-        
+
         std::set<SepChainDDVar*> current_vars;
-        
+
         bool extension_found = true;
-        
+
         SepChainDDFactor* cur_factor = factor_[f];
-        
+
         if (pass > 0) {
 
           SepChainDDFactor* temp_fac = cur_factor;
@@ -1631,7 +1685,7 @@ void SeparatorChainDualDecomposition::set_up_chains() {
             for (uint k=0; k < involved_vars.size(); k++) {
               current_vars.insert(involved_vars[k]);
             }
-            
+
             temp_fac = temp_fac->prev_factor();
           }
 
@@ -1644,7 +1698,7 @@ void SeparatorChainDualDecomposition::set_up_chains() {
             for (uint k=0; k < involved_vars.size(); k++) {
               current_vars.insert(involved_vars[k]);
             }
-            
+
             temp_fac = temp_fac->next_factor();
           }
         }
@@ -1652,62 +1706,62 @@ void SeparatorChainDualDecomposition::set_up_chains() {
 #if 1
         //extend lower end
         while (extension_found) {
-          
+
           extension_found = false;
-          
+
           const Storage1D<SepChainDDVar*>& involved_vars = cur_factor->involved_vars();
           const Storage1D<SepChainDDPairSeparator*>& involved_separators = cur_factor->involved_separators();
-          
+
           for (uint k=0; k < involved_vars.size(); k++) {
             current_vars.insert(involved_vars[k]);
           }
 
           if (pass == 0) {
             for (uint s=0; s < involved_separators.size(); s++) {
-            
+
               SepChainDDPairSeparator* sep = involved_separators[s];
-            
+
               if (sep == cur_factor->next_sep())
                 continue;
               if (cur_factor->next_var() != 0 && (sep->var1() == cur_factor->next_var() || sep->var2() == cur_factor->next_var()))
                 continue;
-              
+
               const Storage1D<SepChainDDFactor*>& adjacent_factor = sep->neighboring_factor();
-              
+
               for (uint l=0; l < adjacent_factor.size(); l++) {
-                
+
                 SepChainDDFactor* hyp_factor = adjacent_factor[l];
                 const Storage1D<SepChainDDVar*>& hyp_involved_vars = hyp_factor->involved_vars();
-                
+
                 if (hyp_factor != cur_factor && hyp_factor->prev_var() == 0 && hyp_factor->prev_sep() == 0
                     && hyp_factor->next_var() == 0 && hyp_factor->next_sep() == 0) {
-                  
+
                   bool is_valid_extension = true;
-                  
+
                   for (uint v=0; v < hyp_involved_vars.size(); v++) {
-                    
-                    if (hyp_involved_vars[v] != sep->var1() && hyp_involved_vars[v] != sep->var2() 
+
+                    if (hyp_involved_vars[v] != sep->var1() && hyp_involved_vars[v] != sep->var2()
                         && current_vars.find(hyp_involved_vars[v]) != current_vars.end())
                       is_valid_extension = false;
                   }
-                  
+
                   if (is_valid_extension) {
-                  
+
                     extension_found = true;
                     cur_factor->set_prev_sep(sep);
                     cur_factor->set_prev_factor(hyp_factor);
-                    
+
                     hyp_factor->set_next_sep(sep);
                     hyp_factor->set_next_factor(cur_factor);
-                    
+
                     cur_factor = hyp_factor;
-                    
+
                     length++;
-                    
+
                     break;
                   }
                 }
-                
+
                 if (extension_found)
                   break;
               }
@@ -1717,39 +1771,39 @@ void SeparatorChainDualDecomposition::set_up_chains() {
             //second pass
 
             for (double k=0; k < involved_vars.size(); k++) {
-              
+
               SepChainDDVar* var = involved_vars[k];
 
               if (var == cur_factor->next_var())
                 continue;
-              
+
               const Storage1D<SepChainDDFactor*>& adjacent_factor = var->neighboring_factor();
-              
+
               for (uint l=0; l < adjacent_factor.size(); l++) {
-                
+
                 SepChainDDFactor* hyp_factor = adjacent_factor[l];
                 const Storage1D<SepChainDDVar*>& hyp_involved_vars = hyp_factor->involved_vars();
-                
+
                 bool is_valid_extension = false;
-                
+
                 if (hyp_factor != cur_factor
                     && hyp_factor->next_var() == 0 && hyp_factor->next_sep() == 0) {
-                  
+
                   is_valid_extension = true;
-                  
+
                   for (uint v=0; v < hyp_involved_vars.size(); v++) {
-                    
+
                     if (hyp_involved_vars[v] != var && current_vars.find(hyp_involved_vars[v]) != current_vars.end())
                       is_valid_extension = false;
                   }
-                  
+
                   SepChainDDFactor* temp_fac = hyp_factor->prev_factor();
                   while (is_valid_extension && temp_fac != 0) {
 
                     const Storage1D<SepChainDDVar*>& temp_involved_vars = temp_fac->involved_vars();
-                    
+
                     for (uint v=0; v < temp_involved_vars.size(); v++) {
-                    
+
                       if (current_vars.find(temp_involved_vars[v]) != current_vars.end()) {
                         is_valid_extension = false;
                         break;
@@ -1758,25 +1812,25 @@ void SeparatorChainDualDecomposition::set_up_chains() {
 
                     temp_fac = temp_fac->prev_factor();
                   }
-                  
+
                   if (is_valid_extension) {
-                    
+
                     extension_found = true;
                     cur_factor->set_prev_var(var);
                     cur_factor->set_prev_factor(hyp_factor);
-                    
+
                     hyp_factor->set_next_var(var);
                     hyp_factor->set_next_factor(cur_factor);
-                    
+
                     cur_factor = hyp_factor;
-                    
+
                     length++;
-                    
+
                     break;
                   }
                 }
               }
-              
+
               if (extension_found)
                 break;
             }
@@ -1788,30 +1842,30 @@ void SeparatorChainDualDecomposition::set_up_chains() {
         //extend upper end
         cur_factor = factor_[f];
         extension_found = true;
-        
+
         while (extension_found) {
-          
+
           extension_found = false;
-        
+
           const Storage1D<SepChainDDVar*>& involved_vars = cur_factor->involved_vars();
           const Storage1D<SepChainDDPairSeparator*>& involved_separators = cur_factor->involved_separators();
-          
+
           for (uint k=0; k < involved_vars.size(); k++) {
             current_vars.insert(involved_vars[k]);
           }
 
           if (pass == 0) {
             for (uint s=0; s < involved_separators.size(); s++) {
-            
+
               SepChainDDPairSeparator* sep = involved_separators[s];
 
               if (sep == cur_factor->prev_sep())
                 continue;
 
               const Storage1D<SepChainDDFactor*>& adjacent_factor = sep->neighboring_factor();
-              
+
               for (uint l=0; l < adjacent_factor.size(); l++) {
-                
+
                 SepChainDDFactor* hyp_factor = adjacent_factor[l];
 
                 bool is_valid_extension = false;
@@ -1822,8 +1876,8 @@ void SeparatorChainDualDecomposition::set_up_chains() {
                   const Storage1D<SepChainDDVar*>& hyp_involved_vars = hyp_factor->involved_vars();
 
                   for (uint v=0; v < hyp_involved_vars.size(); v++) {
-                    
-                    if (hyp_involved_vars[v] != sep->var1() && hyp_involved_vars[v] != sep->var2() 
+
+                    if (hyp_involved_vars[v] != sep->var1() && hyp_involved_vars[v] != sep->var2()
                         && current_vars.find(hyp_involved_vars[v]) != current_vars.end())
                       is_valid_extension = false;
                   }
@@ -1833,17 +1887,17 @@ void SeparatorChainDualDecomposition::set_up_chains() {
                     extension_found = true;
                     cur_factor->set_next_sep(sep);
                     cur_factor->set_next_factor(hyp_factor);
-                    
+
                     hyp_factor->set_prev_sep(sep);
                     hyp_factor->set_prev_factor(cur_factor);
-                    
+
                     cur_factor = hyp_factor;
-                    
+
                     length++;
-                    
+
                     break;
                   }
-                }                
+                }
 
                 if (extension_found)
                   break;
@@ -1852,42 +1906,42 @@ void SeparatorChainDualDecomposition::set_up_chains() {
           }
           else {
             //second pass (use variables as links)
-            
+
             for (double k=0; k < involved_vars.size(); k++) {
-	
+
               SepChainDDVar* var = involved_vars[k];
-              
+
               if (var == cur_factor->prev_var())
                 continue;
-              
+
               const Storage1D<SepChainDDFactor*>& adjacent_factor = var->neighboring_factor();
-              
+
               for (uint l=0; l < adjacent_factor.size(); l++) {
-                
+
                 SepChainDDFactor* hyp_factor = adjacent_factor[l];
-                
+
                 bool is_valid_extension = false;
 
-                if (hyp_factor != cur_factor 
+                if (hyp_factor != cur_factor
                     && hyp_factor->prev_var() == 0 && hyp_factor->prev_sep() == 0) {
 
                   const Storage1D<SepChainDDVar*>& hyp_involved_vars = hyp_factor->involved_vars();
-                  
+
                   is_valid_extension = true;
-                  
+
                   for (uint v=0; v < hyp_involved_vars.size(); v++) {
-                    
+
                     if (hyp_involved_vars[v] != var && current_vars.find(hyp_involved_vars[v]) != current_vars.end())
                       is_valid_extension = false;
                   }
-	      
+
                   SepChainDDFactor* temp_fac = hyp_factor->next_factor();
                   while (is_valid_extension && temp_fac != 0) {
 
                     const Storage1D<SepChainDDVar*>& temp_involved_vars = temp_fac->involved_vars();
-                    
+
                     for (uint v=0; v < temp_involved_vars.size(); v++) {
-                    
+
                       if (current_vars.find(temp_involved_vars[v]) != current_vars.end()) {
                         is_valid_extension = false;
                         break;
@@ -1903,17 +1957,17 @@ void SeparatorChainDualDecomposition::set_up_chains() {
                     extension_found = true;
                     cur_factor->set_next_var(var);
                     cur_factor->set_next_factor(hyp_factor);
-                    
+
                     hyp_factor->set_prev_var(var);
                     hyp_factor->set_prev_factor(cur_factor);
-                    
+
                     cur_factor = hyp_factor;
-                    
+
                     length++;
-                    
+
                     break;
                   }
-                }	    
+                }
 
                 if (extension_found)
                   break;
@@ -1928,7 +1982,8 @@ void SeparatorChainDualDecomposition::set_up_chains() {
 
 }
 
-double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_size, bool quiet) {
+double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_size, bool quiet)
+{
 
   std::cerr.precision(10);
 
@@ -1940,7 +1995,7 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
     set_up_chains();
     if (!quiet)
       std::cerr << "chains created" << std::endl;
-    
+
     for (uint v=0; v < nUsedVars_; v++)
       var_[v]->set_up_chains();
   }
@@ -1966,12 +2021,12 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
 
 
   size_t effort_per_iteration = 0;
-    
+
   for (uint f=0; f < nUsedFactors_; f++) {
-    
+
     uint var_size = factor_[f]->involved_vars().size();
     uint sep_size = factor_[f]->involved_separators().size();
-    
+
     effort_per_iteration += (var_size + sep_size);
   }
 
@@ -1986,7 +2041,7 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
       if (factor_[f]->prev_var() == 0 && factor_[f]->prev_sep() == 0) {
 
         SepChainDDFactor* cur_factor = factor_[f];
-        
+
         std::vector<SepChainDDFactor*> chain;
         std::vector<SepChainDDVar*> out_var;
         std::vector<SepChainDDPairSeparator*> out_sep;
@@ -1996,8 +2051,8 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
         for (uint k=0; k < cur_factor->involved_vars().size(); k++) {
 
           if (cur_factor->involved_vars()[k] != cur_factor->next_var()
-              && (cur_factor->next_sep() == 0 
-                  || (cur_factor->next_sep()->var1() != cur_factor->involved_vars()[k] 
+              && (cur_factor->next_sep() == 0
+                  || (cur_factor->next_sep()->var1() != cur_factor->involved_vars()[k]
                       && cur_factor->next_sep()->var2() != cur_factor->involved_vars()[k]) ) ) {
             in_var = cur_factor->involved_vars()[k];
             break;
@@ -2019,10 +2074,10 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
         //find chain end
         for (uint k=0; k < chain.back()->involved_vars().size(); k++) {
 
-          if (chain.back()->involved_vars()[k] != chain.back()->prev_var() 
+          if (chain.back()->involved_vars()[k] != chain.back()->prev_var()
               && (chain.back()->prev_sep() == 0
                   || (chain.back()->prev_sep()->var1() != chain.back()->involved_vars()[k]
-                      && chain.back()->prev_sep()->var2() != chain.back()->involved_vars()[k]) ) 
+                      && chain.back()->prev_sep()->var2() != chain.back()->involved_vars()[k]) )
               && chain.back()->involved_vars()[k] != in_var) { //can happen for chains of length 1
             out_var.back() = chain.back()->involved_vars()[k];
             break;
@@ -2036,7 +2091,7 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
 
         Math2D::Matrix<double> pair_forward1;
         Math2D::Matrix<double> pair_forward2;
-        
+
         NamedStorage1D<Math2D::Matrix<uint> > var_trace(chain_length,MAKENAME(var_trace));
         NamedStorage1D<Math3D::Tensor<uint> > pair_trace(chain_length,MAKENAME(pair_trace));
 
@@ -2053,13 +2108,13 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
 
           Math2D::Matrix<double>& last_pair_forward = ((k % 2) == 1) ? pair_forward1 : pair_forward2;
           Math2D::Matrix<double>& new_pair_forward = ((k % 2) == 0) ? pair_forward1 : pair_forward2;
-          
-          if (out_var[k] != 0) 
+
+          if (out_var[k] != 0)
             cur_bound += chain[k]->compute_forward(out_sep[k-1],out_var[k-1],out_var[k],
                                                    last_pair_forward,last_forward,new_forward,var_trace[k]);
           else
             cur_bound += chain[k]->compute_forward(out_sep[k-1],out_var[k-1],out_sep[k],
-                                                   last_pair_forward,last_forward,new_pair_forward,pair_trace[k]);          
+                                                   last_pair_forward,last_forward,new_pair_forward,pair_trace[k]);
         }
 
         //traceback
@@ -2084,7 +2139,7 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
 
         for (int k=chain_length-1; k >= 0; k--) {
 
-          Math1D::Vector<uint>& labeling = factor_label[factor_num[chain[k]]];	  
+          Math1D::Vector<uint>& labeling = factor_label[factor_num[chain[k]]];
 
           if (out_var[k] != 0) {
             for (uint v=0; v < labeling.size(); v++)
@@ -2098,7 +2153,7 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
           //update arg_best
           if (k > 0) {
             for (uint v=0; v < labeling.size(); v++) {
-	      
+
               if (out_var[k-1] != 0) {
                 if (chain[k]->involved_vars()[v] == out_var[k-1]) {
                   arg_best1 = labeling[v];
@@ -2131,9 +2186,9 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
     for (uint f=0; f < nUsedFactors_; f++) {
 
       for (uint k=0; k < factor_label[f].size(); k++) {
-        
+
         const SepChainDDVar* cur_var = factor_[f]->involved_vars()[k];
-        
+
         uint cur_fac_label = factor_label[f][k];
         factor_[f]->get_duals(cur_var)[cur_fac_label] -= step_size;
         assert(!isinf(factor_[f]->get_duals(cur_var)[cur_fac_label]));
@@ -2145,12 +2200,12 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
 
         const SepChainDDVar* v1 = cur_sep->var1();
         const SepChainDDVar* v2 = cur_sep->var2();
-        
+
         uint l1 = MAX_UINT;
         uint l2 = MAX_UINT;
-        
+
         for (uint k=0; k < factor_label[f].size(); k++) {
-        
+
           const SepChainDDVar* cur_var = factor_[f]->involved_vars()[k];
 
           if (cur_var == v1)
@@ -2166,19 +2221,19 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
 
     //re-project
     for (uint v=0; v < nUsedVars_; v++) {
-      
+
       if (var_[v]->neighboring_factor().size() > 0) {
 
         Math1D::Vector<double> sum(var_[v]->nLabels(),0.0);
-	  
+
         for (uint k=0; k < var_[v]->neighboring_factor().size(); k++) {
           sum += var_[v]->neighboring_factor()[k]->get_duals(var_[v]);
         }
-        
+
         sum *= 1.0 / var_[v]->neighboring_factor().size();
-	  
+
         for (uint k=0; k < var_[v]->neighboring_factor().size(); k++) {
-	    
+
           var_[v]->neighboring_factor()[k]->get_duals(var_[v]) -= sum;
           for (uint l=0; l < var_[v]->nLabels(); l++)
             assert(!isinf(var_[v]->neighboring_factor()[k]->get_duals(var_[v])[l]));
@@ -2196,7 +2251,7 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
         for (uint k=0; k < cur_sep->neighboring_factor().size(); k++) {
           sum += cur_sep->neighboring_factor()[k]->get_pair_duals(cur_sep);
         }
-        
+
         sum *= 1.0 / cur_sep->neighboring_factor().size();
 
         for (uint k=0; k < cur_sep->neighboring_factor().size(); k++) {
@@ -2207,11 +2262,11 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
   }
 
   for (uint f=0; f < nUsedFactors_; f++) {
-      
+
     for (uint k=0; k < factor_label[f].size(); k++) {
-      
+
       SepChainDDVar* cur_var = factor_[f]->involved_vars()[k];
-      
+
       labeling_[var_num[cur_var]] = factor_label[f][k];
     }
   }
@@ -2220,16 +2275,16 @@ double SeparatorChainDualDecomposition::optimize(uint nIter, double start_step_s
   if (!quiet) {
 
     size_t message_effort = 0;
-    
+
     for (uint f=0; f < nUsedFactors_; f++) {
-      
+
       uint var_size = factor_[f]->involved_vars().size();
       uint sep_size = factor_[f]->involved_separators().size();
-      
+
       message_effort += (var_size + sep_size);
     }
     message_effort *= nIter;
-    
+
     std::cerr << "message effort: " << message_effort << std::endl;
   }
 

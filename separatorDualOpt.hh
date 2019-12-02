@@ -28,7 +28,7 @@ public:
   void add_cost(const Math1D::Vector<float>& cost);
 
   void add_factor(sepDualOptFactor* adjacent_fac);
-  
+
   void add_pair_separator(sepDualOptPairSeparator* adjacent_sep);
 
   double dual_value(uint& arg_min) const;
@@ -42,7 +42,7 @@ public:
   const Math1D::Vector<float>& cost() const;
 
 protected:
-  
+
   Math1D::Vector<float> cost_;
 
   Storage1D<sepDualOptFactor*> adjacent_factor_; //contains only those factors that do not subsume any separator with this var.
@@ -53,7 +53,7 @@ protected:
 //Note: one could have a derived class that also handles its own cost matrix
 class sepDualOptPairSeparator {
 public:
-  
+
   sepDualOptPairSeparator(sepDualOptVar* var1, sepDualOptVar* var2);
 
   virtual ~sepDualOptPairSeparator();
@@ -86,7 +86,7 @@ protected:
 //abstract base class for a factor
 /* abstract */ class sepDualOptFactor {
 public:
-  
+
   sepDualOptFactor(const Storage1D<sepDualOptVar*>& vars, const Storage1D<sepDualOptPairSeparator*>& separators,
                    bool minimal_links);
 
@@ -112,7 +112,7 @@ protected:
   Storage1D<sepDualOptPairSeparator*> separator_;
 
   //if a var is contained in a separator, the respective vector will have length 0
-  Storage1D<Math1D::Vector<double> > dual_var_; 
+  Storage1D<Math1D::Vector<double> > dual_var_;
   Storage1D<Math2D::Matrix<double> > pair_dual_;
 };
 
@@ -182,7 +182,7 @@ protected:
 //this is the main class
 class SeparatorDualOptimization {
 public:
-  
+
   //you have to provide upper bounds on the number of variables, pair separators and factors you will add
   SeparatorDualOptimization(uint nVars, uint nSeparators, uint nFactors, bool minimal_links = true);
 
@@ -216,7 +216,7 @@ protected:
 
   Storage1D<sepDualOptVar*> var_;
   Storage1D<sepDualOptPairSeparator*> separator_;
-  Storage1D<sepDualOptFactor*> factor_;  
+  Storage1D<sepDualOptFactor*> factor_;
 
   Math1D::Vector<uint> labeling_;
 

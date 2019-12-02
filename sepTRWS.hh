@@ -30,7 +30,7 @@ public:
   AllInclusiveSepCumTRWSSepChainLink();
 
   AllInclusiveSepCumTRWSSepChainLink(AllInclusiveSepCumTRWSFactor* lfac, AllInclusiveSepCumTRWSFactor* rfac,
-				     AllInclusiveSepCumTRWSPairSeparator* sep);
+                                     AllInclusiveSepCumTRWSPairSeparator* sep);
 
   AllInclusiveSepCumTRWSPairSeparator* sep_;
 
@@ -56,9 +56,9 @@ public:
 
   //will delete chain links
   ~AllInclusiveSepCumTRWSVariable();
-  
+
   void add_factor(AllInclusiveSepCumTRWSFactor* adjacent_fac);
-  
+
   void add_pair_separator(AllInclusiveSepCumTRWSPairSeparator* adjacent_sep);
 
   void add_cost(const Math1D::Vector<float>& cost);
@@ -81,7 +81,7 @@ public:
 
   double reparameterize_backward();
 
-protected:  
+protected:
 
   Storage1D<AllInclusiveSepCumTRWSFactor*> adjacent_factor_;
 
@@ -151,13 +151,13 @@ protected:
 /*abstract*/ class AllInclusiveSepCumTRWSFactor {
 public:
 
-  AllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
-			       const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators);
+  AllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars,
+                               const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators);
 
   virtual ~AllInclusiveSepCumTRWSFactor();
-  
+
   const Math1D::Vector<double>& var_reparameterization(AllInclusiveSepCumTRWSVariable* var) const;
-  
+
   const Math2D::Matrix<double>& pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair) const;
 
   virtual double compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var) = 0;
@@ -165,14 +165,14 @@ public:
   virtual double compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair) = 0;
 
 
-  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var, 
+  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var,
                                  const AllInclusiveSepCumTRWSVariable* outgoing_var,
-                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
+                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward,
                                  Math1D::Vector<double>& forward);
 
-  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var, 
+  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var,
                                  const AllInclusiveSepCumTRWSPairSeparator* outgoing_sep,
-                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
+                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward,
                                  Math2D::Matrix<double>& forward);
 
   virtual double best_value() = 0;
@@ -232,7 +232,7 @@ protected:
   double valid_offs_;
 
   Math1D::Vector<uchar> parent_sep_;
-  
+
 protected:
   AllInclusiveSepCumTRWSPairSeparator* start_separator_;
   AllInclusiveSepCumTRWSPairSeparator* end_separator_;
@@ -242,11 +242,11 @@ protected:
 class BinaryAllInclusiveSepCumTRWSFactor : public AllInclusiveSepCumTRWSFactor {
 public:
 
-  BinaryAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
+  BinaryAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars,
                                      const Math2D::Matrix<float>& cost);
 
   virtual ~BinaryAllInclusiveSepCumTRWSFactor();
-  
+
   virtual double compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var);
 
   virtual double compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair);
@@ -254,10 +254,10 @@ public:
   virtual double best_value();
 
 
-  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, 
-                                 const AllInclusiveSepCumTRWSVariable* incoming_var, 
+  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep,
+                                 const AllInclusiveSepCumTRWSVariable* incoming_var,
                                  const AllInclusiveSepCumTRWSVariable* outgoing_var,
-                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
+                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward,
                                  Math1D::Vector<double>& forward);
 
 protected:
@@ -269,12 +269,12 @@ protected:
 class TernaryAllInclusiveSepCumTRWSFactor : public AllInclusiveSepCumTRWSFactor {
 public:
 
-  TernaryAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
-				      const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators,
-				      const Math3D::Tensor<float>& cost);
+  TernaryAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars,
+                                      const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators,
+                                      const Math3D::Tensor<float>& cost);
 
   virtual ~TernaryAllInclusiveSepCumTRWSFactor();
-  
+
   virtual double compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var);
 
   virtual double compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair);
@@ -282,14 +282,14 @@ public:
   virtual double best_value();
 
 
-  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var, 
+  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var,
                                  const AllInclusiveSepCumTRWSVariable* outgoing_var,
-                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
+                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward,
                                  Math1D::Vector<double>& forward);
 
-  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var, 
+  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var,
                                  const AllInclusiveSepCumTRWSPairSeparator* outgoing_sep,
-                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
+                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward,
                                  Math2D::Matrix<double>& forward);
 
 protected:
@@ -305,12 +305,12 @@ protected:
 class FourthOrderAllInclusiveSepCumTRWSFactor : public AllInclusiveSepCumTRWSFactor {
 public:
 
-  FourthOrderAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
+  FourthOrderAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars,
                                           const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators,
                                           const Storage1D<Math3D::Tensor<float> >& cost);
 
   virtual ~FourthOrderAllInclusiveSepCumTRWSFactor();
-  
+
   virtual double compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var);
 
   virtual double compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair);
@@ -318,14 +318,14 @@ public:
   virtual double best_value();
 
 
-  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var, 
+  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var,
                                  const AllInclusiveSepCumTRWSVariable* outgoing_var,
-                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
+                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward,
                                  Math1D::Vector<double>& forward);
 
-  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var, 
+  virtual double compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, const AllInclusiveSepCumTRWSVariable* incoming_var,
                                  const AllInclusiveSepCumTRWSPairSeparator* outgoing_sep,
-                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward, 
+                                 const Math2D::Matrix<double>& prev_pair_forward, const Math1D::Vector<double>& prev_var_forward,
                                  Math2D::Matrix<double>& forward);
 
 protected:
@@ -350,7 +350,7 @@ public:
   ~AllInclusiveSepCumTRWS();
 
   uint add_var(const Math1D::Vector<float>& cost);
-  
+
   uint add_pair_separator(uint var1, uint var2);
 
   void add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost);

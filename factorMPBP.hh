@@ -15,31 +15,31 @@ class FactorNode;
 
 class VariableNode {
 public:
-  
+
   VariableNode(const Math1D::Vector<float>& cost);
-  
+
   void add_factor(FactorNode* node);
 
   void add_cost(const Math1D::Vector<float>& cost);
-  
+
   double* get_message(FactorNode* node);
-  
+
   void compute_messages();
-  
+
   double cost(uint label) const;
 
   void compute_beliefs(Math1D::Vector<double>& beliefs);
-  
+
   uint nLabels() const;
 
   void init_messages();
 
   const Storage1D<FactorNode*>& neighboring_factor() const;
 
-protected:  
+protected:
 
-  Storage1D<FactorNode*> neighboring_factor_; 
-  
+  Storage1D<FactorNode*> neighboring_factor_;
+
   Math2D::Matrix<double> message_matrix_;
 
   Math1D::Vector<float> cost_;
@@ -48,15 +48,15 @@ protected:
 
 /*abstract*/ class FactorNode {
 public:
-  
+
   FactorNode(const Storage1D<VariableNode*>& participating_vars);
 
   virtual ~FactorNode();
-  
+
   virtual void compute_messages() = 0;
-  
+
   virtual double* get_message(VariableNode* node) = 0;
-  
+
   virtual double cost(const Math1D::Vector<uint>& labels) const = 0;
 
   virtual void init_messages() = 0;
@@ -65,9 +65,9 @@ public:
   virtual bool process_labeling(Math1D::Vector<uint>& labels) const;
 
   const Storage1D<VariableNode*>& participating_nodes() const;
-  
+
 protected:
-  
+
   Storage1D<VariableNode*> participating_var_;
 };
 
@@ -79,15 +79,15 @@ public:
   virtual ~GenericFactorNode();
 
   virtual void compute_messages();
-  
+
   virtual double* get_message(VariableNode* node);
-  
+
   virtual double cost(const Math1D::Vector<uint>& labels) const;
 
   virtual void init_messages();
 
 protected:
-  
+
   Storage1D<Math1D::Vector<double> > message_;
   VarDimStorage<float> cost_;
 };
@@ -105,8 +105,8 @@ public:
 
 protected:
 
-  Math1D::Vector<double> message1_; 
-  Math1D::Vector<double> message2_; 
+  Math1D::Vector<double> message1_;
+  Math1D::Vector<double> message2_;
 };
 
 class BinaryFactorNode : public BinaryFactorNodeBase {
@@ -158,7 +158,7 @@ protected:
 };
 
 /*abstract*/ class TernaryFactorNodeBase : public FactorNode {
-public: 
+public:
 
   TernaryFactorNodeBase(const Storage1D<VariableNode*>& participating_vars);
 
@@ -170,13 +170,13 @@ public:
 
 protected:
 
-  Math1D::Vector<double> message1_; 
-  Math1D::Vector<double> message2_; 
+  Math1D::Vector<double> message1_;
+  Math1D::Vector<double> message2_;
   Math1D::Vector<double> message3_;
 };
 
 class TernaryFactorNode : public TernaryFactorNodeBase {
-public: 
+public:
 
   TernaryFactorNode(const Storage1D<VariableNode*>& participating_vars, const Math3D::Tensor<float>& cost);
 
@@ -191,7 +191,7 @@ protected:
 };
 
 class TernaryRefFactorNode : public TernaryFactorNodeBase {
-public: 
+public:
 
   TernaryRefFactorNode(const Storage1D<VariableNode*>& participating_vars, const Math3D::Tensor<float>& cost);
 
@@ -208,7 +208,7 @@ protected:
 
 
 /*abstract*/ class FourthOrderFactorNodeBase : public FactorNode {
-public: 
+public:
 
   FourthOrderFactorNodeBase(const Storage1D<VariableNode*>& participating_vars);
 
@@ -220,14 +220,14 @@ public:
 
 protected:
 
-  Math1D::Vector<double> message1_; 
-  Math1D::Vector<double> message2_; 
+  Math1D::Vector<double> message1_;
+  Math1D::Vector<double> message2_;
   Math1D::Vector<double> message3_;
   Math1D::Vector<double> message4_;
 };
 
 class FourthOrderFactorNode : public FourthOrderFactorNodeBase {
-public: 
+public:
 
   FourthOrderFactorNode(const Storage1D<VariableNode*>& participating_vars, const Storage1D<Math3D::Tensor<float> >& cost);
 
@@ -242,7 +242,7 @@ protected:
 };
 
 class FourthOrderRefFactorNode : public FourthOrderFactorNodeBase {
-public: 
+public:
 
   FourthOrderRefFactorNode(const Storage1D<VariableNode*>& participating_vars, const Storage1D<Math3D::Tensor<float> >& cost);
 
@@ -277,7 +277,7 @@ public:
   virtual void compute_messages();
 
   virtual bool process_labeling(Math1D::Vector<uint>& labels) const;
-  
+
   Math2D::Matrix<double> message_matrix_;
 };
 
@@ -325,7 +325,7 @@ public:
   virtual bool process_labeling(Math1D::Vector<uint>& labels) const;
 
 protected:
-  
+
   int rhs_lower_;
   int rhs_upper_;
 
@@ -340,7 +340,7 @@ public:
   FactorMPBP(uint nVars = 0, uint nFactors=0);
 
   //delete all allocated owned var. and factor nodes
-  ~FactorMPBP(); 
+  ~FactorMPBP();
 
   /***** Setting up a factor graph ******/
 
@@ -354,7 +354,7 @@ public:
 
   //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
   uint add_generic_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref=false);
-  
+
   uint add_potts_factor(uint var1, uint var2, double lambda);
 
   //return factor number
@@ -374,7 +374,7 @@ public:
   uint add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& card_cost);
 
   //all participating variables must be binary
-  uint add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive, 
+  uint add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,
                              int rhs_lower = 0, int rhs_upper = 0);
 
   //CAUTION: the factor is deleted together with all truly owned factors
@@ -397,7 +397,7 @@ public:
 protected:
 
   void process_labeling();
-  
+
   uint add_factor(FactorNode* node);
 
   Storage1D<VariableNode*> var_;

@@ -13,7 +13,7 @@
 AllInclusiveSepCumTRWSSepChainLink::AllInclusiveSepCumTRWSSepChainLink() : sep_(0), left_fac_(0), right_fac_(0) {}
 
 AllInclusiveSepCumTRWSSepChainLink::AllInclusiveSepCumTRWSSepChainLink(AllInclusiveSepCumTRWSFactor* lfac, AllInclusiveSepCumTRWSFactor* rfac,
-								       AllInclusiveSepCumTRWSPairSeparator* sep) :
+    AllInclusiveSepCumTRWSPairSeparator* sep) :
   sep_(sep), left_fac_(lfac), right_fac_(rfac) {}
 
 /***************/
@@ -23,7 +23,8 @@ AllInclusiveSepCumTRWSVarChainLink::AllInclusiveSepCumTRWSVarChainLink() {}
 /***************/
 
 AllInclusiveSepCumTRWSVariable::AllInclusiveSepCumTRWSVariable(const Math1D::Vector<float>& cost, uint rank) :
-  cost_(cost), rank_(rank) {
+  cost_(cost), rank_(rank)
+{
 
   cum_cost_.resize(cost_.size());
   for (uint l=0; l < cost_.size(); l++)
@@ -31,27 +32,31 @@ AllInclusiveSepCumTRWSVariable::AllInclusiveSepCumTRWSVariable(const Math1D::Vec
 }
 
 //will delete chain links
-AllInclusiveSepCumTRWSVariable::~AllInclusiveSepCumTRWSVariable() {
+AllInclusiveSepCumTRWSVariable::~AllInclusiveSepCumTRWSVariable()
+{
 
   for (uint k=0; k < chain_link_.size(); k++) {
-    
+
     delete chain_link_[k];
   }
 }
-  
-void AllInclusiveSepCumTRWSVariable::add_factor(AllInclusiveSepCumTRWSFactor* adjacent_fac) {
+
+void AllInclusiveSepCumTRWSVariable::add_factor(AllInclusiveSepCumTRWSFactor* adjacent_fac)
+{
 
   uint nFac = adjacent_factor_.size();
   adjacent_factor_.resize(nFac+1);
   adjacent_factor_[nFac] = adjacent_fac;
 }
 
-void AllInclusiveSepCumTRWSVariable::add_cost(const Math1D::Vector<float>& cost) {
+void AllInclusiveSepCumTRWSVariable::add_cost(const Math1D::Vector<float>& cost)
+{
 
   cost_ += cost;
 }
-  
-void AllInclusiveSepCumTRWSVariable::add_pair_separator(AllInclusiveSepCumTRWSPairSeparator* adjacent_sep) {
+
+void AllInclusiveSepCumTRWSVariable::add_pair_separator(AllInclusiveSepCumTRWSPairSeparator* adjacent_sep)
+{
 
   uint nSep = adjacent_separator_.size();
   adjacent_separator_.resize(nSep+1);
@@ -75,23 +80,28 @@ void AllInclusiveSepCumTRWSVariable::add_pair_separator(AllInclusiveSepCumTRWSPa
   }
 }
 
-uint AllInclusiveSepCumTRWSVariable::nLabels() const {
+uint AllInclusiveSepCumTRWSVariable::nLabels() const
+{
   return cost_.size();
 }
 
-uint AllInclusiveSepCumTRWSVariable::rank() const {
+uint AllInclusiveSepCumTRWSVariable::rank() const
+{
   return rank_;
 }
 
-const Storage1D<AllInclusiveSepCumTRWSFactor*>& AllInclusiveSepCumTRWSVariable::adjacent_factors() const {
+const Storage1D<AllInclusiveSepCumTRWSFactor*>& AllInclusiveSepCumTRWSVariable::adjacent_factors() const
+{
   return adjacent_factor_;
 }
 
-const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& AllInclusiveSepCumTRWSVariable::adjacent_separators() const {
+const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& AllInclusiveSepCumTRWSVariable::adjacent_separators() const
+{
   return adjacent_separator_;
 }
 
-double AllInclusiveSepCumTRWSVariable::reparameterize_forward() {
+double AllInclusiveSepCumTRWSVariable::reparameterize_forward()
+{
 
   double offs = 0.0;
 
@@ -100,26 +110,26 @@ double AllInclusiveSepCumTRWSVariable::reparameterize_forward() {
     AllInclusiveSepCumTRWSVarChainLink* cur_chain_link = chain_link_[c];
 
     AllInclusiveSepCumTRWSFactor* fac = cur_chain_link->involved_factor_[0];
-    
+
     if (cur_chain_link->involved_factor_.size() > 1) {
-      
+
       // we use the pair separator as the end of the first factor in a chain link.
       //  if the variable is the higher ranked in the separator, it comes after the separator,
       //  so we move to the second factor
-      
-      //NOTE: this requires that start- and end-separators are set to 0 
+
+      //NOTE: this requires that start- and end-separators are set to 0
       //   if the chain link is a single variable
-      
+
       uint f=0;
-      while (fac->end_separator() != 0 && 
-	     fac->end_separator()->var2() == this) {
-	f++;
-	if (f >= cur_chain_link->involved_factor_.size())
-	  break;
-	
-	fac = cur_chain_link->involved_factor_[f];
+      while (fac->end_separator() != 0 &&
+             fac->end_separator()->var2() == this) {
+        f++;
+        if (f >= cur_chain_link->involved_factor_.size())
+          break;
+
+        fac = cur_chain_link->involved_factor_[f];
       }
-      
+
       //DEBUG
       // if ( !(f < chain_link_[c]->involved_factor_.size())) {
       //   std::cerr << "var " << rank_ << std::endl;
@@ -128,7 +138,7 @@ double AllInclusiveSepCumTRWSVariable::reparameterize_forward() {
       //     chain_link_[c]->involved_factor_[k]->print_factor();
       // }
       //END_DEBUG
-      
+
       assert(f < chain_link_[c]->involved_factor_.size());
     }
 
@@ -146,7 +156,8 @@ double AllInclusiveSepCumTRWSVariable::reparameterize_forward() {
   return offs;
 }
 
-double AllInclusiveSepCumTRWSVariable::reparameterize_backward() {
+double AllInclusiveSepCumTRWSVariable::reparameterize_backward()
+{
 
   double offs = 0.0;
 
@@ -162,11 +173,11 @@ double AllInclusiveSepCumTRWSVariable::reparameterize_backward() {
 
       if (cur_chain_link->involved_factor_.size() > 1) {
 
-        //NOTE: this requires that start- and end-separators are set to 0 
+        //NOTE: this requires that start- and end-separators are set to 0
         //   if the chain link is a single variable
 
         int f=nInvolved-1;
-        while (fac->start_separator() != 0 && 
+        while (fac->start_separator() != 0 &&
                fac->start_separator()->var1() == this) {
           f--;
           if (f < 0)
@@ -174,7 +185,7 @@ double AllInclusiveSepCumTRWSVariable::reparameterize_backward() {
 
           fac = cur_chain_link->involved_factor_[f];
         }
-        
+
         assert(f >= 0);
       }
 
@@ -192,7 +203,8 @@ double AllInclusiveSepCumTRWSVariable::reparameterize_backward() {
   return offs;
 }
 
-double AllInclusiveSepCumTRWSVariable::average(uint& arg_min) {
+double AllInclusiveSepCumTRWSVariable::average(uint& arg_min)
+{
 
   const uint nLabels = cost_.size();
 
@@ -224,43 +236,45 @@ double AllInclusiveSepCumTRWSVariable::average(uint& arg_min) {
 }
 
 
-const Math1D::Vector<double>& AllInclusiveSepCumTRWSVariable::cost() const {
+const Math1D::Vector<double>& AllInclusiveSepCumTRWSVariable::cost() const
+{
   return cum_cost_;
 }
 
-void AllInclusiveSepCumTRWSVariable::set_up_chains() {
+void AllInclusiveSepCumTRWSVariable::set_up_chains()
+{
 
   //check if the assumptions of the current implementation are satisfied
   for (uint f=0; f < adjacent_factor_.size(); f++) {
-    
+
     AllInclusiveSepCumTRWSFactor* cur_fac = adjacent_factor_[f];
     AllInclusiveSepCumTRWSPairSeparator* start_sep = cur_fac->start_separator();
     AllInclusiveSepCumTRWSPairSeparator* end_sep = cur_fac->end_separator();
-    
+
     if (start_sep == 0 || end_sep == 0)
       continue;
-    
+
     bool in_start_sep = (this == start_sep->var1() || this == start_sep->var2());
     bool in_end_sep = (this == end_sep->var1() || this == end_sep->var2());
-    
+
     if (in_start_sep && in_end_sep && (this != start_sep->var2() || this != end_sep->var1())) {
-      
+
       INTERNAL_ERROR << " if a variable is part of both the start and end separator of a factor, " << std::endl
-                     << "    it currently must be the end of the start sepator and the start of the end separator. Exiting.." 
+                     << "    it currently must be the end of the start sepator and the start of the end separator. Exiting.."
                      << std::endl;
 
       exit(1);
     }
-    
+
     if (start_sep->var2()->rank() > end_sep->var1()->rank() ) {
-      
+
       INTERNAL_ERROR << " start and end separator cannot be processed sequentially. Exiting" << std::endl;
       exit(1);
-    } 
+    }
   }
-  
+
   std::set<AllInclusiveSepCumTRWSFactor*> processed;
-  
+
   for (uint f=0; f < adjacent_factor_.size(); f++) {
 
     if (processed.find(adjacent_factor_[f]) != processed.end())
@@ -269,7 +283,7 @@ void AllInclusiveSepCumTRWSVariable::set_up_chains() {
     processed.insert(adjacent_factor_[f]);
 
     AllInclusiveSepCumTRWSVarChainLink* link = new AllInclusiveSepCumTRWSVarChainLink;
-    
+
     link->involved_factor_.push_back(adjacent_factor_[f]);
 
     bool can_form_var_end_link = (rank_ == adjacent_factor_[f]->max_rank() && adjacent_factor_[f]->next_factor() == 0);
@@ -329,7 +343,7 @@ void AllInclusiveSepCumTRWSVariable::set_up_chains() {
         adjacent_factor_[f]->set_start_separator(0);
         adjacent_factor_[ff]->set_next_factor(adjacent_factor_[f]);
         adjacent_factor_[ff]->set_end_separator(0);
-        processed.insert(adjacent_factor_[ff]);        
+        processed.insert(adjacent_factor_[ff]);
 
         is_var_start_link = true;
 
@@ -343,25 +357,25 @@ void AllInclusiveSepCumTRWSVariable::set_up_chains() {
 
       AllInclusiveSepCumTRWSFactor* prev_fac = adjacent_factor_[f]->prev_factor();
       if (prev_fac->end_separator() != 0) {
-        link->sep_.insert(link->sep_.begin(),prev_fac->end_separator()); 
+        link->sep_.insert(link->sep_.begin(),prev_fac->end_separator());
       }
       if (prev_fac->start_separator() == 0 || prev_fac->start_separator()->var2() != this)
         link->involved_factor_.insert(link->involved_factor_.begin(),prev_fac);
     }
-    
+
     AllInclusiveSepCumTRWSFactor* cur_fac = adjacent_factor_[f];
 
     while (true) {
-      
+
       AllInclusiveSepCumTRWSPairSeparator* start_sep = cur_fac->start_separator();
       if (start_sep == 0 || (start_sep->var1() != this && start_sep->var2() != this))
         break;
-      
+
       link->sep_.insert(link->sep_.begin(),start_sep);
-      
+
       if (cur_fac->prev_factor() == 0)
         break;
-      
+
       cur_fac = cur_fac->prev_factor();
       if (std::find(adjacent_factor_.direct_access(),adjacent_factor_.direct_access()+adjacent_factor_.size(),cur_fac)
           == adjacent_factor_.direct_access() + adjacent_factor_.size())
@@ -384,26 +398,26 @@ void AllInclusiveSepCumTRWSVariable::set_up_chains() {
     }
 
     while (true) {
-      
+
       AllInclusiveSepCumTRWSPairSeparator* end_sep = cur_fac->end_separator();
       if (end_sep == 0 || (end_sep->var1() != this && end_sep->var2() != this)) {
         break;
       }
       link->sep_.push_back(end_sep);
-      
+
       if (cur_fac->next_factor() == 0)
         break;
-      
+
       cur_fac = cur_fac->next_factor();
 
       if (std::find(adjacent_factor_.direct_access(),adjacent_factor_.direct_access()+adjacent_factor_.size(),cur_fac)
           == adjacent_factor_.direct_access() + adjacent_factor_.size())
         break;
-      
+
       processed.insert(cur_fac);
       link->involved_factor_.push_back(cur_fac);
     }
-      
+
     assert(link->involved_factor_.size() <= 3);
     assert(link->sep_.size() <= 2);
 
@@ -420,7 +434,8 @@ void AllInclusiveSepCumTRWSVariable::set_up_chains() {
 /************************/
 
 AllInclusiveSepCumTRWSPairSeparator::AllInclusiveSepCumTRWSPairSeparator(AllInclusiveSepCumTRWSVariable* var1, AllInclusiveSepCumTRWSVariable* var2)
-  :  sep_rank_(MAX_UINT), var1_(var1), var2_(var2) {
+  :  sep_rank_(MAX_UINT), var1_(var1), var2_(var2)
+{
 
   var1_->add_pair_separator(this);
   var2_->add_pair_separator(this);
@@ -429,32 +444,38 @@ AllInclusiveSepCumTRWSPairSeparator::AllInclusiveSepCumTRWSPairSeparator(AllIncl
 }
 
 //will delete chain links
-AllInclusiveSepCumTRWSPairSeparator::~AllInclusiveSepCumTRWSPairSeparator() {
+AllInclusiveSepCumTRWSPairSeparator::~AllInclusiveSepCumTRWSPairSeparator()
+{
 
   for (uint k=0; k < chain_link_.size(); k++)
     delete chain_link_[k];
 }
 
-void AllInclusiveSepCumTRWSPairSeparator::add_factor(AllInclusiveSepCumTRWSFactor* adjacent_fac) {
+void AllInclusiveSepCumTRWSPairSeparator::add_factor(AllInclusiveSepCumTRWSFactor* adjacent_fac)
+{
 
   uint nFac = adjacent_factor_.size();
   adjacent_factor_.resize(nFac+1);
   adjacent_factor_[nFac] = adjacent_fac;
 }
 
-AllInclusiveSepCumTRWSVariable* AllInclusiveSepCumTRWSPairSeparator::var1() const {
+AllInclusiveSepCumTRWSVariable* AllInclusiveSepCumTRWSPairSeparator::var1() const
+{
   return var1_;
 }
 
-AllInclusiveSepCumTRWSVariable* AllInclusiveSepCumTRWSPairSeparator::var2() const {
+AllInclusiveSepCumTRWSVariable* AllInclusiveSepCumTRWSPairSeparator::var2() const
+{
   return var2_;
 }
 
-const Storage1D<AllInclusiveSepCumTRWSFactor*>& AllInclusiveSepCumTRWSPairSeparator::adjacent_factors() const {
+const Storage1D<AllInclusiveSepCumTRWSFactor*>& AllInclusiveSepCumTRWSPairSeparator::adjacent_factors() const
+{
   return adjacent_factor_;
 }
 
-double AllInclusiveSepCumTRWSPairSeparator::reparameterize_forward() {
+double AllInclusiveSepCumTRWSPairSeparator::reparameterize_forward()
+{
 
   double offs = 0.0;
 
@@ -480,7 +501,8 @@ double AllInclusiveSepCumTRWSPairSeparator::reparameterize_forward() {
   return offs;
 }
 
-double AllInclusiveSepCumTRWSPairSeparator::reparameterize_backward() {
+double AllInclusiveSepCumTRWSPairSeparator::reparameterize_backward()
+{
 
   double offs = 0.0;
 
@@ -496,7 +518,7 @@ double AllInclusiveSepCumTRWSPairSeparator::reparameterize_backward() {
       temp = fac->compute_pair_reparameterization(this);
     else
       temp = fac->valid_offs();
-    
+
     if (fac->start_separator() == this) {
       offs += temp;
     }
@@ -505,14 +527,15 @@ double AllInclusiveSepCumTRWSPairSeparator::reparameterize_backward() {
   return offs;
 }
 
-double AllInclusiveSepCumTRWSPairSeparator::average() {
+double AllInclusiveSepCumTRWSPairSeparator::average()
+{
 
   pair_parameters_.set_constant(0.0);
 
   const uint nChains = chain_link_.size();
 
   for (uint c=0; c < nChains; c++) {
-  
+
     pair_parameters_ += chain_link_[c]->left_fac_->pair_reparameterization(this);
     if (chain_link_[c]->right_fac_ != 0)
       pair_parameters_ += chain_link_[c]->right_fac_->pair_reparameterization(this);
@@ -532,7 +555,8 @@ double AllInclusiveSepCumTRWSPairSeparator::average() {
   return offs;
 }
 
-void AllInclusiveSepCumTRWSPairSeparator::set_up_chains() {
+void AllInclusiveSepCumTRWSPairSeparator::set_up_chains()
+{
 
   std::vector<AllInclusiveSepCumTRWSFactor*> left_factor;
   std::vector<AllInclusiveSepCumTRWSFactor*> right_factor;
@@ -546,7 +570,7 @@ void AllInclusiveSepCumTRWSPairSeparator::set_up_chains() {
     else if (cur_fac->end_separator() == this)
       left_factor.push_back(cur_fac);
     else {
-      
+
       AllInclusiveSepCumTRWSSepChainLink* link = new AllInclusiveSepCumTRWSSepChainLink(cur_fac,0,this);
       uint size = chain_link_.size();
       chain_link_.resize(size+1);
@@ -587,29 +611,34 @@ void AllInclusiveSepCumTRWSPairSeparator::set_up_chains() {
 
 }
 
-Math2D::Matrix<double>& AllInclusiveSepCumTRWSPairSeparator::pair_parameters() {
+Math2D::Matrix<double>& AllInclusiveSepCumTRWSPairSeparator::pair_parameters()
+{
   return pair_parameters_;
 }
 
-const Math2D::Matrix<double>& AllInclusiveSepCumTRWSPairSeparator::pair_parameters() const {
+const Math2D::Matrix<double>& AllInclusiveSepCumTRWSPairSeparator::pair_parameters() const
+{
   return pair_parameters_;
 }
 
-uint AllInclusiveSepCumTRWSPairSeparator::sep_rank() const {
+uint AllInclusiveSepCumTRWSPairSeparator::sep_rank() const
+{
   return sep_rank_;
 }
 
-void AllInclusiveSepCumTRWSPairSeparator::set_sep_rank(uint rank) {
+void AllInclusiveSepCumTRWSPairSeparator::set_sep_rank(uint rank)
+{
   sep_rank_ = rank;
 }
 
 /********************/
 
 
-AllInclusiveSepCumTRWSFactor::AllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
-							   const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators)
-  :  involved_var_(vars), adjacent_separator_(separators), 
-     prev_factor_(0), next_factor_(0), valid_sep_(255), start_separator_(0), end_separator_(0) {
+AllInclusiveSepCumTRWSFactor::AllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars,
+    const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators)
+  :  involved_var_(vars), adjacent_separator_(separators),
+     prev_factor_(0), next_factor_(0), valid_sep_(255), start_separator_(0), end_separator_(0)
+{
 
   assert(separators.size() <= 255);
 
@@ -630,12 +659,12 @@ AllInclusiveSepCumTRWSFactor::AllInclusiveSepCumTRWSFactor(const Storage1D<AllIn
 /*virtual*/ AllInclusiveSepCumTRWSFactor::~AllInclusiveSepCumTRWSFactor() {}
 
 /*virtual*/
- double AllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* /*incoming_sep*/, 
-						      const AllInclusiveSepCumTRWSVariable* /*incoming_var*/, 
-						      const AllInclusiveSepCumTRWSVariable* /*outgoing_var*/,
-						      const Math2D::Matrix<double>& /*prev_pair_forward*/, 
-						      const Math1D::Vector<double>& /*prev_var_forward*/, 
-						      Math1D::Vector<double>& /*forward*/)
+double AllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* /*incoming_sep*/,
+    const AllInclusiveSepCumTRWSVariable* /*incoming_var*/,
+    const AllInclusiveSepCumTRWSVariable* /*outgoing_var*/,
+    const Math2D::Matrix<double>& /*prev_pair_forward*/,
+    const Math1D::Vector<double>& /*prev_var_forward*/,
+    Math1D::Vector<double>& /*forward*/)
 {
 
   //this routine is only needed for debugging and independent computations of the current bound
@@ -645,12 +674,12 @@ AllInclusiveSepCumTRWSFactor::AllInclusiveSepCumTRWSFactor(const Storage1D<AllIn
 }
 
 /*virtual*/
-double AllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* /*incoming_sep*/, 
-						     const AllInclusiveSepCumTRWSVariable* /*incoming_var*/, 
-						     const AllInclusiveSepCumTRWSPairSeparator* /*outgoing_sep*/,
-						     const Math2D::Matrix<double>& /*prev_pair_forward*/, 
-						     const Math1D::Vector<double>& /*prev_var_forward*/, 
-						     Math2D::Matrix<double>& /*forward*/)
+double AllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* /*incoming_sep*/,
+    const AllInclusiveSepCumTRWSVariable* /*incoming_var*/,
+    const AllInclusiveSepCumTRWSPairSeparator* /*outgoing_sep*/,
+    const Math2D::Matrix<double>& /*prev_pair_forward*/,
+    const Math1D::Vector<double>& /*prev_var_forward*/,
+    Math2D::Matrix<double>& /*forward*/)
 {
 
   //this routine is only needed for debugging and independent computations of the current bound
@@ -659,7 +688,8 @@ double AllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRW
   return 0.0;
 }
 
-void AllInclusiveSepCumTRWSFactor::compute_rank_range() {
+void AllInclusiveSepCumTRWSFactor::compute_rank_range()
+{
   min_rank_ = MAX_UINT;
   max_rank_ = 0;
 
@@ -692,10 +722,11 @@ void AllInclusiveSepCumTRWSFactor::compute_rank_range() {
       //note that this will fail in certain cases
       set_end_separator(adjacent_separator_[s]);
     }
-  }  
+  }
 }
 
-const Math1D::Vector<double>& AllInclusiveSepCumTRWSFactor::var_reparameterization(AllInclusiveSepCumTRWSVariable* var) const {
+const Math1D::Vector<double>& AllInclusiveSepCumTRWSFactor::var_reparameterization(AllInclusiveSepCumTRWSVariable* var) const
+{
 
   for (uint v=0; v < involved_var_.size(); v++) {
     if (involved_var_[v] == var)
@@ -705,11 +736,12 @@ const Math1D::Vector<double>& AllInclusiveSepCumTRWSFactor::var_reparameterizati
   assert(false);
   return var_reparameterization_[0];
 }
-  
-const Math2D::Matrix<double>& AllInclusiveSepCumTRWSFactor::pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair) const {
+
+const Math2D::Matrix<double>& AllInclusiveSepCumTRWSFactor::pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair) const
+{
 
   for (uint s=0; s < adjacent_separator_.size(); s++) {
-    
+
     if (adjacent_separator_[s] == pair)
       return pair_reparameterization_[s];
   }
@@ -718,52 +750,64 @@ const Math2D::Matrix<double>& AllInclusiveSepCumTRWSFactor::pair_reparameterizat
   return pair_reparameterization_[0];
 }
 
-uint AllInclusiveSepCumTRWSFactor::min_rank() const {
+uint AllInclusiveSepCumTRWSFactor::min_rank() const
+{
   return min_rank_;
 }
 
-uint AllInclusiveSepCumTRWSFactor::max_rank() const {
+uint AllInclusiveSepCumTRWSFactor::max_rank() const
+{
   return max_rank_;
 }
 
-AllInclusiveSepCumTRWSFactor* AllInclusiveSepCumTRWSFactor::prev_factor() const {
+AllInclusiveSepCumTRWSFactor* AllInclusiveSepCumTRWSFactor::prev_factor() const
+{
   return prev_factor_;
 }
 
-AllInclusiveSepCumTRWSFactor* AllInclusiveSepCumTRWSFactor::next_factor() const {
+AllInclusiveSepCumTRWSFactor* AllInclusiveSepCumTRWSFactor::next_factor() const
+{
   return next_factor_;
 }
 
-double AllInclusiveSepCumTRWSFactor::valid_offs() const {
+double AllInclusiveSepCumTRWSFactor::valid_offs() const
+{
   return valid_offs_;
 }
 
-void AllInclusiveSepCumTRWSFactor::set_prev_factor(AllInclusiveSepCumTRWSFactor* prev_factor) {
+void AllInclusiveSepCumTRWSFactor::set_prev_factor(AllInclusiveSepCumTRWSFactor* prev_factor)
+{
   prev_factor_ = prev_factor;
 }
 
-void AllInclusiveSepCumTRWSFactor::set_next_factor(AllInclusiveSepCumTRWSFactor* next_factor) {
+void AllInclusiveSepCumTRWSFactor::set_next_factor(AllInclusiveSepCumTRWSFactor* next_factor)
+{
   next_factor_ = next_factor;
 }
 
-AllInclusiveSepCumTRWSPairSeparator* AllInclusiveSepCumTRWSFactor::start_separator() const {
+AllInclusiveSepCumTRWSPairSeparator* AllInclusiveSepCumTRWSFactor::start_separator() const
+{
   return start_separator_;
 }
 
-AllInclusiveSepCumTRWSPairSeparator* AllInclusiveSepCumTRWSFactor::end_separator() const {
+AllInclusiveSepCumTRWSPairSeparator* AllInclusiveSepCumTRWSFactor::end_separator() const
+{
   return end_separator_;
 }
 
-const Storage1D<AllInclusiveSepCumTRWSVariable*>& AllInclusiveSepCumTRWSFactor::involved_var() const {
+const Storage1D<AllInclusiveSepCumTRWSVariable*>& AllInclusiveSepCumTRWSFactor::involved_var() const
+{
   return involved_var_;
 }
 
-const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& AllInclusiveSepCumTRWSFactor::adjacent_separator() const {
+const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& AllInclusiveSepCumTRWSFactor::adjacent_separator() const
+{
   return adjacent_separator_;
 }
 
 //returns if successful
-bool AllInclusiveSepCumTRWSFactor::set_start_separator(AllInclusiveSepCumTRWSPairSeparator* sep) {
+bool AllInclusiveSepCumTRWSFactor::set_start_separator(AllInclusiveSepCumTRWSPairSeparator* sep)
+{
   if (sep == 0) {
     start_separator_ = sep;
     return true;
@@ -781,7 +825,7 @@ bool AllInclusiveSepCumTRWSFactor::set_start_separator(AllInclusiveSepCumTRWSPai
 
     if (adjacent_separator_[s] == sep)
       break;
-    else if (adjacent_separator_[s]->var1()->rank() < sep->var2()->rank()) {    
+    else if (adjacent_separator_[s]->var1()->rank() < sep->var2()->rank()) {
 
       start_separator_ = 0;
       return false;
@@ -793,7 +837,8 @@ bool AllInclusiveSepCumTRWSFactor::set_start_separator(AllInclusiveSepCumTRWSPai
 }
 
 //returns if successful
-bool AllInclusiveSepCumTRWSFactor::set_end_separator(AllInclusiveSepCumTRWSPairSeparator* sep) {
+bool AllInclusiveSepCumTRWSFactor::set_end_separator(AllInclusiveSepCumTRWSPairSeparator* sep)
+{
 
   if (sep == 0) {
     end_separator_ = sep;
@@ -823,7 +868,8 @@ bool AllInclusiveSepCumTRWSFactor::set_end_separator(AllInclusiveSepCumTRWSPairS
   return true;
 }
 
-bool AllInclusiveSepCumTRWSFactor::sep_is_interrupted(AllInclusiveSepCumTRWSPairSeparator* sep) const {
+bool AllInclusiveSepCumTRWSFactor::sep_is_interrupted(AllInclusiveSepCumTRWSPairSeparator* sep) const
+{
 
   uint rank1 = sep->var1()->rank();
   uint rank2 = sep->var2()->rank();
@@ -845,11 +891,12 @@ bool AllInclusiveSepCumTRWSFactor::sep_is_interrupted(AllInclusiveSepCumTRWSPair
         return true;
     }
   }
-  
+
   return false;
 }
 
-void AllInclusiveSepCumTRWSFactor::print_factor(bool short_form) const {
+void AllInclusiveSepCumTRWSFactor::print_factor(bool short_form) const
+{
 
   std::cerr << "factor " << this << " has variables ";
   for (uint v=0; v < involved_var_.size(); v++) {
@@ -857,21 +904,21 @@ void AllInclusiveSepCumTRWSFactor::print_factor(bool short_form) const {
   }
   std::cerr << std::endl << "     and separators ";
   for (uint s=0; s < adjacent_separator_.size(); s++) {
-    std::cerr << adjacent_separator_[s] << " (" << adjacent_separator_[s]->var1()->rank() 
+    std::cerr << adjacent_separator_[s] << " (" << adjacent_separator_[s]->var1()->rank()
               << "," << adjacent_separator_[s]->var2()->rank() << ") ;";
   }
   std::cerr << std::endl;
-  std::cerr << "     prev factor: " << prev_factor_ << ", next factor: " << next_factor_ << std::endl;  
+  std::cerr << "     prev factor: " << prev_factor_ << ", next factor: " << next_factor_ << std::endl;
   std::cerr << " start sep: " << start_separator_ << ", end sep: " << end_separator_ << std::endl;
 
   if (!short_form) {
     std::cerr << "var repars: " << std::endl;
-    for (uint v=0; v < involved_var_.size(); v++) 
+    for (uint v=0; v < involved_var_.size(); v++)
       std::cerr << "     " << var_reparameterization_[v] << std::endl;
     std::cerr << "var cost: " << std::endl;
-    for (uint v=0; v < involved_var_.size(); v++) 
+    for (uint v=0; v < involved_var_.size(); v++)
       std::cerr << "     " << involved_var_[v]->cost() << std::endl;
-  
+
 
     std::cerr << "pair repars: " << std::endl;
     for (uint s=0; s < adjacent_separator_.size(); s++)
@@ -882,7 +929,8 @@ void AllInclusiveSepCumTRWSFactor::print_factor(bool short_form) const {
   }
 }
 
-const AllInclusiveSepCumTRWSPairSeparator* AllInclusiveSepCumTRWSFactor::valid_separator() const {
+const AllInclusiveSepCumTRWSPairSeparator* AllInclusiveSepCumTRWSFactor::valid_separator() const
+{
 
   if (valid_sep_ < adjacent_separator_.size())
     return adjacent_separator_[valid_sep_];
@@ -893,9 +941,10 @@ const AllInclusiveSepCumTRWSPairSeparator* AllInclusiveSepCumTRWSFactor::valid_s
 /***********************/
 
 
-BinaryAllInclusiveSepCumTRWSFactor::BinaryAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
-                                                                       const Math2D::Matrix<float>& cost) :
-  AllInclusiveSepCumTRWSFactor(vars,Storage1D<AllInclusiveSepCumTRWSPairSeparator*>()), cost_(cost) {
+BinaryAllInclusiveSepCumTRWSFactor::BinaryAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars,
+    const Math2D::Matrix<float>& cost) :
+  AllInclusiveSepCumTRWSFactor(vars,Storage1D<AllInclusiveSepCumTRWSPairSeparator*>()), cost_(cost)
+{
 
   if (vars.size() != 2) {
     INTERNAL_ERROR << " attempt to instantiate binary factor with " << vars.size() << " variables. Exiting." << std::endl;
@@ -909,9 +958,10 @@ BinaryAllInclusiveSepCumTRWSFactor::BinaryAllInclusiveSepCumTRWSFactor(const Sto
 }
 
 /*virtual*/ BinaryAllInclusiveSepCumTRWSFactor::~BinaryAllInclusiveSepCumTRWSFactor() {}
-  
-/*virtual*/ 
-double BinaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var) {
+
+/*virtual*/
+double BinaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var)
+{
 
   double offs = 0.0;
 
@@ -926,23 +976,23 @@ double BinaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInc
   uint idx = 0;
 
   if (var == involved_var_[0]) {
-    
+
     idx = 0;
 
     for (uint l1 = 0; l1 < nLabels1; l1++) {
-      
+
       double best = 1e300;
 
       for (uint l2 = 0; l2 < nLabels2; l2++) {
 
         const double w2 = param[1][l2];
-	
+
         double hyp = cost_(l1,l2) - w2;
-	  
+
         if (hyp < best)
           best = hyp;
       }
-      
+
       var_reparameterization_[0][l1] = best;
     }
   }
@@ -952,21 +1002,21 @@ double BinaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInc
     idx = 1;
 
     for (uint l2 = 0; l2 < nLabels2; l2++) {
-      
+
       double best = 1e300;
-      
+
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 
         const double w1 = param[0][l1];
-	
+
         double hyp = cost_(l1,l2) - w1;
-	  
+
         if (hyp < best)
           best = hyp;
       }
-      
+
       var_reparameterization_[1][l2] = best;
-    }    
+    }
   }
 
   const double msg_offs = var_reparameterization_[idx].min();
@@ -976,20 +1026,22 @@ double BinaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInc
     var_reparameterization_[idx][l] -= msg_offs;
 
   valid_sep_ = 255;
-  
+
   return offs;
 }
 
-/*virtual*/ 
-double BinaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* /*pair*/) {
+/*virtual*/
+double BinaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* /*pair*/)
+{
 
   //should never be called
   assert(false);
   return 0.0;
 }
 
-/*virtual*/ 
-double BinaryAllInclusiveSepCumTRWSFactor::best_value() {
+/*virtual*/
+double BinaryAllInclusiveSepCumTRWSFactor::best_value()
+{
 
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
@@ -997,13 +1049,13 @@ double BinaryAllInclusiveSepCumTRWSFactor::best_value() {
   double min_val = 1e300;
 
   for (uint l1 = 0; l1 < nLabels1; l1++) {
-    
+
     for (uint l2 = 0; l2 < nLabels2; l2++) {
-	
+
       double hyp = cost_(l1,l2);
       hyp += involved_var_[0]->cost()[l1] - var_reparameterization_[0][l1];
       hyp += involved_var_[1]->cost()[l2] - var_reparameterization_[1][l2];
-      
+
       if (hyp < min_val)
         min_val = hyp;
     }
@@ -1013,17 +1065,18 @@ double BinaryAllInclusiveSepCumTRWSFactor::best_value() {
 }
 
 
-/*virtual*/ 
-double BinaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* /*incoming_sep*/, 
-                                                           const AllInclusiveSepCumTRWSVariable* incoming_var, 
-                                                           const AllInclusiveSepCumTRWSVariable* outgoing_var,
-                                                           const Math2D::Matrix<double>& /*prev_pair_forward*/, 
-                                                           const Math1D::Vector<double>& prev_var_forward, 
-                                                           Math1D::Vector<double>& forward) {
+/*virtual*/
+double BinaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* /*incoming_sep*/,
+    const AllInclusiveSepCumTRWSVariable* incoming_var,
+    const AllInclusiveSepCumTRWSVariable* outgoing_var,
+    const Math2D::Matrix<double>& /*prev_pair_forward*/,
+    const Math1D::Vector<double>& prev_var_forward,
+    Math1D::Vector<double>& forward)
+{
 
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
-  
+
   Storage1D<Math1D::Vector<double> > param = var_reparameterization_;
   for (uint v=0; v < involved_var_.size(); v++) {
     //do NOT include cost of variables included in the pair-separator
@@ -1034,23 +1087,23 @@ double BinaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSep
   }
 
   if (outgoing_var == involved_var_[0]) {
-    
+
     forward.resize(nLabels1);
 
     for (uint l1 = 0; l1 < nLabels1; l1++) {
-      
+
       double best = 1e300;
 
       for (uint l2 = 0; l2 < nLabels2; l2++) {
 
         const double w2 = param[1][l2];
-	
+
         double hyp = cost_(l1,l2) - w2;
 
         if (hyp < best)
           best = hyp;
       }
-      
+
       forward[l1] = best - param[0][l1];
     }
   }
@@ -1060,21 +1113,21 @@ double BinaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSep
     forward.resize(nLabels2);
 
     for (uint l2 = 0; l2 < nLabels2; l2++) {
-      
+
       double best = 1e300;
-      
+
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 
         const double w1 = param[0][l1];
-	
+
         double hyp = cost_(l1,l2) - w1;
-        
+
         if (hyp < best)
           best = hyp;
       }
-      
+
       forward[l2] = best  - param[1][l2];
-    }    
+    }
   }
 
   const double offs = forward.min();
@@ -1087,10 +1140,11 @@ double BinaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSep
 
 /***********************/
 
-TernaryAllInclusiveSepCumTRWSFactor::TernaryAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
-									 const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators,
-									 const Math3D::Tensor<float>& cost) :
-  AllInclusiveSepCumTRWSFactor(vars,separators), cost_(cost) {
+TernaryAllInclusiveSepCumTRWSFactor::TernaryAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars,
+    const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators,
+    const Math3D::Tensor<float>& cost) :
+  AllInclusiveSepCumTRWSFactor(vars,separators), cost_(cost)
+{
 
   if (vars.size() != 3) {
     INTERNAL_ERROR << " attempt to instantiate ternary factor with " << vars.size() << " variables. Exiting." << std::endl;
@@ -1104,9 +1158,10 @@ TernaryAllInclusiveSepCumTRWSFactor::TernaryAllInclusiveSepCumTRWSFactor(const S
 }
 
 /*virtual*/ TernaryAllInclusiveSepCumTRWSFactor::~TernaryAllInclusiveSepCumTRWSFactor() {}
-  
-/*virtual*/ 
-double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var) {
+
+/*virtual*/
+double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var)
+{
 
   double offs = 0.0;
 
@@ -1121,8 +1176,8 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllIn
 
     for (uint v=0; v < involved_var_.size(); v++) {
       if (involved_var_[v] == var) {
-	idx = v;
-	break;
+        idx = v;
+        break;
       }
     }
     assert(involved_var_[idx] == var);
@@ -1135,37 +1190,37 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllIn
     if (valid_sep->var1() == var) {
 
       for (uint l1=0; l1 < var->nLabels(); l1++) {
-	
-	double best = 1e300;
-	
-	for (uint l2=0; l2 < otherpar.size(); l2++) {
 
-	  const double hyp = pair_cost(l1,l2) + otherpar[l2];
-	  
-	  if (hyp < best)
-	    best = hyp;
-	}
+        double best = 1e300;
 
-	//repar was used for the computation of pair_cost -> cancel this
-	repar[l1] = best + repar[l1];
+        for (uint l2=0; l2 < otherpar.size(); l2++) {
+
+          const double hyp = pair_cost(l1,l2) + otherpar[l2];
+
+          if (hyp < best)
+            best = hyp;
+        }
+
+        //repar was used for the computation of pair_cost -> cancel this
+        repar[l1] = best + repar[l1];
       }
     }
     else {
 
       for (uint l2=0; l2 < var->nLabels(); l2++) {
 
-	double best = 1e300;
+        double best = 1e300;
 
-	for (uint l1=0; l1 < otherpar.size(); l1++) {
+        for (uint l1=0; l1 < otherpar.size(); l1++) {
 
-	  const double hyp = pair_cost(l1,l2) + otherpar[l1];
+          const double hyp = pair_cost(l1,l2) + otherpar[l1];
 
-	  if (hyp < best)
-	    best = hyp;
-	}
+          if (hyp < best)
+            best = hyp;
+        }
 
-	//repar was used for the computation of pair_cost -> cancel this
-	repar[l2] = best + repar[l2];
+        //repar was used for the computation of pair_cost -> cancel this
+        repar[l2] = best + repar[l2];
       }
     }
   }
@@ -1174,7 +1229,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllIn
     const uint nLabels1 = involved_var_[0]->nLabels();
     const uint nLabels2 = involved_var_[1]->nLabels();
     const uint nLabels3 = involved_var_[2]->nLabels();
-    
+
     const uint nSeps = adjacent_separator_.size();
 
     //std::cerr << "before" << std::endl;
@@ -1185,33 +1240,33 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllIn
     }
 
     if (var == involved_var_[0]) {
-    
+
       idx = 0;
 
       Math1D::Vector<double>& repar = var_reparameterization_[0];
-      
+
       for (uint l1 = 0; l1 < nLabels1; l1++) {
-	
-	double best = 1e300;
-	
-	for (uint l2 = 0; l2 < nLabels2; l2++) {
-	  
-	  const double w2 = param[1][l2];
-	
-	  for (uint l3 = 0; l3 < nLabels3; l3++) {
-	  
-	    double hyp = cost_(l1,l2,l3) - w2;
-	    hyp -= param[2][l3];
-	    
-	    for (uint s=0; s < nSeps; s++)
-	      hyp += eval_pair(s,l1,l2,l3);
-	  
-	    if (hyp < best)
-	      best = hyp;
-	  }
-	}
-      
-	repar[l1] = best;
+
+        double best = 1e300;
+
+        for (uint l2 = 0; l2 < nLabels2; l2++) {
+
+          const double w2 = param[1][l2];
+
+          for (uint l3 = 0; l3 < nLabels3; l3++) {
+
+            double hyp = cost_(l1,l2,l3) - w2;
+            hyp -= param[2][l3];
+
+            for (uint s=0; s < nSeps; s++)
+              hyp += eval_pair(s,l1,l2,l3);
+
+            if (hyp < best)
+              best = hyp;
+          }
+        }
+
+        repar[l1] = best;
       }
     }
     else if (var == involved_var_[1]) {
@@ -1221,60 +1276,60 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllIn
       Math1D::Vector<double>& repar = var_reparameterization_[1];
 
       for (uint l2 = 0; l2 < nLabels2; l2++) {
-      
-	double best = 1e300;
-	
-	for (uint l1 = 0; l1 < nLabels1; l1++) {
-	
-	  const double w1 = param[0][l1];
-	
-	  for (uint l3 = 0; l3 < nLabels3; l3++) {
-	  
-	    double hyp = cost_(l1,l2,l3) - w1;
-	    hyp -= param[2][l3];
 
-	    for (uint s=0; s < nSeps; s++)
-	      hyp += eval_pair(s,l1,l2,l3);
-	    
-	    if (hyp < best)
-	      best = hyp;
-	  }
-	}
+        double best = 1e300;
 
-	repar[l2] = best;
-      }    
+        for (uint l1 = 0; l1 < nLabels1; l1++) {
+
+          const double w1 = param[0][l1];
+
+          for (uint l3 = 0; l3 < nLabels3; l3++) {
+
+            double hyp = cost_(l1,l2,l3) - w1;
+            hyp -= param[2][l3];
+
+            for (uint s=0; s < nSeps; s++)
+              hyp += eval_pair(s,l1,l2,l3);
+
+            if (hyp < best)
+              best = hyp;
+          }
+        }
+
+        repar[l2] = best;
+      }
     }
     else {
       assert(var == involved_var_[2]);
-    
+
       idx = 2;
 
       Math1D::Vector<double>& repar = var_reparameterization_[2];
 
       for (uint l3 = 0; l3 < nLabels3; l3++) {
-	
-	double best = 1e300;
-	
-	for (uint l1 = 0; l1 < nLabels1; l1++) {
-	  
-	  const double w1 = param[0][l1];
-	
-	  for (uint l2 = 0; l2 < nLabels2; l2++) {
-	  
-	    double hyp = cost_(l1,l2,l3) - w1;
-	    hyp -= param[1][l2];
-	    
-	    for (uint s=0; s < nSeps; s++)
-	      hyp += eval_pair(s,l1,l2,l3);
-	    
-	    if (hyp < best)
-	      best = hyp;
-	  }
-	}
-	
-	repar[l3] = best;
+
+        double best = 1e300;
+
+        for (uint l1 = 0; l1 < nLabels1; l1++) {
+
+          const double w1 = param[0][l1];
+
+          for (uint l2 = 0; l2 < nLabels2; l2++) {
+
+            double hyp = cost_(l1,l2,l3) - w1;
+            hyp -= param[1][l2];
+
+            for (uint s=0; s < nSeps; s++)
+              hyp += eval_pair(s,l1,l2,l3);
+
+            if (hyp < best)
+              best = hyp;
+          }
+        }
+
+        repar[l3] = best;
       }
-    }    
+    }
   }
 
   Math1D::Vector<double>& repar = var_reparameterization_[idx];
@@ -1292,13 +1347,14 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllIn
 
 }
 
-/*virtual*/ 
-double TernaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair) {
+/*virtual*/
+double TernaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair)
+{
 
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
   const uint nLabels3 = involved_var_[2]->nLabels();
-  
+
   Storage1D<Math1D::Vector<double> > param = var_reparameterization_;
   for (uint v=0; v < involved_var_.size(); v++) {
     //do NOT include cost of variables included in the pair-separator
@@ -1321,18 +1377,18 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllI
     if (pair->var2() == involved_var_[1]) {
 
       for (uint l1=0; l1 < nLabels1; l1++) {
-        
+
         const double w1 = param[0][l1];
 
         for (uint l2=0; l2 < nLabels2; l2++) {
 
           double best = 1e300;
-	  
+
           for (uint l3=0; l3 < nLabels3; l3++) {
 
             double hyp = cost_(l1,l2,l3);
 
-            hyp -= param[2][l3]; 
+            hyp -= param[2][l3];
 
             for (uint ss=0; ss < nSeps; ss++) {
 
@@ -1362,7 +1418,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllI
 
             double hyp = cost_(l1,l2,l3);
 
-            hyp -= param[1][l2]; 
+            hyp -= param[1][l2];
 
             for (uint ss=0; ss < nSeps; ss++) {
 
@@ -1392,15 +1448,15 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllI
         for (uint l1=0; l1 < nLabels1; l1++) {
 
           double hyp = cost_(l1,l2,l3);
-	  
-          hyp -= param[0][l1]; 
-	  
+
+          hyp -= param[0][l1];
+
           for (uint ss=0; ss < nSeps; ss++) {
-	    
+
             if (ss != s)
               hyp += eval_pair(ss,l1,l2,l3);
           }
-	  
+
           if (hyp < best)
             best = hyp;
         }
@@ -1419,8 +1475,9 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllI
   return offs;
 }
 
-/*virtual*/ 
-double TernaryAllInclusiveSepCumTRWSFactor::best_value() {
+/*virtual*/
+double TernaryAllInclusiveSepCumTRWSFactor::best_value()
+{
 
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
@@ -1429,9 +1486,9 @@ double TernaryAllInclusiveSepCumTRWSFactor::best_value() {
   double min_val = 1e300;
 
   for (uint l1 = 0; l1 < nLabels1; l1++) {
-    
+
     for (uint l2 = 0; l2 < nLabels2; l2++) {
-	
+
       for (uint l3 = 0; l3 < nLabels3; l3++) {
 
         double hyp = cost_(l1,l2,l3);
@@ -1452,18 +1509,19 @@ double TernaryAllInclusiveSepCumTRWSFactor::best_value() {
 }
 
 
-/*virtual*/ 
-double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, 
-							    const AllInclusiveSepCumTRWSVariable* incoming_var, 
-							    const AllInclusiveSepCumTRWSVariable* outgoing_var,
-							    const Math2D::Matrix<double>& prev_pair_forward, 
-							    const Math1D::Vector<double>& prev_var_forward, 
-							    Math1D::Vector<double>& forward) {
+/*virtual*/
+double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep,
+    const AllInclusiveSepCumTRWSVariable* incoming_var,
+    const AllInclusiveSepCumTRWSVariable* outgoing_var,
+    const Math2D::Matrix<double>& prev_pair_forward,
+    const Math1D::Vector<double>& prev_var_forward,
+    Math1D::Vector<double>& forward)
+{
 
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
   const uint nLabels3 = involved_var_[2]->nLabels();
-  
+
   Storage1D<Math1D::Vector<double> > param = var_reparameterization_;
   for (uint v=0; v < involved_var_.size(); v++) {
     //do NOT include cost of variables included in the pair-separator
@@ -1475,7 +1533,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
 
   Storage1D<Math2D::Matrix<double> > pair_param = pair_reparameterization_;
   for (uint s=0; s < pair_param.size(); s++) {
-    
+
     pair_param[s] -= adjacent_separator_[s]->pair_parameters();
     if (adjacent_separator_[s] == incoming_sep)
       pair_param[s] -= prev_pair_forward;
@@ -1484,30 +1542,30 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
   const uint nSeps = adjacent_separator_.size();
 
   if (outgoing_var == involved_var_[0]) {
-    
+
     forward.resize(nLabels1);
 
     for (uint l1 = 0; l1 < nLabels1; l1++) {
-      
+
       double best = 1e300;
 
       for (uint l2 = 0; l2 < nLabels2; l2++) {
 
         const double w2 = param[1][l2];
-	
+
         for (uint l3 = 0; l3 < nLabels3; l3++) {
-	  
+
           double hyp = cost_(l1,l2,l3) - w2;
           hyp -= param[2][l3];
 
           for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
-	  
+
           if (hyp < best)
             best = hyp;
         }
       }
-      
+
       forward[l1] = best - param[0][l1];
     }
   }
@@ -1516,28 +1574,28 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
     forward.resize(nLabels2);
 
     for (uint l2 = 0; l2 < nLabels2; l2++) {
-      
+
       double best = 1e300;
-      
+
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 
         const double w1 = param[0][l1];
-	
+
         for (uint l3 = 0; l3 < nLabels3; l3++) {
-	  
+
           double hyp = cost_(l1,l2,l3) - w1;
           hyp -= param[2][l3];
 
           for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
-	  
+
           if (hyp < best)
             best = hyp;
         }
       }
-      
+
       forward[l2] = best  - param[1][l2];
-    }    
+    }
   }
   else {
     assert(outgoing_var == involved_var_[2]);
@@ -1545,26 +1603,26 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
     forward.resize(nLabels3);
 
     for (uint l3 = 0; l3 < nLabels3; l3++) {
-      
+
       double best = 1e300;
-      
+
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 
         const double w1 = param[0][l1];
-	
+
         for (uint l2 = 0; l2 < nLabels2; l2++) {
-	  
+
           double hyp = cost_(l1,l2,l3) - w1;
           hyp -= param[1][l2];
 
           for (uint s=0; s < nSeps; s++)
             hyp -= eval_pair(s,l1,l2,l3,pair_param);
-	  
+
           if (hyp < best)
             best = hyp;
         }
       }
-      
+
       forward[l3] = best  - param[2][l3];
     }
   }
@@ -1576,19 +1634,20 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
   return offs;
 }
 
-/*virtual*/ 
-double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, 
-							    const AllInclusiveSepCumTRWSVariable* incoming_var, 
-							    const AllInclusiveSepCumTRWSPairSeparator* outgoing_sep,
-							    const Math2D::Matrix<double>& prev_pair_forward, 
-							    const Math1D::Vector<double>& prev_var_forward, 
-							    Math2D::Matrix<double>& forward) {
+/*virtual*/
+double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep,
+    const AllInclusiveSepCumTRWSVariable* incoming_var,
+    const AllInclusiveSepCumTRWSPairSeparator* outgoing_sep,
+    const Math2D::Matrix<double>& prev_pair_forward,
+    const Math1D::Vector<double>& prev_var_forward,
+    Math2D::Matrix<double>& forward)
+{
 
 
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
   const uint nLabels3 = involved_var_[2]->nLabels();
-  
+
   Storage1D<Math1D::Vector<double> > param = var_reparameterization_;
   for (uint v=0; v < involved_var_.size(); v++) {
     //do NOT include cost of variables included in the pair-separator
@@ -1625,12 +1684,12 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
         for (uint l2=0; l2 < nLabels2; l2++) {
 
           double best = 1e300;
-	  
+
           for (uint l3=0; l3 < nLabels3; l3++) {
 
             double hyp = cost_(l1,l2,l3);
 
-            hyp -= param[2][l3]; 
+            hyp -= param[2][l3];
 
             for (uint ss=0; ss < nSeps; ss++) {
 
@@ -1658,7 +1717,7 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
 
             double hyp = cost_(l1,l2,l3);
 
-            hyp -= param[1][l2]; 
+            hyp -= param[1][l2];
 
             for (uint ss=0; ss < nSeps; ss++) {
 
@@ -1686,14 +1745,14 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
         for (uint l1=0; l1 < nLabels1; l1++) {
 
           double hyp = cost_(l1,l2,l3);
-	  
-          hyp -= param[0][l1]; 
-	  
+
+          hyp -= param[0][l1];
+
           for (uint ss=0; ss < nSeps; ss++) {
-	    
+
             hyp -= eval_pair(ss,l1,l2,l3,pair_param);
           }
-	  
+
           if (hyp < best)
             best = hyp;
         }
@@ -1705,64 +1764,67 @@ double TernaryAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSe
   return 0.0;
 }
 
-double TernaryAllInclusiveSepCumTRWSFactor::eval_pair(uint pair_num, uint x, uint y, uint z) const {
+double TernaryAllInclusiveSepCumTRWSFactor::eval_pair(uint pair_num, uint x, uint y, uint z) const
+{
 
   AllInclusiveSepCumTRWSVariable* v1 = adjacent_separator_[pair_num]->var1();
   AllInclusiveSepCumTRWSVariable* v2 = adjacent_separator_[pair_num]->var2();
-  
+
   uint a=MAX_UINT;
   uint b=MAX_UINT;
-  
+
   if (involved_var_[0] == v1)
     a = x;
-  else { 
+  else {
     assert(involved_var_[1] == v1);
     a = y;
   }
-  
+
   if (involved_var_[1] == v2)
     b = y;
   else {
     assert(involved_var_[2] == v2);
     b = z;
   }
-  
+
   return adjacent_separator_[pair_num]->pair_parameters()(a,b) - pair_reparameterization_[pair_num](a,b);
 }
 
-double TernaryAllInclusiveSepCumTRWSFactor::eval_pair(uint pair_num, uint x, uint y, uint z, 
-						      const Storage1D< Math2D::Matrix<double> >& pair_param) const {
-  
+double TernaryAllInclusiveSepCumTRWSFactor::eval_pair(uint pair_num, uint x, uint y, uint z,
+    const Storage1D< Math2D::Matrix<double> >& pair_param) const
+{
+
   AllInclusiveSepCumTRWSVariable* v1 = adjacent_separator_[pair_num]->var1();
   AllInclusiveSepCumTRWSVariable* v2 = adjacent_separator_[pair_num]->var2();
-  
+
   uint a=MAX_UINT;
   uint b=MAX_UINT;
-  
+
   if (involved_var_[0] == v1)
     a = x;
-  else { 
+  else {
     assert(involved_var_[1] == v1);
     a = y;
   }
-  
+
   if (involved_var_[1] == v2)
     b = y;
   else {
     assert(involved_var_[2] == v2);
     b = z;
   }
-  
+
   return pair_param[pair_num](a,b);
 }
 
 
 /*******************/
 
-FourthOrderAllInclusiveSepCumTRWSFactor::FourthOrderAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars, 
-                                                                                 const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators,
-                                                                                 const Storage1D<Math3D::Tensor<float> >& cost) :
-  AllInclusiveSepCumTRWSFactor(vars,separators), cost_(cost) {
+FourthOrderAllInclusiveSepCumTRWSFactor::FourthOrderAllInclusiveSepCumTRWSFactor(const Storage1D<AllInclusiveSepCumTRWSVariable*>& vars,
+    const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& separators,
+    const Storage1D<Math3D::Tensor<float> >& cost) :
+  AllInclusiveSepCumTRWSFactor(vars,separators), cost_(cost)
+{
 
   if (vars.size() != 4) {
     INTERNAL_ERROR << " attempt to instantiate ternary factor with " << vars.size() << " variables. Exiting." << std::endl;
@@ -1778,8 +1840,9 @@ FourthOrderAllInclusiveSepCumTRWSFactor::FourthOrderAllInclusiveSepCumTRWSFactor
 
 /*virtual*/ FourthOrderAllInclusiveSepCumTRWSFactor::~FourthOrderAllInclusiveSepCumTRWSFactor() {}
 
-/*virtual*/ 
-double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var) {
+/*virtual*/
+double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(AllInclusiveSepCumTRWSVariable* var)
+{
 
   double offs = 0.0;
 
@@ -1794,8 +1857,8 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
 
     for (uint v=0; v < involved_var_.size(); v++) {
       if (involved_var_[v] == var) {
-	idx = v;
-	break;
+        idx = v;
+        break;
       }
     }
     assert(involved_var_[idx] == var);
@@ -1808,37 +1871,37 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
     if (valid_sep->var1() == var) {
 
       for (uint l1=0; l1 < var->nLabels(); l1++) {
-	
-	double best = 1e300;
-	
-	for (uint l2=0; l2 < otherpar.size(); l2++) {
 
-	  const double hyp = pair_cost(l1,l2) + otherpar[l2];
-	  
-	  if (hyp < best)
-	    best = hyp;
-	}
+        double best = 1e300;
 
-	//repar was used for the computation of pair_cost -> cancel this
-	repar[l1] = best + repar[l1];
+        for (uint l2=0; l2 < otherpar.size(); l2++) {
+
+          const double hyp = pair_cost(l1,l2) + otherpar[l2];
+
+          if (hyp < best)
+            best = hyp;
+        }
+
+        //repar was used for the computation of pair_cost -> cancel this
+        repar[l1] = best + repar[l1];
       }
     }
     else {
 
       for (uint l2=0; l2 < var->nLabels(); l2++) {
 
-	double best = 1e300;
+        double best = 1e300;
 
-	for (uint l1=0; l1 < otherpar.size(); l1++) {
+        for (uint l1=0; l1 < otherpar.size(); l1++) {
 
-	  const double hyp = pair_cost(l1,l2) + otherpar[l1];
+          const double hyp = pair_cost(l1,l2) + otherpar[l1];
 
-	  if (hyp < best)
-	    best = hyp;
-	}
+          if (hyp < best)
+            best = hyp;
+        }
 
-	//repar was used for the computation of pair_cost -> cancel this
-	repar[l2] = best + repar[l2];
+        //repar was used for the computation of pair_cost -> cancel this
+        repar[l2] = best + repar[l2];
       }
     }
   }
@@ -1848,7 +1911,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
     const uint nLabels2 = involved_var_[1]->nLabels();
     const uint nLabels3 = involved_var_[2]->nLabels();
     const uint nLabels4 = involved_var_[3]->nLabels();
-    
+
     const uint nSeps = adjacent_separator_.size();
 
     Storage1D<Math1D::Vector<double> > param = var_reparameterization_;
@@ -1857,40 +1920,40 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
     }
 
     if (var == involved_var_[0]) {
-    
+
       idx = 0;
 
       Math1D::Vector<double>& repar = var_reparameterization_[0];
-      
+
       for (uint l1 = 0; l1 < nLabels1; l1++) {
-	
-	double best = 1e300;
+
+        double best = 1e300;
 
         const Math3D::Tensor<float>& cur_cost = cost_[l1];
-	
-	for (uint l2 = 0; l2 < nLabels2; l2++) {
-	  
-	  const double w2 = param[1][l2];
-	
-	  for (uint l3 = 0; l3 < nLabels3; l3++) {
+
+        for (uint l2 = 0; l2 < nLabels2; l2++) {
+
+          const double w2 = param[1][l2];
+
+          for (uint l3 = 0; l3 < nLabels3; l3++) {
 
             const double w3 =  w2 + param[2][l3];
 
             for (uint l4 = 0; l4 < nLabels4; l4++) {
-	  
+
               double hyp = cur_cost(l2,l3,l4) - w3;
               hyp -= param[3][l4];
-              
+
               for (uint s=0; s < nSeps; s++)
                 hyp += eval_pair(s,l1,l2,l3,l4);
-              
+
               if (hyp < best)
                 best = hyp;
             }
-	  }
-	}
-      
-	repar[l1] = best;
+          }
+        }
+
+        repar[l1] = best;
       }
     }
     else if (var == involved_var_[1]) {
@@ -1900,73 +1963,73 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
       Math1D::Vector<double>& repar = var_reparameterization_[1];
 
       for (uint l2 = 0; l2 < nLabels2; l2++) {
-      
-	double best = 1e300;
-	
-	for (uint l1 = 0; l1 < nLabels1; l1++) {
-	
-	  const double w1 = param[0][l1];
+
+        double best = 1e300;
+
+        for (uint l1 = 0; l1 < nLabels1; l1++) {
+
+          const double w1 = param[0][l1];
 
           const Math3D::Tensor<float>& cur_cost = cost_[l1];
-	
-	  for (uint l3 = 0; l3 < nLabels3; l3++) {
+
+          for (uint l3 = 0; l3 < nLabels3; l3++) {
 
             const double w3 = w1 + param[2][l3];
 
             for (uint l4 = 0; l4 < nLabels4; l4++) {
-	  
+
               double hyp = cur_cost(l2,l3,l4) - w3;
               hyp -= param[3][l4];
-              
+
               for (uint s=0; s < nSeps; s++)
                 hyp += eval_pair(s,l1,l2,l3,l4);
-              
+
               if (hyp < best)
                 best = hyp;
             }
-	  }
-	}
+          }
+        }
 
-	repar[l2] = best;
-      }    
+        repar[l2] = best;
+      }
     }
     else if (var == involved_var_[2]) {
-    
+
       idx = 2;
 
       Math1D::Vector<double>& repar = var_reparameterization_[2];
 
       for (uint l3 = 0; l3 < nLabels3; l3++) {
-	
-	double best = 1e300;
-	
-	for (uint l1 = 0; l1 < nLabels1; l1++) {
-	  
-	  const double w1 = param[0][l1];
-	
+
+        double best = 1e300;
+
+        for (uint l1 = 0; l1 < nLabels1; l1++) {
+
+          const double w1 = param[0][l1];
+
           const Math3D::Tensor<float>& cur_cost = cost_[l1];
 
-	  for (uint l2 = 0; l2 < nLabels2; l2++) {
+          for (uint l2 = 0; l2 < nLabels2; l2++) {
 
             const double w2 = w1 + param[1][l2];
 
             for (uint l4 = 0; l4 < nLabels4; l4++) {
-	  
+
               double hyp = cur_cost(l2,l3,l4) - w2;
               hyp -= param[3][l4];
-              
+
               for (uint s=0; s < nSeps; s++)
                 hyp += eval_pair(s,l1,l2,l3,l4);
-              
+
               if (hyp < best)
                 best = hyp;
             }
-	  }
-	}
-	
-	repar[l3] = best;
+          }
+        }
+
+        repar[l3] = best;
       }
-    }    
+    }
     else {
       assert(var == involved_var_[3]);
 
@@ -1976,15 +2039,15 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
 
       for (uint l4 = 0; l4 < nLabels4; l4++) {
 
-	double best = 1e300;
+        double best = 1e300;
 
-	for (uint l1 = 0; l1 < nLabels1; l1++) {
-	  
-	  const double w1 = param[0][l1];
-	
+        for (uint l1 = 0; l1 < nLabels1; l1++) {
+
+          const double w1 = param[0][l1];
+
           const Math3D::Tensor<float>& cur_cost = cost_[l1];
 
-	  for (uint l2 = 0; l2 < nLabels2; l2++) {
+          for (uint l2 = 0; l2 < nLabels2; l2++) {
 
             const double w2 = w1 + param[1][l2];
 
@@ -1992,16 +2055,16 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
 
               double hyp = cur_cost(l2,l3,l4) - w2;
               hyp -= param[2][l3];
-              
+
               for (uint s=0; s < adjacent_separator_.size(); s++)
                 hyp += eval_pair(s,l1,l2,l3,l4);
-              
+
               if (hyp < best)
                 best = hyp;
             }
           }
         }
-        
+
         repar[l4] = best;
       }
     }
@@ -2022,8 +2085,9 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_var_reparameterization(A
   return offs;
 }
 
-/*virtual*/ 
-double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair) {
+/*virtual*/
+double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(AllInclusiveSepCumTRWSPairSeparator* pair)
+{
 
   double offs = 0.0;
 
@@ -2056,28 +2120,28 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
       repar.resize(nLabels1,nLabels2);
 
       for (uint l1=0; l1 < nLabels1; l1++) {
-        
+
         const double w1 = param[0][l1];
 
         for (uint l2=0; l2 < nLabels2; l2++) {
 
           double best = 1e300;
-	  
+
           for (uint l3=0; l3 < nLabels3; l3++) {
-            
+
             const double w3 = param[2][l3];
-            
+
             for (uint l4=0; l4 < nLabels4; l4++) {
 
               double hyp = cost_[l1](l2,l3,l4) - w3;
-              hyp -= param[3][l4]; 
-              
+              hyp -= param[3][l4];
+
               for (uint ss=0; ss < nSeps; ss++) {
-                
+
                 if (ss != s)
                   hyp += eval_pair(ss,l1,l2,l3,l4);
               }
-              
+
               if (hyp < best)
                 best = hyp;
             }
@@ -2106,14 +2170,14 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
             for (uint l4=0; l4 < nLabels4; l4++) {
 
               double hyp = cost_[l1](l2,l3,l4) - w2;
-              hyp -= param[3][l4]; 
-              
+              hyp -= param[3][l4];
+
               for (uint ss=0; ss < nSeps; ss++) {
-                
+
                 if (ss != s)
                   hyp += eval_pair(ss,l1,l2,l3,l4);
               }
-              
+
               if (hyp < best)
                 best = hyp;
             }
@@ -2138,20 +2202,20 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
           double best = 1e300;
 
           for (uint l2=0; l2 < nLabels2; l2++) {
-            
+
             const double w2 = param[1][l2];
 
             for (uint l3=0; l3 < nLabels3; l3++) {
 
               double hyp = cost_[l1](l2,l3,l4) - w2;
-              hyp -= param[2][l3]; 
-              
+              hyp -= param[2][l3];
+
               for (uint ss=0; ss < nSeps; ss++) {
-                
+
                 if (ss != s)
                   hyp += eval_pair(ss,l1,l2,l3,l4);
               }
-              
+
               if (hyp < best)
                 best = hyp;
             }
@@ -2163,7 +2227,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
     }
   }
   else if (pair->var1() == involved_var_[1]) {
-    
+
     if (pair->var2() == involved_var_[2]) {
 
       repar.resize(nLabels2,nLabels3);
@@ -2183,14 +2247,14 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
             for (uint l4=0; l4 < nLabels4; l4++) {
 
               double hyp = cost_[l1](l2,l3,l4) - w1;
-              hyp -= param[3][l4]; 
-              
+              hyp -= param[3][l4];
+
               for (uint ss=0; ss < nSeps; ss++) {
-                
+
                 if (ss != s)
                   hyp += eval_pair(ss,l1,l2,l3,l4);
               }
-              
+
               if (hyp < best)
                 best = hyp;
             }
@@ -2221,14 +2285,14 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
             for (uint l3=0; l3 < nLabels3; l3++) {
 
               double hyp = cost_[l1](l2,l3,l4) - w1;
-              hyp -= param[2][l3]; 
-              
+              hyp -= param[2][l3];
+
               for (uint ss=0; ss < nSeps; ss++) {
-                
+
                 if (ss != s)
                   hyp += eval_pair(ss,l1,l2,l3,l4);
               }
-              
+
               if (hyp < best)
                 best = hyp;
             }
@@ -2252,7 +2316,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
       for (uint l4=0; l4 < nLabels4; l4++) {
 
         double best = 1e300;
-        
+
         for (uint l1=0; l1 < nLabels1; l1++) {
 
           const double w1 = param[0][l1];
@@ -2260,19 +2324,19 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
           for (uint l2=0; l2 < nLabels2; l2++) {
 
             double hyp = cost_[l1](l2,l3,l4) - w1;
-            hyp -= param[1][l2]; 
-              
+            hyp -= param[1][l2];
+
             for (uint ss=0; ss < nSeps; ss++) {
-              
+
               if (ss != s)
                 hyp += eval_pair(ss,l1,l2,l3,l4);
             }
-              
+
             if (hyp < best)
               best = hyp;
           }
         }
-        
+
         repar(l3,l4) = best - w3 - param[3][l4];
       }
     }
@@ -2288,8 +2352,9 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_pair_reparameterization(
   return offs;
 }
 
-/*virtual*/ 
-double FourthOrderAllInclusiveSepCumTRWSFactor::best_value() {
+/*virtual*/
+double FourthOrderAllInclusiveSepCumTRWSFactor::best_value()
+{
 
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
@@ -2301,9 +2366,9 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::best_value() {
   const uint nSeps = adjacent_separator_.size();
 
   for (uint l1 = 0; l1 < nLabels1; l1++) {
-    
+
     for (uint l2 = 0; l2 < nLabels2; l2++) {
-	
+
       for (uint l3 = 0; l3 < nLabels3; l3++) {
 
         for (uint l4 = 0; l4 < nLabels4; l4++) {
@@ -2316,7 +2381,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::best_value() {
 
           for (uint s=0; s < nSeps; s++)
             hyp += eval_pair(s,l1,l2,l3,l4);
-  
+
           if (hyp < min_val)
             min_val = hyp;
         }
@@ -2327,19 +2392,20 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::best_value() {
   return min_val;
 }
 
-/*virtual*/ 
-double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, 
-                                                                const AllInclusiveSepCumTRWSVariable* incoming_var, 
-                                                                const AllInclusiveSepCumTRWSVariable* outgoing_var,
-                                                                const Math2D::Matrix<double>& prev_pair_forward, 
-                                                                const Math1D::Vector<double>& prev_var_forward, 
-                                                                Math1D::Vector<double>& forward) {
+/*virtual*/
+double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep,
+    const AllInclusiveSepCumTRWSVariable* incoming_var,
+    const AllInclusiveSepCumTRWSVariable* outgoing_var,
+    const Math2D::Matrix<double>& prev_pair_forward,
+    const Math1D::Vector<double>& prev_var_forward,
+    Math1D::Vector<double>& forward)
+{
 
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
   const uint nLabels3 = involved_var_[2]->nLabels();
   const uint nLabels4 = involved_var_[3]->nLabels();
-  
+
   Storage1D<Math1D::Vector<double> > param = var_reparameterization_;
   for (uint v=0; v < involved_var_.size(); v++) {
     //do NOT include cost of variables included in the pair-separator
@@ -2353,7 +2419,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
 
   Storage1D<Math2D::Matrix<double> > pair_param = pair_reparameterization_;
   for (uint s=0; s < pair_param.size(); s++) {
-    
+
     pair_param[s] -= adjacent_separator_[s]->pair_parameters();
     if (adjacent_separator_[s] == incoming_sep)
       pair_param[s] -= prev_pair_forward;
@@ -2364,30 +2430,30 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
     forward.resize(nLabels1);
 
     for (uint l1 = 0; l1 < nLabels1; l1++) {
-      
+
       double best = 1e300;
 
       for (uint l2 = 0; l2 < nLabels2; l2++) {
 
         const double w2 = param[1][l2];
-	
+
         for (uint l3 = 0; l3 < nLabels3; l3++) {
 
           for (uint l4 = 0; l4 < nLabels4; l4++) {
-	  
+
             double hyp = cost_[l1](l2,l3,l4) - w2;
             hyp -= param[2][l3];
             hyp -= param[3][l4];
-            
+
             for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-            
+
             if (hyp < best)
               best = hyp;
           }
         }
       }
-      
+
       forward[l1] = best - param[0][l1];
     }
   }
@@ -2396,62 +2462,62 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
     forward.resize(nLabels2);
 
     for (uint l2 = 0; l2 < nLabels2; l2++) {
-      
+
       double best = 1e300;
-      
+
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 
         const double w1 = param[0][l1];
-	
+
         for (uint l3 = 0; l3 < nLabels3; l3++) {
 
           for (uint l4 = 0; l4 < nLabels4; l4++) {
-	  
+
             double hyp = cost_[l1](l2,l3,l4) - w1;
             hyp -= param[2][l3];
             hyp -= param[3][l4];
-            
+
             for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-            
+
             if (hyp < best)
               best = hyp;
           }
         }
       }
-      
+
       forward[l2] = best  - param[1][l2];
-    }    
+    }
   }
   else if (outgoing_var == involved_var_[2]) {
 
     forward.resize(nLabels3);
 
     for (uint l3 = 0; l3 < nLabels3; l3++) {
-      
+
       double best = 1e300;
-      
+
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 
         const double w1 = param[0][l1];
-	
+
         for (uint l2 = 0; l2 < nLabels2; l2++) {
 
           for (uint l4 = 0; l4 < nLabels4; l4++) {
-	  
+
             double hyp = cost_[l1](l2,l3,l4) - w1;
             hyp -= param[1][l2];
             hyp -= param[3][l4];
 
             for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-	  
+
             if (hyp < best)
               best = hyp;
           }
         }
       }
-      
+
       forward[l3] = best  - param[2][l3];
     }
   }
@@ -2460,13 +2526,13 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
     forward.resize(nLabels4);
 
     for (uint l4 = 0; l4 < nLabels4; l4++) {
-      
+
       double best = 1e300;
-      
+
       for (uint l1 = 0; l1 < nLabels1; l1++) {
 
         const double w1 = param[0][l1];
-	
+
         for (uint l2 = 0; l2 < nLabels2; l2++) {
 
           for (uint l3 = 0; l3 < nLabels3; l3++) {
@@ -2477,7 +2543,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
 
             for (uint s=0; s < nSeps; s++)
               hyp -= eval_pair(s,l1,l2,l3,l4,pair_param);
-	  
+
             if (hyp < best)
               best = hyp;
           }
@@ -2495,19 +2561,20 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
   return offs;
 }
 
-/*virtual*/ 
-double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep, 
-                                                                const AllInclusiveSepCumTRWSVariable* incoming_var, 
-                                                                const AllInclusiveSepCumTRWSPairSeparator* outgoing_sep,
-                                                                const Math2D::Matrix<double>& prev_pair_forward, 
-                                                                const Math1D::Vector<double>& prev_var_forward, 
-                                                                Math2D::Matrix<double>& forward) {
+/*virtual*/
+double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusiveSepCumTRWSPairSeparator* incoming_sep,
+    const AllInclusiveSepCumTRWSVariable* incoming_var,
+    const AllInclusiveSepCumTRWSPairSeparator* outgoing_sep,
+    const Math2D::Matrix<double>& prev_pair_forward,
+    const Math1D::Vector<double>& prev_var_forward,
+    Math2D::Matrix<double>& forward)
+{
 
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
   const uint nLabels3 = involved_var_[2]->nLabels();
   const uint nLabels4 = involved_var_[3]->nLabels();
-  
+
   Storage1D<Math1D::Vector<double> > param = var_reparameterization_;
   for (uint v=0; v < involved_var_.size(); v++) {
     //do NOT include cost of variables included in the pair-separator
@@ -2545,20 +2612,20 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
         for (uint l2=0; l2 < nLabels2; l2++) {
 
           double best = 1e300;
-	  
+
           for (uint l3=0; l3 < nLabels3; l3++) {
             for (uint l4=0; l4 < nLabels4; l4++) {
 
               double hyp = cost_[l1](l2,l3,l4);
 
-              hyp -= param[2][l3]; 
-              hyp -= param[3][l4]; 
-              
+              hyp -= param[2][l3];
+              hyp -= param[3][l4];
+
               for (uint ss=0; ss < nSeps; ss++) {
-                
+
                 hyp -= eval_pair(ss,l1,l2,l3,l4,pair_param);
               }
-              
+
               if (hyp < best)
                 best = hyp;
             }
@@ -2582,14 +2649,14 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
 
               double hyp = cost_[l1](l2,l3,l4);
 
-              hyp -= param[1][l2]; 
-              hyp -= param[3][l4]; 
-              
+              hyp -= param[1][l2];
+              hyp -= param[3][l4];
+
               for (uint ss=0; ss < nSeps; ss++) {
-                
+
                 hyp -= eval_pair(ss,l1,l2,l3,l4,pair_param);
               }
-              
+
               if (hyp < best)
                 best = hyp;
             }
@@ -2615,14 +2682,14 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
 
               double hyp = cost_[l1](l2,l3,l4);
 
-              hyp -= param[1][l2]; 
-              hyp -= param[2][l3]; 
-              
+              hyp -= param[1][l2];
+              hyp -= param[2][l3];
+
               for (uint ss=0; ss < nSeps; ss++) {
-                
+
                 hyp -= eval_pair(ss,l1,l2,l3,l4,pair_param);
               }
-              
+
               if (hyp < best)
                 best = hyp;
             }
@@ -2634,7 +2701,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
     }
   }
   else if (outgoing_sep->var1() == involved_var_[1]) {
-    
+
     if (outgoing_sep->var2() == involved_var_[2]) {
 
       forward.resize(nLabels2,nLabels3);
@@ -2649,14 +2716,14 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
 
               double hyp = cost_[l1](l2,l3,l4);
 
-              hyp -= param[0][l1]; 
-              hyp -= param[3][l4]; 
-              
+              hyp -= param[0][l1];
+              hyp -= param[3][l4];
+
               for (uint ss=0; ss < nSeps; ss++) {
-                
+
                 hyp -= eval_pair(ss,l1,l2,l3,l4,pair_param);
               }
-              
+
               if (hyp < best)
                 best = hyp;
             }
@@ -2682,14 +2749,14 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
 
               double hyp = cost_[l1](l2,l3,l4);
 
-              hyp -= param[0][l1]; 
-              hyp -= param[2][l3]; 
-              
+              hyp -= param[0][l1];
+              hyp -= param[2][l3];
+
               for (uint ss=0; ss < nSeps; ss++) {
-                
+
                 hyp -= eval_pair(ss,l1,l2,l3,l4,pair_param);
               }
-              
+
               if (hyp < best)
                 best = hyp;
             }
@@ -2710,42 +2777,43 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::compute_forward(const AllInclusi
       for (uint l4=0; l4 < nLabels4; l4++) {
 
         double best = 1e300;
-        
+
         for (uint l1=0; l1 < nLabels1; l1++) {
           for (uint l2=0; l2 < nLabels2; l2++) {
 
             double hyp = cost_[l1](l2,l3,l4);
 
-            hyp -= param[0][l1]; 
-            hyp -= param[1][l2]; 
-              
+            hyp -= param[0][l1];
+            hyp -= param[1][l2];
+
             for (uint ss=0; ss < nSeps; ss++) {
-              
+
               hyp -= eval_pair(ss,l1,l2,l3,l4,pair_param);
             }
-              
+
             if (hyp < best)
               best = hyp;
           }
         }
-        
+
         forward(l3,l4) = best - param[2][l3] - param[3][l4];
       }
     }
   }
-  
+
   return 0.0;
 }
 
 
-double FourthOrderAllInclusiveSepCumTRWSFactor::eval_pair(uint pair_num, uint x, uint y, uint z, uint w) const {
+double FourthOrderAllInclusiveSepCumTRWSFactor::eval_pair(uint pair_num, uint x, uint y, uint z, uint w) const
+{
 
   AllInclusiveSepCumTRWSVariable* v1 = adjacent_separator_[pair_num]->var1();
   AllInclusiveSepCumTRWSVariable* v2 = adjacent_separator_[pair_num]->var2();
-  
+
   uint a=MAX_UINT;
   uint b=MAX_UINT;
-  
+
   if (involved_var_[0] == v1)
     a = x;
   else if (involved_var_[1] == v1) {
@@ -2755,7 +2823,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::eval_pair(uint pair_num, uint x,
     assert(involved_var_[2] == v1);
     a = z;
   }
-  
+
   if (involved_var_[1] == v2)
     b = y;
   else if (involved_var_[2] == v2) {
@@ -2770,14 +2838,15 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::eval_pair(uint pair_num, uint x,
 }
 
 double FourthOrderAllInclusiveSepCumTRWSFactor::eval_pair(uint pair_num, uint x, uint y, uint z, uint w,
-                                                          const Storage1D< Math2D::Matrix<double> >& pair_param) const {
+    const Storage1D< Math2D::Matrix<double> >& pair_param) const
+{
 
   AllInclusiveSepCumTRWSVariable* v1 = adjacent_separator_[pair_num]->var1();
   AllInclusiveSepCumTRWSVariable* v2 = adjacent_separator_[pair_num]->var2();
-  
+
   uint a=MAX_UINT;
   uint b=MAX_UINT;
-  
+
   if (involved_var_[0] == v1)
     a = x;
   else if (involved_var_[1] == v1) {
@@ -2787,7 +2856,7 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::eval_pair(uint pair_num, uint x,
     assert(involved_var_[2] == v1);
     a = z;
   }
-  
+
   if (involved_var_[1] == v2)
     b = y;
   else if (involved_var_[2] == v2) {
@@ -2804,26 +2873,29 @@ double FourthOrderAllInclusiveSepCumTRWSFactor::eval_pair(uint pair_num, uint x,
 /*******************/
 
 AllInclusiveSepCumTRWS::AllInclusiveSepCumTRWS(uint nVars, uint nSeparators, uint nFactors) :
-  nUsedVars_(0), nUsedSeparators_(0), nUsedFactors_(0), optimize_called_(false) {
+  nUsedVars_(0), nUsedSeparators_(0), nUsedFactors_(0), optimize_called_(false)
+{
 
   var_.resize(nVars,0);
   separator_.resize(nSeparators);
   factor_.resize(nFactors);
 }
 
-AllInclusiveSepCumTRWS::~AllInclusiveSepCumTRWS() {
-  
+AllInclusiveSepCumTRWS::~AllInclusiveSepCumTRWS()
+{
+
   for (uint v=0; v < nUsedVars_; v++)
     delete var_[v];
 
-  for (uint s=0; s < nUsedSeparators_; s++) 
+  for (uint s=0; s < nUsedSeparators_; s++)
     delete separator_[s];
 
   for (uint f=0; f < nUsedFactors_; f++)
     delete factor_[f];
 }
 
-uint AllInclusiveSepCumTRWS::add_var(const Math1D::Vector<float>& cost) {
+uint AllInclusiveSepCumTRWS::add_var(const Math1D::Vector<float>& cost)
+{
 
   assert(!optimize_called_);
 
@@ -2838,7 +2910,8 @@ uint AllInclusiveSepCumTRWS::add_var(const Math1D::Vector<float>& cost) {
   return nUsedVars_-1;
 }
 
-uint AllInclusiveSepCumTRWS::add_pair_separator(uint var1, uint var2) {
+uint AllInclusiveSepCumTRWS::add_pair_separator(uint var1, uint var2)
+{
 
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_) {
     INTERNAL_ERROR << "out of range. Exiting." << std::endl;
@@ -2860,7 +2933,8 @@ uint AllInclusiveSepCumTRWS::add_pair_separator(uint var1, uint var2) {
   return nUsedSeparators_-1;
 }
 
-void AllInclusiveSepCumTRWS::add_factor(AllInclusiveSepCumTRWSFactor* fac) {
+void AllInclusiveSepCumTRWS::add_factor(AllInclusiveSepCumTRWSFactor* fac)
+{
 
   assert(!optimize_called_);
 
@@ -2886,7 +2960,8 @@ void AllInclusiveSepCumTRWS::add_binary_factor(uint v1, uint v2, const Math2D::M
 }
 
 void AllInclusiveSepCumTRWS::add_ternary_factor(uint v1, uint v2, uint v3, const Storage1D<uint>& separators,
-						const Math3D::Tensor<float>& cost) {
+    const Math3D::Tensor<float>& cost)
+{
 
   if (v1 >= nUsedVars_ || v2 >= nUsedVars_ || v3 >= nUsedVars_) {
     INTERNAL_ERROR << "out of range. Exiting." << std::endl;
@@ -2922,7 +2997,7 @@ void AllInclusiveSepCumTRWS::add_ternary_factor(uint v1, uint v2, uint v3, const
       for (uint y=0; y < var_[v2]->nLabels(); y++)
         for (uint z=y+1; z < var_[v3]->nLabels(); z++)
           std::swap(cost_copy(x,y,z),cost_copy(x,z,y));
-    
+
     std::swap(v2,v3);
   }
   if (v1 > v2) {
@@ -2967,7 +3042,7 @@ void AllInclusiveSepCumTRWS::add_ternary_factor(uint v1, uint v2, uint v3, const
 }
 
 void AllInclusiveSepCumTRWS::add_fourth_order_factor(uint v1, uint v2, uint v3, uint v4, const Storage1D<uint>& separators,
-						     const Storage1D<Math3D::Tensor<float> >& cost)
+    const Storage1D<Math3D::Tensor<float> >& cost)
 {
 
   if (v1 >= nUsedVars_ || v2 >= nUsedVars_ || v3 >= nUsedVars_ || v4 >= nUsedVars_) {
@@ -3034,13 +3109,13 @@ void AllInclusiveSepCumTRWS::add_fourth_order_factor(uint v1, uint v2, uint v3, 
 #endif
 
   assert(nUsedFactors_ < factor_.size());
-  
+
   Storage1D<AllInclusiveSepCumTRWSVariable*> vars(4);
   vars[0] = var_[v1];
   vars[1] = var_[v2];
   vars[2] = var_[v3];
   vars[3] = var_[v4];
-  
+
   Storage1D<AllInclusiveSepCumTRWSPairSeparator*> seps(separators.size());
   for (uint s=0; s < separators.size(); s++) {
 
@@ -3055,7 +3130,8 @@ void AllInclusiveSepCumTRWS::add_fourth_order_factor(uint v1, uint v2, uint v3, 
   add_factor(new FourthOrderAllInclusiveSepCumTRWSFactor(vars,seps,cost_copy));
 }
 
-AllInclusiveSepCumTRWSVariable* AllInclusiveSepCumTRWS::get_variable(uint v) {
+AllInclusiveSepCumTRWSVariable* AllInclusiveSepCumTRWS::get_variable(uint v)
+{
 
   if (v < nUsedVars_)
     return var_[v];
@@ -3076,37 +3152,37 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter, bool quiet)
   if (!optimize_called_) {
 
     uint next_sep_rank = 0;
-    
+
     for (uint v=0; v < nUsedVars_; v++) {
-      
+
       const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& adj_sep = var_[v]->adjacent_separators();
-      
+
       for (uint s=0; s < adj_sep.size(); s++) {
-        
+
         if (var_[v] == adj_sep[s]->var2()) {
-          
+
           adj_sep[s]->set_sep_rank(next_sep_rank);
           next_sep_rank++;
         }
       }
     }
-    
+
     for (uint f=0; f < nUsedFactors_; f++)
       factor_[f]->compute_rank_range();
-    
+
     for (uint s=0; s < nUsedSeparators_; s++) {
       separator_[s]->set_up_chains();
     }
-    
+
     for (uint v=0; v < nUsedVars_; v++) {
       var_[v]->set_up_chains();
     }
-    
+
     for (uint f=0; f < nUsedFactors_; f++) {
       if (factor_[f]->prev_factor() == 0)
         factor_[f]->set_start_separator(0);
       if (factor_[f]->next_factor() == 0)
-        factor_[f]->set_end_separator(0);      
+        factor_[f]->set_end_separator(0);
     }
   }
 
@@ -3123,12 +3199,12 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter, bool quiet)
     size_t effort_per_iteration = 0;
 
     size_t message_effort = 0;
-    
+
     for (uint f=0; f < nUsedFactors_; f++) {
-      
+
       uint var_size = factor_[f]->involved_var().size();
       uint sep_size = factor_[f]->adjacent_separator().size();
-      
+
       effort_per_iteration += (var_size + sep_size-1) * (var_size + sep_size);
     }
     message_effort = effort_per_iteration * nIter;
@@ -3144,7 +3220,7 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter, bool quiet)
     //double single_share = 0.0;
     //double fwd_av_share = 0.0;
     //END_DEBUG
-    
+
     double fwd_bound = 0.0;
     for (uint v=0; v < nUsedVars_; v++) {
 
@@ -3152,15 +3228,15 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter, bool quiet)
       const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& adj_sep = var_[v]->adjacent_separators();
 
       for (uint s=0; s < adj_sep.size(); s++) {
-        
+
         if (var_[v] == adj_sep[s]->var2()) {
 
-	  fwd_bound += adj_sep[s]->reparameterize_forward();
+          fwd_bound += adj_sep[s]->reparameterize_forward();
 
-	  double temp = adj_sep[s]->average();
-	  fwd_bound += temp;
-	  //fwd_av_share += temp;
-	}
+          double temp = adj_sep[s]->average();
+          fwd_bound += temp;
+          //fwd_av_share += temp;
+        }
       }
 
 
@@ -3190,7 +3266,7 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter, bool quiet)
     for (int v=nUsedVars_-1; v >= 0; v--) {
 
       //average the var
-      
+
       bwd_bound += var_[v]->reparameterize_backward();
 
       double temp = var_[v]->average(arg_min);
@@ -3202,15 +3278,15 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter, bool quiet)
       const Storage1D<AllInclusiveSepCumTRWSPairSeparator*>& adj_sep = var_[v]->adjacent_separators();
 
       for (int s= adj_sep.size() - 1; s >= 0; s--) {
-        
+
         if (var_[v] == adj_sep[s]->var2()) {
 
-	  bwd_bound += adj_sep[s]->reparameterize_backward();
+          bwd_bound += adj_sep[s]->reparameterize_backward();
 
-	  double temp = adj_sep[s]->average();
-	  bwd_bound += temp;
-	  //bwd_av_share += temp;
-	}
+          double temp = adj_sep[s]->average();
+          bwd_bound += temp;
+          //bwd_av_share += temp;
+        }
       }
 
     }
@@ -3225,21 +3301,23 @@ double AllInclusiveSepCumTRWS::optimize(uint nIter, bool quiet)
 }
 
 
-const Math1D::Vector<uint>& AllInclusiveSepCumTRWS::labeling() const {
+const Math1D::Vector<uint>& AllInclusiveSepCumTRWS::labeling() const
+{
   return labeling_;
 }
 
 
-double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
+double AllInclusiveSepCumTRWS::cur_bound(bool backward)
+{
 
-  double bound = 0.0; 
+  double bound = 0.0;
 
   for (uint f=0; f < nUsedFactors_; f++) {
 
     if (factor_[f]->prev_factor() == 0) {
 
       AllInclusiveSepCumTRWSFactor* cur_factor = factor_[f];
-        
+
       std::vector<AllInclusiveSepCumTRWSFactor*> chain;
       std::vector<AllInclusiveSepCumTRWSVariable*> out_var;
       std::vector<AllInclusiveSepCumTRWSPairSeparator*> out_sep;
@@ -3247,15 +3325,15 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
       //find chain start
       AllInclusiveSepCumTRWSVariable* in_var = 0;
       for (uint k=0; k < cur_factor->involved_var().size(); k++) {
-        
+
         if (cur_factor->involved_var()[k]->rank() == cur_factor->min_rank()) {
           in_var = cur_factor->involved_var()[k];
           break;
         }
       }
-      
+
       assert(in_var != 0);
-      
+
       while (cur_factor != 0) {
 
         chain.push_back(cur_factor);
@@ -3266,7 +3344,7 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
         else {
           out_sep.push_back(0);
           for (uint k=0; k < cur_factor->involved_var().size(); k++) {
-            
+
             if (cur_factor->involved_var()[k]->rank() == cur_factor->max_rank()) {
               out_var.push_back(cur_factor->involved_var()[k]);
               break;
@@ -3275,12 +3353,12 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
         }
         cur_factor = cur_factor->next_factor();
       }
-      
+
       uint chain_length = chain.size();
-      
+
       //find chain end
       for (uint k=0; k < chain.back()->involved_var().size(); k++) {
-        
+
         if (chain.back()->involved_var()[k]->rank() == chain.back()->max_rank()) {
           out_var.back() = chain.back()->involved_var()[k];
           break;
@@ -3289,105 +3367,105 @@ double AllInclusiveSepCumTRWS::cur_bound(bool backward) {
 
       if (backward) {
 
-	Math1D::NamedVector<double> backward1(MAKENAME(backward1));
-	Math1D::NamedVector<double> backward2(in_var->nLabels(),0.0,MAKENAME(backward2));
+        Math1D::NamedVector<double> backward1(MAKENAME(backward1));
+        Math1D::NamedVector<double> backward2(in_var->nLabels(),0.0,MAKENAME(backward2));
 
-	Math2D::Matrix<double> pair_backward1;
-	Math2D::Matrix<double> pair_backward2;
+        Math2D::Matrix<double> pair_backward1;
+        Math2D::Matrix<double> pair_backward2;
 
-	if (chain_length > 1) {
-	  if (out_var[chain_length-2] != 0) {
-	    double offs = chain.back()->compute_forward(0,out_var.back(),out_var[chain_length-2],pair_backward2,backward2,backward1);
-	    bound += offs;
-	  }
-	  else {
-	    double offs = chain.back()->compute_forward(0,out_var.back(),out_sep[chain_length-2],pair_backward2,backward2,pair_backward1);
-	    bound += offs;
+        if (chain_length > 1) {
+          if (out_var[chain_length-2] != 0) {
+            double offs = chain.back()->compute_forward(0,out_var.back(),out_var[chain_length-2],pair_backward2,backward2,backward1);
+            bound += offs;
+          }
+          else {
+            double offs = chain.back()->compute_forward(0,out_var.back(),out_sep[chain_length-2],pair_backward2,backward2,pair_backward1);
+            bound += offs;
 
-	    assert(offs == 0.0);
-	  }
-	}
-	else {
-	  backward1.resize(out_var[0]->nLabels(),0.0);
-	}
+            assert(offs == 0.0);
+          }
+        }
+        else {
+          backward1.resize(out_var[0]->nLabels(),0.0);
+        }
 
-	for (int k=chain_length-2; k >= 0; k--) {
+        for (int k=chain_length-2; k >= 0; k--) {
 
-	  Math1D::Vector<double>& last_backward = (( (int(chain_length)-1-k) % 2) == 1) ? backward1 : backward2;
-	  Math1D::Vector<double>& new_backward = (((int(chain_length)-1-k) % 2) == 0) ? backward1 : backward2;
-        
-	  Math2D::Matrix<double>& last_pair_backward = (((int(chain_length)-1-k) % 2) == 1) ? pair_backward1 : pair_backward2;
-	  Math2D::Matrix<double>& new_pair_backward = (((int(chain_length)-1-k) % 2) == 0) ? pair_backward1 : pair_backward2;
-	
-	  if (k == 0) {
+          Math1D::Vector<double>& last_backward = (( (int(chain_length)-1-k) % 2) == 1) ? backward1 : backward2;
+          Math1D::Vector<double>& new_backward = (((int(chain_length)-1-k) % 2) == 0) ? backward1 : backward2;
 
-	    double offs = chain[0]->compute_forward(out_sep[k],out_var[k],in_var,last_pair_backward,last_backward,new_backward);
-	    bound += offs;
-	  }
-	  else {
+          Math2D::Matrix<double>& last_pair_backward = (((int(chain_length)-1-k) % 2) == 1) ? pair_backward1 : pair_backward2;
+          Math2D::Matrix<double>& new_pair_backward = (((int(chain_length)-1-k) % 2) == 0) ? pair_backward1 : pair_backward2;
 
-	    if (out_var[k-1] != 0) {
-	      double offs = chain[k]->compute_forward(out_sep[k],out_var[k],out_var[k-1],last_pair_backward,last_backward,new_backward);
-	      bound += offs;
-	    }
-	    else {
-	      double offs = chain[k]->compute_forward(out_sep[k],out_var[k],out_sep[k-1],last_pair_backward,last_backward,new_pair_backward);
-	      bound += offs;
-	    }
-	  }
-	}
-	
+          if (k == 0) {
 
-	Math1D::Vector<double>& new_backward = (((chain_length-1) % 2) == 0) ? backward1 : backward2;
+            double offs = chain[0]->compute_forward(out_sep[k],out_var[k],in_var,last_pair_backward,last_backward,new_backward);
+            bound += offs;
+          }
+          else {
 
-	new_backward += in_var->cost();
+            if (out_var[k-1] != 0) {
+              double offs = chain[k]->compute_forward(out_sep[k],out_var[k],out_var[k-1],last_pair_backward,last_backward,new_backward);
+              bound += offs;
+            }
+            else {
+              double offs = chain[k]->compute_forward(out_sep[k],out_var[k],out_sep[k-1],last_pair_backward,last_backward,new_pair_backward);
+              bound += offs;
+            }
+          }
+        }
 
-	bound += new_backward.min();
+
+        Math1D::Vector<double>& new_backward = (((chain_length-1) % 2) == 0) ? backward1 : backward2;
+
+        new_backward += in_var->cost();
+
+        bound += new_backward.min();
       }
       else {
 
 
-	Math1D::NamedVector<double> forward1(MAKENAME(forward1));
-	Math1D::NamedVector<double> forward2(in_var->nLabels(),0.0,MAKENAME(forward2));
-	
-	Math2D::Matrix<double> pair_forward1;
-	Math2D::Matrix<double> pair_forward2;
+        Math1D::NamedVector<double> forward1(MAKENAME(forward1));
+        Math1D::NamedVector<double> forward2(in_var->nLabels(),0.0,MAKENAME(forward2));
 
-	//compute forward
-	if (out_var[0] != 0) {
-	  double offs = chain[0]->compute_forward(0,in_var,out_var[0],pair_forward2,forward2,forward1);
-	  bound += offs;
-	}
-	else {
-	  bound += chain[0]->compute_forward(0,in_var,out_sep[0],pair_forward2,forward2,pair_forward1);
-	}
-	
-	for (uint k=1; k < chain_length; k++) {
-	  
-	  Math1D::Vector<double>& last_forward = ((k % 2) == 1) ? forward1 : forward2;
-	  Math1D::Vector<double>& new_forward = ((k % 2) == 0) ? forward1 : forward2;
-        
-	  Math2D::Matrix<double>& last_pair_forward = ((k % 2) == 1) ? pair_forward1 : pair_forward2;
-	  Math2D::Matrix<double>& new_pair_forward = ((k % 2) == 0) ? pair_forward1 : pair_forward2;
-	  
-	  if (out_var[k] != 0) {
-	    double offs = chain[k]->compute_forward(out_sep[k-1],out_var[k-1],out_var[k],
-						    last_pair_forward,last_forward,new_forward);
-	    bound += offs;
-	  }
-	  else {
-	    bound += chain[k]->compute_forward(out_sep[k-1],out_var[k-1],out_sep[k],
-					       last_pair_forward,last_forward,new_pair_forward);
-	  }
-	}
+        Math2D::Matrix<double> pair_forward1;
+        Math2D::Matrix<double> pair_forward2;
 
-	Math1D::Vector<double>& new_forward = (((chain_length-1) % 2) == 0) ? forward1 : forward2;
-      
-	assert(out_var[chain_length-1] != 0);
+        //compute forward
+        if (out_var[0] != 0) {
+          double offs = chain[0]->compute_forward(0,in_var,out_var[0],pair_forward2,forward2,forward1);
+          bound += offs;
+        }
+        else {
+          bound += chain[0]->compute_forward(0,in_var,out_sep[0],pair_forward2,forward2,pair_forward1);
+        }
 
-	new_forward += out_var[chain_length-1]->cost();
+        for (uint k=1; k < chain_length; k++) {
 
-	bound += new_forward.min();
+          Math1D::Vector<double>& last_forward = ((k % 2) == 1) ? forward1 : forward2;
+          Math1D::Vector<double>& new_forward = ((k % 2) == 0) ? forward1 : forward2;
+
+          Math2D::Matrix<double>& last_pair_forward = ((k % 2) == 1) ? pair_forward1 : pair_forward2;
+          Math2D::Matrix<double>& new_pair_forward = ((k % 2) == 0) ? pair_forward1 : pair_forward2;
+
+          if (out_var[k] != 0) {
+            double offs = chain[k]->compute_forward(out_sep[k-1],out_var[k-1],out_var[k],
+                                                    last_pair_forward,last_forward,new_forward);
+            bound += offs;
+          }
+          else {
+            bound += chain[k]->compute_forward(out_sep[k-1],out_var[k-1],out_sep[k],
+                                               last_pair_forward,last_forward,new_pair_forward);
+          }
+        }
+
+        Math1D::Vector<double>& new_forward = (((chain_length-1) % 2) == 0) ? forward1 : forward2;
+
+        assert(out_var[chain_length-1] != 0);
+
+        new_forward += out_var[chain_length-1]->cost();
+
+        bound += new_forward.min();
       }
     }
   }

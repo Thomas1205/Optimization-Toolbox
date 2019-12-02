@@ -2,31 +2,36 @@
 
 #include "smooth_function.hh"
 
-SmoothFunction::SmoothFunction(uint n) : 
-  n_(n), quiet_(false), max_alpha_(1.0), backtrack_factor_(0.75), cutoff_factor_(0.05), grad_norm_cutoff_(1-4) 
+SmoothFunction::SmoothFunction(uint n) :
+  n_(n), quiet_(false), max_alpha_(1.0), backtrack_factor_(0.75), cutoff_factor_(0.05), grad_norm_cutoff_(1-4)
 {}
 
-void SmoothFunction::set_max_alpha(double max_alpha) {
+void SmoothFunction::set_max_alpha(double max_alpha)
+{
   max_alpha_ = max_alpha;
 }
 
-void SmoothFunction::set_backtracking_factor(double backtrack_factor) {
+void SmoothFunction::set_backtracking_factor(double backtrack_factor)
+{
   backtrack_factor_ = backtrack_factor;
 }
 
-void SmoothFunction::set_cutoff_factor(double cutoff_factor) {
+void SmoothFunction::set_cutoff_factor(double cutoff_factor)
+{
   cutoff_factor_ = cutoff_factor;
 }
 
-void SmoothFunction::set_cutoff_sqr_grad_norm(double cutoff_sqr_grad_norm) {
+void SmoothFunction::set_cutoff_sqr_grad_norm(double cutoff_sqr_grad_norm)
+{
   grad_norm_cutoff_ = cutoff_sqr_grad_norm;
 }
 
 
-/*virtual*/ 
-double SmoothFunction::hyp_function_value(const Math1D::Vector<double>& x, const Math1D::Vector<double>& addon, double alpha) const {
+/*virtual*/
+double SmoothFunction::hyp_function_value(const Math1D::Vector<double>& x, const Math1D::Vector<double>& addon, double alpha) const
+{
 
-  
+
   Math1D::Vector<double> hyp_x(n_);
   for (uint k=0; k < n_; k++)
     hyp_x[k] = x[k] + alpha*addon[k];
@@ -36,7 +41,8 @@ double SmoothFunction::hyp_function_value(const Math1D::Vector<double>& x, const
 
 
 //returns the computed function value
-double SmoothFunction::minimize_nlcg(Math1D::Vector<double>& x, uint nIter) {
+double SmoothFunction::minimize_nlcg(Math1D::Vector<double>& x, uint nIter)
+{
 
 
   Math1D::Vector<double> search_direction(n_);
@@ -44,14 +50,14 @@ double SmoothFunction::minimize_nlcg(Math1D::Vector<double>& x, uint nIter) {
   Math1D::Vector<double> gradient[2];
   gradient[0].resize(n_);
   gradient[1].resize(n_);
-  
+
   // init search direction with the current gradient
   compute_gradient(x,gradient[0]);
 
   double cur_energy = function_value(x);
 
   search_direction = gradient[0];
-  negate(search_direction); 
+  negate(search_direction);
 
   double prev_grad_norm = gradient[0].sqr_norm();
 
@@ -70,7 +76,7 @@ double SmoothFunction::minimize_nlcg(Math1D::Vector<double>& x, uint nIter) {
     const Math1D::Vector<double>& prev_gradient = gradient[cur_idx];
     cur_idx = 1-cur_idx;
     Math1D::Vector<double>& cur_gradient = gradient[cur_idx];
-    
+
     //a) line search along the current search direction
     double best_alpha = max_alpha;
 
@@ -95,25 +101,25 @@ double SmoothFunction::minimize_nlcg(Math1D::Vector<double>& x, uint nIter) {
 
       double hyp_energy = hyp_function_value(x,search_direction,alpha);
 
-      // std::cerr << "alpha: " << alpha << ", hyp energy: " << hyp_energy << ", threshold: " 
-      // 		<< (cur_energy + alpha*cutoff_offset) << ", satisfied: " 
+      // std::cerr << "alpha: " << alpha << ", hyp energy: " << hyp_energy << ", threshold: "
+      // 		<< (cur_energy + alpha*cutoff_offset) << ", satisfied: "
       // 		<< (hyp_energy <= cur_energy + alpha*cutoff_offset) << std::endl;
 
       //Wolfe conditions, part 1:
       if (hyp_energy <= cur_energy + alpha*cutoff_offset) {
-      	wolfe_satisfied = true; //TODO: second part of strong Wolfe conditions
+        wolfe_satisfied = true; //TODO: second part of strong Wolfe conditions
 
-      	if (hyp_energy < best_energy) {
-      	  best_energy = hyp_energy;
-      	  best_alpha = alpha;
-      	}
-      	else 
-      	  break;
+        if (hyp_energy < best_energy) {
+          best_energy = hyp_energy;
+          best_alpha = alpha;
+        }
+        else
+          break;
       }
-      else if (wolfe_satisfied) 
-       	break;
+      else if (wolfe_satisfied)
+        break;
     }
-    
+
     //b) update <code> x </code> and the gradient at <code> x </code>
     if (best_energy <= cur_energy) {
 
@@ -121,7 +127,7 @@ double SmoothFunction::minimize_nlcg(Math1D::Vector<double>& x, uint nIter) {
         x[k] += best_alpha * search_direction[k];
 
       cur_energy = best_energy;
-      
+
       if (best_alpha == max_alpha)
         max_alpha *= 1.5;
       else if (best_alpha < backtrack_factor_*backtrack_factor_*max_alpha)
@@ -154,7 +160,7 @@ double SmoothFunction::minimize_nlcg(Math1D::Vector<double>& x, uint nIter) {
     beta_hs = beta_pr / beta_hs_denom;
 
     beta_pr /= prev_grad_norm; //Polack-Ribiere variant
-    
+
     beta_pr = std::max(0.0,beta_pr);
     //beta_pr = std::max(-beta_fr,beta_pr);
     beta_hs = std::max(0.0,beta_hs); //Hestenes-Stiefel variant
@@ -163,7 +169,7 @@ double SmoothFunction::minimize_nlcg(Math1D::Vector<double>& x, uint nIter) {
     //if (beta_pr > beta_fr)
     //  beta_pr = beta_fr; //PR+
 
-    //if (beta_hs > beta_fr) 
+    //if (beta_hs > beta_fr)
     //  beta_hs = beta_fr; //HS+
 
     //double beta = beta_fr;
@@ -192,7 +198,8 @@ double SmoothFunction::minimize_nlcg(Math1D::Vector<double>& x, uint nIter) {
 }
 
 //returns the computed function value
-double SmoothFunction::minimize_l_bfgs(Math1D::Vector<double>& x, int L, uint nIter) {
+double SmoothFunction::minimize_l_bfgs(Math1D::Vector<double>& x, int L, uint nIter)
+{
 
   assert(L >= 1);
 
@@ -205,7 +212,7 @@ double SmoothFunction::minimize_l_bfgs(Math1D::Vector<double>& x, int L, uint nI
 
     grad_diff[l].resize(n_);
     step[l].resize(n_);
-  } 
+  }
 
   if (!quiet_)
     std::cerr.precision(10);
@@ -230,7 +237,7 @@ double SmoothFunction::minimize_l_bfgs(Math1D::Vector<double>& x, int L, uint nI
       break; //problem solved to sufficient accuracy
 
     double cur_curv = 0.0;
-    
+
     if (iter > 1) {
       //update grad_diff and rho
       uint cur_l = (iter-1) % L;
@@ -240,7 +247,7 @@ double SmoothFunction::minimize_l_bfgs(Math1D::Vector<double>& x, int L, uint nI
       double cur_rho = 0.0;
 
       for (uint k=0; k < n_; k++) {
-	
+
         //cur_grad_diff was set to minus the previous gradient at the end of the previous iteration
         cur_grad_diff[k] += cur_gradient[k];
         cur_rho += cur_grad_diff[k] * cur_step[k];
@@ -267,56 +274,56 @@ double SmoothFunction::minimize_l_bfgs(Math1D::Vector<double>& x, int L, uint nI
       const int cur_first_iter = std::max<int>(start_iter,iter-L);
 
       Math1D::Vector<double> alpha(L);
-      
+
       //first loop in Algorithm 7.4 from [Nocedal & Wright]
       for (int prev_iter = iter-1; prev_iter >= cur_first_iter; prev_iter--) {
-	
+
         uint prev_l = prev_iter % L;
-	
+
         const Math1D::Vector<double>& cur_step = step[prev_l];
         const Math1D::Vector<double>& cur_grad_diff = grad_diff[prev_l];
-	
-        double cur_alpha = 0.0; 
+
+        double cur_alpha = 0.0;
         for (uint k=0; k < n_; k++) {
           cur_alpha += search_direction[k] * cur_step[k];
         }
         cur_alpha *= rho[prev_l];
         alpha[prev_l] = cur_alpha;
-	
+
         for (uint k=0; k < n_; k++) {
           search_direction[k] -= cur_alpha * cur_grad_diff[k];
         }
       }
-      
+
       //we use a scaled identity as base matrix (q=r=search_direction)
       search_direction *= cur_curv;
-      
+
       //second loop in Algorithm 7.4 from [Nocedal & Wright]
       for (int prev_iter = cur_first_iter; prev_iter < iter; prev_iter++) {
-	
+
         uint prev_l = prev_iter % L;
-	
+
         const Math1D::Vector<double>& cur_step = step[prev_l];
         const Math1D::Vector<double>& cur_grad_diff = grad_diff[prev_l];
-	
-        double beta = 0.0; 
+
+        double beta = 0.0;
         for (uint k=0; k < n_; k++) {
           beta += search_direction[k] * cur_grad_diff[k];
         }
         beta *= rho[prev_l];
 
         const double gamma = alpha[prev_l] - beta;
-	
+
         for (uint k=0; k < n_; k++) {
           search_direction[k] += cur_step[k] * gamma;
         }
       }
-      
+
     }
     negate(search_direction);
 
     //b) line search along the current search direction
-    double best_alpha = 1.0; 
+    double best_alpha = 1.0;
     double best_energy = hyp_function_value(x,search_direction,best_alpha);
 
     double alpha = best_alpha;
@@ -331,7 +338,7 @@ double SmoothFunction::minimize_l_bfgs(Math1D::Vector<double>& x, int L, uint nI
     if (cutoff_offset >= 0.0) {
       //this can happen if the function is not strongly convex and we do not enforce part 2 of the Wolfe conditions.
       // in such a case we switch to a steepest descent iteration
-      
+
       search_direction = cur_gradient;
       negate(search_direction);
 
@@ -349,25 +356,25 @@ double SmoothFunction::minimize_l_bfgs(Math1D::Vector<double>& x, int L, uint nI
 
       double hyp_energy = hyp_function_value(x,search_direction,alpha);
 
-      // std::cerr << "alpha: " << alpha << ", hyp energy: " << hyp_energy << ", threshold: " 
-      // 		<< (cur_energy + alpha*cutoff_offset) << ", satisfied: " 
+      // std::cerr << "alpha: " << alpha << ", hyp energy: " << hyp_energy << ", threshold: "
+      // 		<< (cur_energy + alpha*cutoff_offset) << ", satisfied: "
       // 		<< (hyp_energy <= cur_energy + alpha*cutoff_offset) << std::endl;
 
       //Wolfe conditions, part 1:
       if (hyp_energy <= cur_energy + alpha*cutoff_offset) {
-      	wolfe_satisfied = true; 
+        wolfe_satisfied = true;
 
         //NOTE: part 2 of the Wolfe conditions is difficult to enforce, see Algorithm 3.5 in [Nocedal & Wright]
 
-      	if (hyp_energy < best_energy) {
-      	  best_energy = hyp_energy;
-      	  best_alpha = alpha;
-      	}
-      	else 
-      	  break;
+        if (hyp_energy < best_energy) {
+          best_energy = hyp_energy;
+          best_alpha = alpha;
+        }
+        else
+          break;
       }
-      else if (wolfe_satisfied) 
-       	break;
+      else if (wolfe_satisfied)
+        break;
     }
 
     //c) update the variables and the step vectors

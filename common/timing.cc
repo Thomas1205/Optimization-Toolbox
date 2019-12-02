@@ -4,7 +4,8 @@
 #include <algorithm>
 #include <iostream>
 
-double diff_mseconds(const timeval& end, const timeval& start) {
+double diff_mseconds(const timeval& end, const timeval& start)
+{
 
 //   std::cerr << "end= " << end.tv_usec << " micro + " << end.tv_sec << " sec" << std::endl;
 //   std::cerr << "start= " << start.tv_usec << " micro + " << start.tv_sec << " sec" << std::endl;
@@ -15,11 +16,13 @@ double diff_mseconds(const timeval& end, const timeval& start) {
   return end_mseconds - start_mseconds;
 }
 
-double diff_seconds(const timeval& end, const timeval& start) {
+double diff_seconds(const timeval& end, const timeval& start)
+{
   return diff_mseconds(end,start) / 1000.0;
 }
 
 
-double diff_seconds(const std::clock_t& end, const std::clock_t& start) {
+double diff_seconds(const std::clock_t& end, const std::clock_t& start)
+{
   return ((double) (end - start)) / ((double) (CLOCKS_PER_SEC));
 }
