@@ -5,16 +5,21 @@
 
 #include "vector.hh"
 
-template <typename T>
+template<typename T>
 class VarDimStorage : public StorageBase<T> {
 public:
 
-  VarDimStorage(const Math1D::Vector<size_t>& dim);
+  using Base = StorageBase<T>;
 
-  VarDimStorage(const Math1D::Vector<size_t>& dim, T fill);
+  explicit VarDimStorage(const Math1D::Vector<size_t>& dim);
+
+  explicit VarDimStorage(const Math1D::Vector<size_t>& dim, T fill);
 
   //copy constructor
   VarDimStorage(const VarDimStorage& toCopy);
+
+  //move constructor
+  VarDimStorage(VarDimStorage&& toTake);
 
   ~VarDimStorage();
 
@@ -32,7 +37,9 @@ public:
 
   T data(uint pos) const;
 
-  void operator=(const VarDimStorage& toCopy);
+  VarDimStorage<T>& operator=(const VarDimStorage& toCopy);
+
+  VarDimStorage<T>& operator=(VarDimStorage&& toTake) = default;
 
 protected:
 
@@ -49,90 +56,103 @@ bool operator!=(const VarDimStorage<T>& v1, const VarDimStorage<T>& v2);
 /*********** implementation *******/
 
 
-template <typename T> 
+template<typename T> 
 VarDimStorage<T>::VarDimStorage(const Math1D::Vector<size_t>& dim) : StorageBase<T>(), dim_(dim)
 {
-  StorageBase<T>::size_ = (dim.size() == 0) ? 0 : 1;
+  Base::size_ = (dim.size() == 0) ? 0 : 1;
 
   for (uint k=0; k < dim.size(); k++)
-    StorageBase<T>::size_ *= dim[k];
+    Base::size_ *= dim[k];
 
-  StorageBase<T>::data_ = new T[StorageBase<T>::size_];
+  Base::data_ = new T[Base::size_];
 }
 
-template <typename T> 
+template<typename T> 
 VarDimStorage<T>::VarDimStorage(const Math1D::Vector<size_t>& dim, T fill) : StorageBase<T>(), dim_(dim)
 {
-  StorageBase<T>::size_ = (dim.size() == 0) ? 0 : 1;
+  Base::size_ = (dim.size() == 0) ? 0 : 1;
 
   for (size_t k=0; k < dim.size(); k++)
-    StorageBase<T>::size_ *= dim[k];
+    Base::size_ *= dim[k];
 
-  StorageBase<T>::data_ = new T[StorageBase<T>::size_];
+  Base::data_ = new T[Base::size_];
 
-  std::fill_n(StorageBase<T>::data_,StorageBase<T>::data_+StorageBase<T>::size_,fill);
+  std::fill_n(Base::data_,Base::data_+Base::size_,fill);
 }
 
-template <typename T> 
+template<typename T> 
 VarDimStorage<T>::VarDimStorage(const VarDimStorage& toCopy)
 {
-  StorageBase<T>::size_ = toCopy.size();
-  dim_ = toCopy.dim_vector();
+  Base::size_ = toCopy.size();
+  dim_ = toCopy.dim_;
 
-  StorageBase<T>::data_ = new T[StorageBase<T>::size_];
-  for (uint k=0; k < StorageBase<T>::size_; k++) {
-    StorageBase<T>::data_[k] = toCopy.data(k);
+  Base::data_ = new T[Base::size_];
+  for (uint k=0; k < Base::size_; k++) {
+    Base::data_[k] = toCopy.data(k);
   }
 }
 
-template <typename T> 
+//move constructor
+template<typename T> 
+VarDimStorage<T>::VarDimStorage(VarDimStorage&& toTake)
+{
+  Base::data_ = toTake.data_;
+  Base::size_ = toTake.size_;
+  dim_ = std::move(toTake.dim_);
+  
+  toTake.data_ = 0;
+}
+
+template<typename T> 
 VarDimStorage<T>::~VarDimStorage()
 {
 }
 
-template <typename T>
-void VarDimStorage<T>::operator=(const VarDimStorage& toCopy)
+template<typename T>
+VarDimStorage<T>& VarDimStorage<T>::operator=(const VarDimStorage& toCopy)
 {
-  StorageBase<T>::size_ = toCopy.size();
+  Base::size_ = toCopy.size();
   dim_ = toCopy.dim_vector();
 
-  StorageBase<T>::data_ = new T[StorageBase<T>::size_];
-  for (uint k=0; k < StorageBase<T>::size_; k++) {
-    StorageBase<T>::data_[k] = toCopy.data(k);
+  Base::data_ = new T[Base::size_];
+  for (uint k=0; k < Base::size_; k++) {
+    Base::data_[k] = toCopy.data(k);
   }
+  
+  return *this;
 }
 
-template <typename T>
+template<typename T>
 size_t VarDimStorage<T>::dim(uint n) const
 {
   return dim_[n];
 }
 
-template <typename T>
+template<typename T>
 size_t VarDimStorage<T>::nDims() const
 {
   return dim_.size();
 }
 
-template <typename T>
+template<typename T>
 const Math1D::Vector<size_t>& VarDimStorage<T>::dims()
 {
   return dim_;
 }
 
-template <typename T>
+template<typename T>
 T VarDimStorage<T>::data(uint pos) const
 {
-  return StorageBase<T>::data_[pos];
+  return Base::data_[pos];
 }
 
-template <typename T>
+template<typename T>
 const Math1D::Vector<size_t>& VarDimStorage<T>::dim_vector() const
 {
   return dim_;
 }
 
-template <typename T>
+template<typename T>
 const T& VarDimStorage<T>::operator()(Math1D::Vector<size_t>& pos) const
 {
   assert(pos.size() == dim_.size());
@@ -149,10 +169,10 @@ const T& VarDimStorage<T>::operator()(Math1D::Vector<size_t>& pos) const
     data_pos += pos[k];
   }
 
-  return StorageBase<T>::data_[data_pos];
+  return Base::data_[data_pos];
 }
 
-template <typename T>
+template<typename T>
 T& VarDimStorage<T>::operator()(Math1D::Vector<size_t>& pos)
 {
   assert(pos.size() == dim_.size());
@@ -169,25 +189,25 @@ T& VarDimStorage<T>::operator()(Math1D::Vector<size_t>& pos)
     data_pos += pos[k];
   }
 
-  return StorageBase<T>::data_[data_pos];
+  return Base::data_[data_pos];
 }
 
 template<typename T, typename ST>
-bool operator==(const VarDimStorage<T>& v1, const VarDimStorage<T>& v2) 
+bool operator==(const VarDimStorage<T>& v1, const VarDimStorage<T>& v2)
 {
   if (v1.dims() != v2.dims())
     return false;
-  
+
   for (size_t k = 0; k < v1.size(); k++) {
     if (v1.direct_access(k) != v2.direct_access(k))
       return false;
   }
-  
+
   return true;
 }
 
 template<typename T, typename ST>
-bool operator!=(const VarDimStorage<T>& v1, const VarDimStorage<T>& v2) 
+bool operator!=(const VarDimStorage<T>& v1, const VarDimStorage<T>& v2)
 {
   return !(v1 == v2);
 }

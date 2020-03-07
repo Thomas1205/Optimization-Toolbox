@@ -19,21 +19,21 @@ public:
 
   ChainDDVar(const Math1D::Vector<float>& cost);
 
-  void add_cost(const Math1D::Vector<float>& cost);
+  void add_cost(const Math1D::Vector<float>& cost) noexcept;
 
-  void add_factor(ChainDDFactor* factor);
+  void add_factor(ChainDDFactor* factor) noexcept;
 
-  const Math1D::Vector<float>& cost() const;
+  const Math1D::Vector<float>& cost() const noexcept;
 
-  uint nLabels() const;
+  uint nLabels() const noexcept;
 
-  const Storage1D<ChainDDFactor*>& neighboring_factor() const;
+  const Storage1D<ChainDDFactor*>& neighboring_factor() const noexcept;
 
-  uint nChains() const;
+  uint nChains() const noexcept;
 
-  void set_up_chains();
+  void set_up_chains() noexcept;
 
-  double dual_value(uint& arg_min);
+  double dual_value(uint& arg_min) noexcept;
 
 protected:
 
@@ -50,39 +50,38 @@ public:
 
   virtual ~ChainDDFactor();
 
-  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const = 0;
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                                 Math2D::Matrix<uint>& trace) const noexcept = 0;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const = 0;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept = 0;
 
-  Math1D::Vector<double>& dual_vars(const ChainDDVar* var);
+  Math1D::Vector<double>& dual_vars(const ChainDDVar* var) noexcept;
 
-  const Math1D::Vector<double>& dual_vars(const ChainDDVar* var) const;
+  const Math1D::Vector<double>& dual_vars(const ChainDDVar* var) const noexcept;
 
-  Math1D::Vector<double>& dual_vars(uint var);
+  Math1D::Vector<double>& dual_vars(uint var) noexcept;
 
-  const Math1D::Vector<double>& dual_vars(uint var) const;
+  const Math1D::Vector<double>& dual_vars(uint var) const noexcept;
 
-  ChainDDVar* prev_var() const;
+  ChainDDVar* prev_var() const noexcept;
 
-  ChainDDVar* next_var() const;
+  ChainDDVar* next_var() const noexcept;
 
-  ChainDDFactor* prev_factor() const;
+  ChainDDFactor* prev_factor() const noexcept;
 
-  ChainDDFactor* next_factor() const;
+  ChainDDFactor* next_factor() const noexcept;
 
-  void set_prev_var(ChainDDVar* var);
+  void set_prev_var(ChainDDVar* var) noexcept;
 
-  void set_next_var(ChainDDVar* var);
+  void set_next_var(ChainDDVar* var) noexcept;
 
-  void set_prev_factor(ChainDDFactor* factor);
+  void set_prev_factor(ChainDDFactor* factor) noexcept;
 
-  void set_next_factor(ChainDDFactor* factor);
+  void set_next_factor(ChainDDFactor* factor) noexcept;
 
-  const Storage1D<ChainDDVar*>& involved_vars() const;
+  const Storage1D<ChainDDVar*>& involved_vars() const noexcept;
 
-  uint var_idx(const ChainDDVar* var) const;
+  uint var_idx(const ChainDDVar* var) const noexcept;
 
 protected:
 
@@ -105,11 +104,10 @@ public:
 
   virtual ~GenericChainDDFactor();
 
-  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
 protected:
 
@@ -122,9 +120,8 @@ public:
 
   BinaryChainDDFactorBase(const Storage1D<ChainDDVar*>& involved_vars);
 
-  double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                         const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                         Math2D::Matrix<uint>& trace, const Math2D::Matrix<float>& cost) const;
+  double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                         Math2D::Matrix<uint>& trace, const Math2D::Matrix<float>& cost) const noexcept;
 };
 
 // binary factor with costs stored explicitly
@@ -135,11 +132,10 @@ public:
 
   virtual ~BinaryChainDDFactor();
 
-  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
 protected:
   const Math2D::Matrix<float> cost_;
@@ -155,9 +151,9 @@ public:
 
   virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
                                  const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
 protected:
   const Math2D::Matrix<float>& cost_;
@@ -171,9 +167,8 @@ public:
 
   TernaryChainDDFactorBase(const Storage1D<ChainDDVar*>& involved_vars);
 
-  double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                         const Math1D::Vector<double>& prev_forward, const Math3D::Tensor<float>& cost,
-                         Math1D::Vector<double>& forward, Math2D::Matrix<uint>& trace) const;
+  double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, const Math3D::Tensor<float>& cost,
+                         Math1D::Vector<double>& forward, Math2D::Matrix<uint>& trace) const noexcept;
 };
 
 // ternary factor with costs stored explicitly
@@ -184,16 +179,14 @@ public:
 
   virtual ~TernaryChainDDFactor();
 
-  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept;
 
 protected:
   const Math3D::Tensor<float> cost_;
 };
-
 
 // ternary factor storing only a reference to the cost (saves memory if you have many similar factors)
 class TernaryChainDDRefFactor: public TernaryChainDDFactorBase {
@@ -205,9 +198,9 @@ public:
 
   virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
                                  const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
 protected:
   const Math3D::Tensor<float>& cost_;
@@ -223,9 +216,9 @@ public:
 
   virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
                                  const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
 protected:
   const float lambda_;
@@ -241,23 +234,22 @@ public:
 
   double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
                          const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                         Math2D::Matrix<uint>& trace, const Storage1D<Math3D::Tensor<float> >& cost) const;
+                         Math2D::Matrix<uint>& trace, const Storage1D<Math3D::Tensor<float> >& cost) const noexcept;
 };
 
 // 4th order factor with costs stored explicitly
 class FourthOrderChainDDFactor : public FourthOrderChainDDFactorBase {
 public:
 
-  FourthOrderChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars,
-                           const Storage1D<Math3D::Tensor<float> >& cost);
+  FourthOrderChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars, const Storage1D<Math3D::Tensor<float> >& cost);
 
   virtual ~FourthOrderChainDDFactor();
 
   virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
                                  const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
 protected:
   const Storage1D<Math3D::Tensor<float> > cost_;
@@ -267,16 +259,15 @@ protected:
 class FourthOrderChainDDRefFactor : public FourthOrderChainDDFactorBase {
 public:
 
-  FourthOrderChainDDRefFactor(const Storage1D<ChainDDVar*>& involved_vars,
-                              const Storage1D<Math3D::Tensor<float> >& cost);
+  FourthOrderChainDDRefFactor(const Storage1D<ChainDDVar*>& involved_vars, const Storage1D<Math3D::Tensor<float> >& cost);
 
   virtual ~FourthOrderChainDDRefFactor();
 
   virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
                                  const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
 protected:
   const Storage1D<Math3D::Tensor<float> >& cost_;
@@ -288,11 +279,10 @@ public:
 
   GeneralizedPottsChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars, float lambda);
 
-  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
 protected:
   float lambda_;
@@ -308,13 +298,12 @@ public:
 
   virtual ~OneOfNChainDDFactor();
 
-  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
-  uint best_of_n() const;
+  uint best_of_n() const noexcept;
 };
 
 /******/
@@ -324,9 +313,8 @@ public:
 
   CardinalityChainDDFactorBase(const Storage1D<ChainDDVar*>& involved_vars);
 
-  double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                         const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                         Math2D::Matrix<uint>& trace, const Math1D::Vector<float>& cost) const;
+  double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                         Math2D::Matrix<uint>& trace, const Math1D::Vector<float>& cost) const noexcept;
 };
 
 /******/
@@ -339,11 +327,10 @@ public:
 
   virtual ~CardinalityChainDDFactor();
 
-  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
 protected:
   const Math1D::Vector<float> cost_;
@@ -359,14 +346,43 @@ public:
 
   virtual ~CardinalityChainDDRefFactor();
 
-  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
 protected:
   const Math1D::Vector<float>& cost_;
+};
+
+/******/
+
+class NonbinaryCardinalityChainDDFactorBase : public ChainDDFactor {
+public:
+
+  NonbinaryCardinalityChainDDFactorBase(const Storage1D<ChainDDVar*>& involved_vars);
+
+  double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                         Math2D::Matrix<uint>& trace, const Math1D::Vector<float>& cost, const Math1D::Vector<uint>& level) const noexcept;
+};
+
+/******/
+
+class NonbinaryCardinalityChainDDFactor : public NonbinaryCardinalityChainDDFactorBase {
+public:
+
+  NonbinaryCardinalityChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars, const Math1D::Vector<float>& cost, const Math1D::Vector<uint>& level);
+
+
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
+
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
+
+protected:
+
+  const Math1D::Vector<float> cost_;
+  const Math1D::Vector<uint> level_;
 };
 
 /******/
@@ -375,16 +391,15 @@ protected:
 class AllPosBILPChainDDFactor : public ChainDDFactor {
 public:
 
-  AllPosBILPChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars,
-                          int rhs_lower = 0, int rhs_upper = 0);
+  AllPosBILPChainDDFactor(const Storage1D<ChainDDVar*>& involved_vars, int rhs_lower = 0, int rhs_upper = 0);
 
   virtual ~AllPosBILPChainDDFactor();
 
   virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
                                  const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
 protected:
   short rhs_lower_;
@@ -402,11 +417,10 @@ public:
 
   virtual ~BILPChainDDFactor();
 
-  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing,
-                                 const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
-                                 Math2D::Matrix<uint>& trace) const;
+  virtual double compute_forward(const ChainDDVar* incoming, const ChainDDVar* outgoing, const Math1D::Vector<double>& prev_forward, Math1D::Vector<double>& forward,
+                                 Math2D::Matrix<uint>& trace) const noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labeling) const;
+  virtual double cost(const Math1D::Vector<uint>& labeling) const noexcept override;
 
 protected:
 
@@ -419,9 +433,6 @@ protected:
   short zero_offset_;
 };
 
-
-//!!!! DON'T PUBLISH THIS
-enum SDD_LBFGS_MODE {SDD_LBFGS_IMPLICIT_CONSTRAINTS,SDD_LBFGS_ELIMINATION,SDD_LBFGS_KKT_SCHUR};
 
 /***************************************/
 
@@ -459,6 +470,9 @@ public:
   //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
   uint add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost, bool ref=false);
 
+  uint add_nonbinary_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost,
+                                        const Math1D::Vector<uint>& level);
+
   // all variables must be binary
   uint add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,
                              int rhs_lower = 0, int rhs_upper = 0);
@@ -471,6 +485,8 @@ public:
   ChainDDFactor* get_factor(uint f);
 
   double optimize(uint nIter, double start_step_size = 1.0, bool quiet = false);
+
+  double smooth_optimization(uint nIter, double epsilon = 1.0);
 
   const Math1D::Vector<uint>& labeling();
 

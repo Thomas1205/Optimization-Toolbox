@@ -21,8 +21,18 @@ double diff_seconds(const timeval& end, const timeval& start)
   return diff_mseconds(end,start) / 1000.0;
 }
 
-
 double diff_seconds(const std::clock_t& end, const std::clock_t& start)
 {
   return ((double) (end - start)) / ((double) (CLOCKS_PER_SEC));
+}
+
+chronoTime currentTime()
+{
+  return std::chrono::high_resolution_clock::now();
+}
+
+double diff_seconds(const chronoTime& end, const chronoTime& start)
+{
+  double count = std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
+  return count / 1000000.0;
 }

@@ -24,31 +24,31 @@ public:
 
   DualVariableNode(const Math1D::Vector<float>& cost);
 
-  void add_cost(const Math1D::Vector<float>& add_cost);
+  void add_cost(const Math1D::Vector<float>& add_cost) noexcept;
 
-  void add_factor(DualFactorNode* node);
+  void add_factor(DualFactorNode* node) noexcept;
 
-  double* get_dual_vars(const DualFactorNode* node);
+  double* get_dual_vars(const DualFactorNode* node) noexcept;
 
-  const double* get_dual_vars(const DualFactorNode* node) const;
+  const double* get_dual_vars(const DualFactorNode* node) const noexcept;
 
-  double* get_dual_var_start();
+  double* get_dual_var_start() noexcept;
 
-  const double* get_dual_var_start() const;
+  const double* get_dual_var_start() const noexcept;
 
-  void compute_message(const DualFactorNode* node, Math1D::Vector<double>& msg) const;
+  void compute_message(const DualFactorNode* node, Math1D::Vector<double>& msg) const noexcept;
 
-  double cost(uint label) const;
+  double cost(uint label) const noexcept;
 
-  const Math1D::Vector<float>& cost() const;
+  const Math1D::Vector<float>& cost() const noexcept;
 
-  double dual_value(uint& arg_min) const;
+  double dual_value(uint& arg_min) const noexcept;
 
-  uint nLabels() const;
+  uint nLabels() const noexcept;
 
-  void init_dual_vars();
+  void init_dual_vars() noexcept;
 
-  const Storage1D<DualFactorNode*>& neighboring_factor() const;
+  const Storage1D<DualFactorNode*>& neighboring_factor() const noexcept;
 
 protected:
 
@@ -69,18 +69,18 @@ public:
 
   virtual ~DualFactorNode();
 
-  virtual void update_duals(DualBCAMode mode) = 0;
+  virtual void update_duals(DualBCAMode mode) noexcept = 0;
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const = 0;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept = 0;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const = 0;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept = 0;
 
   //factors can modify the current labeling, e.g. to satisfy some constraints
-  virtual bool process_labeling(Math1D::Vector<uint>& labels) const;
+  virtual bool process_labeling(Math1D::Vector<uint>& labels) const noexcept;
 
-  const Storage1D<DualVariableNode*>& participating_nodes() const;
+  const Storage1D<DualVariableNode*>& participating_nodes() const noexcept;
 
 protected:
 
@@ -96,13 +96,13 @@ public:
   GenericDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const VarDimStorage<float>& cost);
 
   //CAUTION: currently only MPLP supported, other modes will be ignored
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
 
@@ -117,11 +117,11 @@ public:
 
   BinaryDualFactorNodeBase(const Storage1D<DualVariableNode*>& participating_vars);
 
-  void update_duals(const Math2D::Matrix<float>& cost, DualBCAMode mode);
+  void update_duals(const Math2D::Matrix<float>& cost, DualBCAMode mode) noexcept;
 
-  double dual_value(const Math2D::Matrix<float>& cost) const;
+  double dual_value(const Math2D::Matrix<float>& cost) const noexcept;
 
-  double compute_minimizer(const Math2D::Matrix<float>& cost, Math1D::Vector<uint>& min_labels) const;
+  double compute_minimizer(const Math2D::Matrix<float>& cost, Math1D::Vector<uint>& min_labels) const noexcept;
 };
 
 /**************************/
@@ -132,13 +132,13 @@ public:
 
   BinaryDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const Math2D::Matrix<float>& cost);
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
   const Math2D::Matrix<float> cost_;
@@ -152,13 +152,13 @@ public:
 
   BinaryDualRefFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const Math2D::Matrix<float>& cost);
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
   const Math2D::Matrix<float>& cost_;
@@ -172,13 +172,13 @@ public:
 
   PottsDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, float lambda);
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
   const float lambda_;
@@ -192,11 +192,11 @@ public:
 
   TernaryDualFactorNodeBase(const Storage1D<DualVariableNode*>& participating_vars);
 
-  void update_duals(const Math3D::Tensor<float>& cost, DualBCAMode mode);
+  void update_duals(const Math3D::Tensor<float>& cost, DualBCAMode mode) noexcept;
 
-  double dual_value(const Math3D::Tensor<float>& cost) const;
+  double dual_value(const Math3D::Tensor<float>& cost) const noexcept;
 
-  double compute_minimizer(const Math3D::Tensor<float>& cost, Math1D::Vector<uint>& min_labels) const;
+  double compute_minimizer(const Math3D::Tensor<float>& cost, Math1D::Vector<uint>& min_labels) const noexcept;
 };
 
 /**************************/
@@ -207,13 +207,13 @@ public:
 
   TernaryDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const Math3D::Tensor<float>& cost);
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
   const Math3D::Tensor<float> cost_;
@@ -227,13 +227,13 @@ public:
 
   TernaryDualRefFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const Math3D::Tensor<float>& cost);
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
   const Math3D::Tensor<float>& cost_;
@@ -245,13 +245,13 @@ public:
 
   SecondDiffDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, float lambda);
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
 
@@ -266,12 +266,11 @@ public:
 
   FourthOrderDualFactorNodeBase(const Storage1D<DualVariableNode*>& participating_vars);
 
-  void update_duals(const Storage1D<Math3D::Tensor<float> >& cost, DualBCAMode mode);
+  void update_duals(const Storage1D<Math3D::Tensor<float> >& cost, DualBCAMode mode) noexcept;
 
-  double dual_value(const Storage1D<Math3D::Tensor<float> >& cost) const;
+  double dual_value(const Storage1D<Math3D::Tensor<float> >& cost) const noexcept;
 
-  double compute_minimizer(const Storage1D<Math3D::Tensor<float> >& cost,
-                           Math1D::Vector<uint>& min_labels) const;
+  double compute_minimizer(const Storage1D<Math3D::Tensor<float> >& cost, Math1D::Vector<uint>& min_labels) const noexcept;
 };
 
 /**************************/
@@ -280,16 +279,15 @@ public:
 class FourthOrderDualFactorNode : public FourthOrderDualFactorNodeBase {
 public:
 
-  FourthOrderDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars,
-                            const Storage1D<Math3D::Tensor<float> >& cost);
+  FourthOrderDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const Storage1D<Math3D::Tensor<float> >& cost);
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
   const Storage1D<Math3D::Tensor<float> > cost_;
@@ -301,16 +299,15 @@ protected:
 class FourthOrderDualRefFactorNode : public FourthOrderDualFactorNodeBase {
 public:
 
-  FourthOrderDualRefFactorNode(const Storage1D<DualVariableNode*>& participating_vars,
-                               const Storage1D<Math3D::Tensor<float> >& cost);
+  FourthOrderDualRefFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const Storage1D<Math3D::Tensor<float> >& cost);
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
   const Storage1D<Math3D::Tensor<float> >& cost_;
@@ -324,13 +321,13 @@ public:
 
   GeneralizedPottsDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, float lambda);
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
 
@@ -346,13 +343,13 @@ public:
   //all variables must be binary
   OneOfNDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars);
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 };
 
 /**************************/
@@ -362,11 +359,11 @@ public:
 
   CardinalityDualFactorNodeBase(const Storage1D<DualVariableNode*>& participating_vars);
 
-  void update_duals(DualBCAMode mode, const Math1D::Vector<float>& card_cost);
+  void update_duals(DualBCAMode mode, const Math1D::Vector<float>& card_cost) noexcept;
 
-  double dual_value(const Math1D::Vector<float>& card_cost) const;
+  double dual_value(const Math1D::Vector<float>& card_cost) const noexcept;
 
-  double compute_minimizer(Math1D::Vector<uint>& min_labels, const Math1D::Vector<float>& card_cost) const;
+  double compute_minimizer(Math1D::Vector<uint>& min_labels, const Math1D::Vector<float>& card_cost) const noexcept;
 
 };
 
@@ -374,16 +371,15 @@ public:
 class CardinalityDualFactorNode : public CardinalityDualFactorNodeBase {
 public:
 
-  CardinalityDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars,
-                            const Math1D::Vector<float>& card_cost);
+  CardinalityDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, const Math1D::Vector<float>& card_cost);
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
   const Math1D::Vector<float> card_cost_;
@@ -395,19 +391,55 @@ protected:
 class CardinalityDualFactorRefNode : public CardinalityDualFactorNodeBase {
 public:
 
-  CardinalityDualFactorRefNode(const Storage1D<DualVariableNode*>& participating_vars,
-                               const Math1D::Vector<float>& card_cost);
+  CardinalityDualFactorRefNode(const Storage1D<DualVariableNode*>& participating_vars, const Math1D::Vector<float>& card_cost);
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
   const Math1D::Vector<float>& card_cost_;
+};
+
+/**************************/
+
+class NonbinaryCardinalityDualFactorNodeBase : public DualFactorNode {
+public:
+
+  NonbinaryCardinalityDualFactorNodeBase(const Storage1D<DualVariableNode*>& participating_vars);
+
+  void update_duals(DualBCAMode mode, const Math1D::Vector<float>& card_cost, const Math1D::Vector<uint>& level) noexcept;
+
+  double dual_value(const Math1D::Vector<float>& card_cost, const Math1D::Vector<uint>& level) const noexcept;
+
+  double compute_minimizer(Math1D::Vector<uint>& min_labels, const Math1D::Vector<float>& card_cost,
+                           const Math1D::Vector<uint>& level) const noexcept;
+};
+
+/*****/
+
+class NonbinaryCardinalityDualFactorNode : public NonbinaryCardinalityDualFactorNodeBase {
+public:
+
+  NonbinaryCardinalityDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars,
+                                     const Math1D::Vector<float>& card_cost, const Math1D::Vector<uint>& level);
+
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
+
+  virtual void update_duals(DualBCAMode mode) noexcept override;
+
+  virtual double dual_value() const noexcept override;
+
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
+
+protected:
+
+  const Math1D::Vector<float> card_cost_;
+  const Math1D::Vector<uint> level_;
 };
 
 /**************************/
@@ -418,22 +450,20 @@ class AllPosBILPConstraintDualFactorNode: public DualFactorNode {
 public:
 
   //all variables must be binary
-  AllPosBILPConstraintDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars,
-                                     int rhs_lower = 0, int rhs_upper = 0);
+  AllPosBILPConstraintDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars, int rhs_lower = 0, int rhs_upper = 0);
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
   int rhs_lower_;
   int rhs_upper_;
 };
-
 
 /**************************/
 
@@ -445,13 +475,13 @@ public:
   BILPConstraintDualFactorNode(const Storage1D<DualVariableNode*>& participating_vars,
                                const Storage1D<bool>& positive, int rhs_lower = 0, int rhs_upper = 0);
 
-  virtual double cost(const Math1D::Vector<uint>& labels) const;
+  virtual double cost(const Math1D::Vector<uint>& labels) const noexcept override;
 
-  virtual void update_duals(DualBCAMode mode);
+  virtual void update_duals(DualBCAMode mode) noexcept override;
 
-  virtual double dual_value() const;
+  virtual double dual_value() const noexcept override;
 
-  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const;
+  virtual double compute_minimizer(Math1D::Vector<uint>& min_labels) const noexcept override;
 
 protected:
 
@@ -513,6 +543,8 @@ public:
   //returns factor number
   uint add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& card_cost, bool ref=false);
 
+  uint add_nonbinary_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& card_cost,
+                                        const Math1D::Vector<uint>& level);
 
   //all participating variables must be binary
   //returns factor number

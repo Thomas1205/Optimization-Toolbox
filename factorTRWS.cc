@@ -16,7 +16,7 @@ CumTRWSVar::CumTRWSVar(const Math1D::Vector<float>& cost, uint rank) : cost_(cos
   assign(cum_cost_,cost);
 }
 
-void CumTRWSVar::add_cost(const Math1D::Vector<float>& add_cost)
+void CumTRWSVar::add_cost(const Math1D::Vector<float>& add_cost) noexcept
 {
 
   if (add_cost.size() != cost_.size()) {
@@ -30,9 +30,8 @@ void CumTRWSVar::add_cost(const Math1D::Vector<float>& add_cost)
   }
 }
 
-void CumTRWSVar::set_up_chains()
+void CumTRWSVar::set_up_chains() noexcept
 {
-
   nChains_ = 0;
 
   {
@@ -65,18 +64,16 @@ void CumTRWSVar::set_up_chains()
     cum_cost_[l] = cost_[l] / nChains_;
 }
 
-void CumTRWSVar::add_factor(CumTRWSFactor* factor)
+void CumTRWSVar::add_factor(CumTRWSFactor* factor) noexcept
 {
-
   uint size = adjacent_factor_.size();
 
   adjacent_factor_.resize(size+1);
   adjacent_factor_[size] = factor;
 }
 
-double CumTRWSVar::average_forward(uint& arg_min)
+double CumTRWSVar::average_forward(uint& arg_min) noexcept
 {
-
   double total_offs = 0.0;
 
   //std::cerr << "avg" << std::endl;
@@ -133,9 +130,8 @@ double CumTRWSVar::average_forward(uint& arg_min)
   return total_offs;
 }
 
-double CumTRWSVar::average_backward(uint& arg_min)
+double CumTRWSVar::average_backward(uint& arg_min) noexcept
 {
-
   double total_offs = 0.0;
 
   //std::cerr << "avg" << std::endl;
@@ -190,33 +186,32 @@ double CumTRWSVar::average_backward(uint& arg_min)
   return total_offs;
 }
 
-
-uint CumTRWSVar::rank() const
+uint CumTRWSVar::rank() const noexcept
 {
   return rank_;
 }
 
-void CumTRWSVar::set_rank(uint rank)
+void CumTRWSVar::set_rank(uint rank) noexcept
 {
   rank_ = rank;
 }
 
-size_t CumTRWSVar::nLabels() const
+size_t CumTRWSVar::nLabels() const noexcept
 {
   return cost_.size();
 }
 
-const Storage1D<CumTRWSFactor*>& CumTRWSVar::adjacent_factor() const
+const Storage1D<CumTRWSFactor*>& CumTRWSVar::adjacent_factor() const noexcept
 {
   return adjacent_factor_;
 }
 
-const Math1D::Vector<double>& CumTRWSVar::cost() const
+const Math1D::Vector<double>& CumTRWSVar::cost() const noexcept
 {
   return cum_cost_;
 }
 
-const Math1D::Vector<float>& CumTRWSVar::input_cost() const
+const Math1D::Vector<float>& CumTRWSVar::input_cost() const noexcept
 {
   return cost_;
 }
@@ -226,7 +221,6 @@ const Math1D::Vector<float>& CumTRWSVar::input_cost() const
 CumTRWSFactor::CumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars) :
   involved_var_(involved_vars)
 {
-
   uint nVars = involved_vars.size();
   assert(nVars >= 2);
 
@@ -245,24 +239,23 @@ CumTRWSFactor::CumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars) :
 
 /*virtual*/ CumTRWSFactor::~CumTRWSFactor() {}
 
-/*virtual*/ void CumTRWSFactor::init()
+/*virtual*/ void CumTRWSFactor::init() noexcept
 {
   //by default no action
 }
 
-uint CumTRWSFactor::min_rank() const
+uint CumTRWSFactor::min_rank() const noexcept
 {
   return min_rank_;
 }
 
-uint CumTRWSFactor::max_rank() const
+uint CumTRWSFactor::max_rank() const noexcept
 {
   return max_rank_;
 }
 
-void CumTRWSFactor::compute_rank_range()
+void CumTRWSFactor::compute_rank_range() noexcept
 {
-
   min_rank_ = MAX_UINT;
   max_rank_ = 0;
 
@@ -275,9 +268,8 @@ void CumTRWSFactor::compute_rank_range()
   }
 }
 
-void CumTRWSFactor::sort_by_rank()
+void CumTRWSFactor::sort_by_rank() noexcept
 {
-
   const uint nVars = involved_var_.size();
 
   for (uint k=0; k < nVars-1; k++) {
@@ -286,23 +278,20 @@ void CumTRWSFactor::sort_by_rank()
         std::swap(involved_var_[l],involved_var_[l+1]);
     }
   }
-
 }
 
-/*virtual*/ uint CumTRWSFactor::best_of_n()
+/*virtual*/ uint CumTRWSFactor::best_of_n() const noexcept
 {
-
   TODO("best_of_n");
 }
 
-const Storage1D<CumTRWSVar*>& CumTRWSFactor::involved_vars() const
+const Storage1D<CumTRWSVar*>& CumTRWSFactor::involved_vars() const noexcept
 {
   return involved_var_;
 }
 
-const Math1D::Vector<double>& CumTRWSFactor::reparameterization(const CumTRWSVar* var) const
+const Math1D::Vector<double>& CumTRWSFactor::reparameterization(const CumTRWSVar* var) const noexcept
 {
-
   for (uint k=0; k < involved_var_.size(); k++) {
 
     if (involved_var_[k] == var)
@@ -318,7 +307,6 @@ const Math1D::Vector<double>& CumTRWSFactor::reparameterization(const CumTRWSVar
 GenericCumTRWSFactor::GenericCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const VarDimStorage<float>& cost)
   : CumTRWSFactor(involved_vars), cost_(cost)
 {
-
   if (cost.nDims() != involved_vars.size()) {
     INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
     exit(1);
@@ -335,9 +323,8 @@ GenericCumTRWSFactor::GenericCumTRWSFactor(const Storage1D<CumTRWSVar*>& involve
 /*virtual*/ GenericCumTRWSFactor::~GenericCumTRWSFactor() {}
 
 /*virtual*/
-const Math1D::Vector<double>& GenericCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& GenericCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   const uint nVars = involved_var_.size();
 
   Math1D::NamedVector<uint> nLabels(nVars, MAKENAME(nLabels));
@@ -401,7 +388,6 @@ const Math1D::Vector<double>& GenericCumTRWSFactor::compute_reparameterization(c
 BinaryCumTRWSFactorBase::BinaryCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars)
   : CumTRWSFactor(involved_vars)
 {
-
   if (involved_vars.size() != 2 ) {
     INTERNAL_ERROR << "attempt to instantiate a binary factor with " << involved_vars.size() << " variables. Exiting." << std::endl;
     exit(1);
@@ -410,9 +396,8 @@ BinaryCumTRWSFactorBase::BinaryCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& i
 
 
 const Math1D::Vector<double>& BinaryCumTRWSFactorBase::compute_reparameterization(const CumTRWSVar* var, const Math2D::Matrix<float>& cost,
-    double& offs)
+    double& offs) noexcept
 {
-
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
 
@@ -488,7 +473,6 @@ BinaryCumTRWSFactor::BinaryCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_
     const Math2D::Matrix<float>& cost) :
   BinaryCumTRWSFactorBase(involved_vars), cost_(cost)
 {
-
   if (cost_.xDim() < involved_vars[0]->nLabels() || cost_.yDim() < involved_vars[1]->nLabels()) {
     INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
   }
@@ -497,9 +481,8 @@ BinaryCumTRWSFactor::BinaryCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_
 /*virtual*/ BinaryCumTRWSFactor::~BinaryCumTRWSFactor() {}
 
 /*virtual*/
-const Math1D::Vector<double>& BinaryCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& BinaryCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   return BinaryCumTRWSFactorBase::compute_reparameterization(var,cost_,offs);
 }
 
@@ -514,9 +497,8 @@ BinaryCumTRWSRefFactor::BinaryCumTRWSRefFactor(const Storage1D<CumTRWSVar*>& inv
 /*virtual*/ BinaryCumTRWSRefFactor::~BinaryCumTRWSRefFactor() {}
 
 /*virtual*/
-const Math1D::Vector<double>& BinaryCumTRWSRefFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& BinaryCumTRWSRefFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   assert(cost_.xDim() >= involved_var_[0]->nLabels());
   assert(cost_.yDim() >= involved_var_[1]->nLabels());
 
@@ -528,7 +510,6 @@ const Math1D::Vector<double>& BinaryCumTRWSRefFactor::compute_reparameterization
 TernaryCumTRWSFactorBase::TernaryCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars) :
   CumTRWSFactor(involved_vars)
 {
-
   if (involved_vars.size() != 3 ) {
     INTERNAL_ERROR << "attempt to instantiate a ternary factor with " << involved_vars.size() << " variables. Exiting." << std::endl;
     exit(1);
@@ -536,9 +517,8 @@ TernaryCumTRWSFactorBase::TernaryCumTRWSFactorBase(const Storage1D<CumTRWSVar*>&
 }
 
 const Math1D::Vector<double>& TernaryCumTRWSFactorBase::compute_reparameterization(const CumTRWSVar* var, const Math3D::Tensor<float>& cost,
-    double& offs)
+    double& offs) noexcept
 {
-
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
   const uint nLabels3 = involved_var_[2]->nLabels();
@@ -661,7 +641,6 @@ const Math1D::Vector<double>& TernaryCumTRWSFactorBase::compute_reparameterizati
 TernaryCumTRWSFactor::TernaryCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Math3D::Tensor<float>& cost) :
   TernaryCumTRWSFactorBase(involved_vars), cost_(cost)
 {
-
   if (cost_.xDim() < involved_vars[0]->nLabels() || cost_.yDim() < involved_vars[1]->nLabels()
       || cost_.zDim() < involved_vars[2]->nLabels()) {
     INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
@@ -671,9 +650,8 @@ TernaryCumTRWSFactor::TernaryCumTRWSFactor(const Storage1D<CumTRWSVar*>& involve
 /*virtual*/ TernaryCumTRWSFactor::~TernaryCumTRWSFactor() {}
 
 /*virtual*/
-const Math1D::Vector<double>& TernaryCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& TernaryCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   return TernaryCumTRWSFactorBase::compute_reparameterization(var,cost_,offs);
 }
 
@@ -685,9 +663,8 @@ TernaryCumTRWSRefFactor::TernaryCumTRWSRefFactor(const Storage1D<CumTRWSVar*>& i
 /*virtual*/ TernaryCumTRWSRefFactor::~TernaryCumTRWSRefFactor() {}
 
 /*virtual*/
-const Math1D::Vector<double>& TernaryCumTRWSRefFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& TernaryCumTRWSRefFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   assert(cost_.xDim() >= involved_var_[0]->nLabels());
   assert(cost_.yDim() >= involved_var_[1]->nLabels());
   assert(cost_.zDim() >= involved_var_[2]->nLabels());
@@ -700,7 +677,6 @@ const Math1D::Vector<double>& TernaryCumTRWSRefFactor::compute_reparameterizatio
 SecondDiffCumTRWSFactor::SecondDiffCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, float lambda) :
   CumTRWSFactor(involved_vars), lambda_(lambda)
 {
-
   if (involved_vars.size() != 3) {
     INTERNAL_ERROR << "attempt to instantiate a second difference factor with " << involved_vars.size() << " variables" << std::endl;
     exit(1);
@@ -710,9 +686,8 @@ SecondDiffCumTRWSFactor::SecondDiffCumTRWSFactor(const Storage1D<CumTRWSVar*>& i
 /*virtual*/ SecondDiffCumTRWSFactor::~SecondDiffCumTRWSFactor() {}
 
 /*virtual*/
-const Math1D::Vector<double>& SecondDiffCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& SecondDiffCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
   const uint nLabels3 = involved_var_[2]->nLabels();
@@ -730,7 +705,7 @@ const Math1D::Vector<double>& SecondDiffCumTRWSFactor::compute_reparameterizatio
 
     Math1D::Vector<double>& message = reparameterization_[idx];
 
-    double base_cost = -param[1].max() - param[2].max() + 3*lambda_;
+    const double base_cost = -param[1].max() - param[2].max() + 3*lambda_;
 
     for (int l1=0; l1 < int(nLabels1); l1++) {
 
@@ -771,7 +746,7 @@ const Math1D::Vector<double>& SecondDiffCumTRWSFactor::compute_reparameterizatio
 
     Math1D::Vector<double>& message = reparameterization_[idx];
 
-    double base_cost = -param[0].max() - param[2].max() + 3*lambda_;
+    const double base_cost = -param[0].max() - param[2].max() + 3*lambda_;
 
     for (int l2=0; l2 < int(nLabels2); l2++) {
 
@@ -814,7 +789,7 @@ const Math1D::Vector<double>& SecondDiffCumTRWSFactor::compute_reparameterizatio
 
     Math1D::Vector<double>& message = reparameterization_[idx];
 
-    double base_cost = -param[0].max() - param[1].max() + 3*lambda_;
+    const double base_cost = -param[0].max() - param[1].max() + 3*lambda_;
 
     for (int l3=0; l3 < int(nLabels3); l3++) {
 
@@ -868,7 +843,6 @@ const Math1D::Vector<double>& SecondDiffCumTRWSFactor::compute_reparameterizatio
 FourthOrderCumTRWSFactorBase::FourthOrderCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars)
   : CumTRWSFactor(involved_vars)
 {
-
   if (involved_vars.size() != 4) {
     INTERNAL_ERROR << "attempt to instantiate a 4th order factor with " << involved_vars.size() << " variables" << std::endl;
     exit(1);
@@ -876,9 +850,8 @@ FourthOrderCumTRWSFactorBase::FourthOrderCumTRWSFactorBase(const Storage1D<CumTR
 }
 
 const Math1D::Vector<double>& FourthOrderCumTRWSFactorBase::compute_reparameterization(const CumTRWSVar* var, const Storage1D<Math3D::Tensor<float> >& cost,
-    double& offs)
+    double& offs) noexcept
 {
-
   const uint nLabels1 = involved_var_[0]->nLabels();
   const uint nLabels2 = involved_var_[1]->nLabels();
   const uint nLabels3 = involved_var_[2]->nLabels();
@@ -951,8 +924,7 @@ const Math1D::Vector<double>& FourthOrderCumTRWSFactorBase::compute_reparameteri
 
           for (uint l4 = 0; l4 < nLabels4; l4++) {
 
-            double hyp = cur_cost(l2,l3,l4)
-                         - sum2 - param3[l4];
+            const double hyp = cur_cost(l2,l3,l4) - sum2 - param3[l4];
 
             best = std::min(best,hyp);
           }
@@ -973,7 +945,7 @@ const Math1D::Vector<double>& FourthOrderCumTRWSFactorBase::compute_reparameteri
 
         const Math3D::Tensor<float>& cur_cost = cost[l1];
 
-        const double w1 = param[0][l1];
+        const double w1 = param0[l1];
 
         for (uint l3 = 0; l3 < nLabels3; l3++) {
 
@@ -981,8 +953,7 @@ const Math1D::Vector<double>& FourthOrderCumTRWSFactorBase::compute_reparameteri
 
           for (uint l4 = 0; l4 < nLabels4; l4++) {
 
-            double hyp = cur_cost(l2,l3,l4)
-                         - sum3 - param[3][l4];
+            const double hyp = cur_cost(l2,l3,l4) - sum3 - param3[l4];
 
             best = std::min(best,hyp);
           }
@@ -1010,8 +981,7 @@ const Math1D::Vector<double>& FourthOrderCumTRWSFactorBase::compute_reparameteri
 
           for (uint l4 = 0; l4 < nLabels4; l4++) {
 
-            double hyp = cur_cost(l2,l3,l4)
-                         - sum2 - param3[l4];
+            const double hyp = cur_cost(l2,l3,l4) - sum2 - param3[l4];
 
             best = std::min(best,hyp);
           }
@@ -1055,8 +1025,7 @@ const Math1D::Vector<double>& FourthOrderCumTRWSFactorBase::compute_reparameteri
 
           for (uint l2 = 0; l2 < nLabels2; l2++) {
 
-            double hyp = cur_cost(l2,l3,l4)
-                         - sum3 - param1[l2];
+            const double hyp = cur_cost(l2,l3,l4) - sum3 - param1[l2];
 
             best = std::min(best,hyp);
           }
@@ -1086,7 +1055,6 @@ FourthOrderCumTRWSFactor::FourthOrderCumTRWSFactor(const Storage1D<CumTRWSVar*>&
     const Storage1D<Math3D::Tensor<float> >& cost) :
   FourthOrderCumTRWSFactorBase(involved_vars), cost_(cost)
 {
-
   if (cost_.size() < involved_vars[0]->nLabels() || cost_[0].xDim() < involved_vars[1]->nLabels()
       || cost_[0].yDim() < involved_vars[2]->nLabels() || cost_[0].zDim() < involved_vars[3]->nLabels()) {
     INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
@@ -1096,9 +1064,8 @@ FourthOrderCumTRWSFactor::FourthOrderCumTRWSFactor(const Storage1D<CumTRWSVar*>&
 /*virtual*/ FourthOrderCumTRWSFactor::~FourthOrderCumTRWSFactor() {}
 
 /*virtual*/
-const Math1D::Vector<double>& FourthOrderCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& FourthOrderCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   return  FourthOrderCumTRWSFactorBase::compute_reparameterization(var,cost_,offs);
 }
 
@@ -1113,9 +1080,8 @@ FourthOrderCumTRWSRefFactor::FourthOrderCumTRWSRefFactor(const Storage1D<CumTRWS
 /*virtual*/ FourthOrderCumTRWSRefFactor::~FourthOrderCumTRWSRefFactor() {}
 
 /*virtual*/
-const Math1D::Vector<double>& FourthOrderCumTRWSRefFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& FourthOrderCumTRWSRefFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   assert(cost_.size() >= involved_var_[0]->nLabels());
   assert(cost_[0].xDim() >= involved_var_[1]->nLabels());
   assert(cost_[0].yDim() >= involved_var_[2]->nLabels());
@@ -1130,7 +1096,6 @@ const Math1D::Vector<double>& FourthOrderCumTRWSRefFactor::compute_reparameteriz
 GeneralizedPottsCumTRWSFactor::GeneralizedPottsCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars,float lambda)
   : CumTRWSFactor(involved_vars), lambda_(lambda)
 {
-
   uint nLabels = involved_vars[0]->nLabels();
   for (uint k=1; k < involved_vars.size(); k++) {
 
@@ -1141,9 +1106,8 @@ GeneralizedPottsCumTRWSFactor::GeneralizedPottsCumTRWSFactor(const Storage1D<Cum
   }
 }
 
-/*virtual*/ const Math1D::Vector<double>& GeneralizedPottsCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+/*virtual*/ const Math1D::Vector<double>& GeneralizedPottsCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   const uint nVars = involved_var_.size();
 
   uint idx = MAX_UINT;
@@ -1185,10 +1149,211 @@ GeneralizedPottsCumTRWSFactor::GeneralizedPottsCumTRWSFactor(const Storage1D<Cum
 
 /********************/
 
+TwoLevelCumTRWSFactor::TwoLevelCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Math2D::Matrix<uint>& exception, double exception_cost, double std_cost) :
+   CumTRWSFactor(involved_vars), exception_(exception), exception_cost_(exception_cost), std_cost_(std_cost)
+{
+  const uint nVars = involved_vars.size();
+  assert(nVars == exception.xDim());
+
+  if (exception_cost > std_cost) {
+
+    for (uint k1=0; k1 < exception_.yDim(); k1++) {
+      for (uint k2=0; k2 < exception_.yDim(); k2++) {
+
+        uint nDiffs = 0;
+        for (uint l=0; l < nVars; l++)
+          if (exception_(l,k1) != exception_(l,k2))
+            nDiffs++;
+
+        if (nDiffs == 1) {
+
+          INTERNAL_ERROR << "when exceptions are costlier, all exceptions need to have a hamming distance of 2 to each other. Exiting.."
+                         << std::endl;
+          exit(1);
+        }
+      }
+    }
+  }
+}
+
+/*virtual*/ TwoLevelCumTRWSFactor::~TwoLevelCumTRWSFactor() {}
+
+/*virtual*/
+const Math1D::Vector<double>& TwoLevelCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
+{
+  const uint nVars = involved_var_.size();
+
+  const uint yDim = exception_.yDim();
+
+  uint idx = MAX_UINT;
+
+  Math1D::Vector<double> mincost(nVars,1e100);
+  Math1D::Vector<uint> argmin(nVars,MAX_UINT);
+
+  Storage1D<Math1D::Vector<double> > param = reparameterization_;
+  for (uint k=0; k < nVars; k++) {
+    if (involved_var_[k] != var)
+      param[k] -= involved_var_[k]->cost();
+    else {
+      idx = k;
+      param[k].set_constant(0.0);
+    }
+
+    for (uint l=0; l < involved_var_[k]->nLabels(); l++) {
+
+      if (-param[k][l] < mincost[k]) {
+        mincost[k] = -param[k][l];
+        argmin[k] = l;
+      }
+    }
+  }
+
+  double cost_base = mincost.sum() - mincost[idx];
+
+  Math1D::Vector<double>& message = reparameterization_[idx];
+
+  std::vector<std::vector<uint> > label_exceptions(involved_var_[idx]->nLabels());
+
+  for (uint exc = 0; exc < yDim; exc++) {
+    label_exceptions[exception_(idx,exc)].push_back(exc);
+  }
+
+  for (uint l=0; l < involved_var_[idx]->nLabels(); l++) {
+
+    if (exception_cost_ <= std_cost_) {
+
+      double best_entry = cost_base - param[idx][l] + std_cost_;
+
+      for (uint exc = 0; exc < yDim; exc++) {
+        if (exception_(idx,exc) == l) {
+          double hyp_entry = exception_cost_;
+          for (uint k=0; k < nVars; k++)
+            hyp_entry -= param[k][exception_(k,idx)];
+
+          best_entry = std::min(best_entry,hyp_entry);
+        }
+      }
+
+      message[l] = best_entry;
+    }
+    else {
+
+      double std_entry = cost_base - param[idx][l] + std_cost_;
+      mincost[idx] = -param[idx][l];
+      argmin[idx] = l;
+
+      bool argmin_is_exc = false;
+
+      double exc_entry = 1e100;
+
+      // for (uint exc = 0; exc < yDim; exc++) {
+      //   if (exception_(idx,exc) == l) {
+
+      for (uint k=0; k < label_exceptions[l].size(); k++) {
+
+        uint exc = label_exceptions[l][k];
+
+        if (true) {
+
+          //check if the standard argmin is an exception
+          if (!argmin_is_exc) {
+            argmin_is_exc = true;
+
+            for (uint k=0; k < nVars; k++) {
+
+              if (exception_(k,exc) != argmin[k]) {
+                argmin_is_exc = false;
+                break;
+              }
+            }
+          }
+
+          // double hyp_entry = exception_cost_;
+          // for (uint k=0; k < nVars; k++)
+          //   hyp_entry -= param[k][exception_(k,exc)];
+
+          // if (hyp_entry < exc_entry)
+          //   exc_entry = hyp_entry;
+        }
+      }
+
+      if (argmin_is_exc) {
+
+        for (uint k=0; k < label_exceptions[l].size(); k++) {
+
+          uint exc = label_exceptions[l][k];
+
+          double hyp_entry = exception_cost_;
+          for (uint k=0; k < nVars; k++)
+            hyp_entry -= param[k][exception_(k,exc)];
+
+          exc_entry = std::min(exc_entry,hyp_entry);
+        }
+
+        double best_add = 0.0;
+        double best_change = 1e100;
+        uint arg_b2b = MAX_UINT;
+
+        for (uint k=0; k < nVars; k++) {
+
+          if (k != idx) {
+
+#if 1
+            Math1D::Vector<double> temp = param[k];
+            temp *= -1.0;
+            std::sort(temp.direct_access(),temp.direct_access()+temp.size());
+
+            if (temp[1] - temp[0] < best_change) {
+              best_change = temp[1] - temp[0];
+              best_add = temp[1];
+              arg_b2b = k;
+            }
+#else
+            double cur_best = 1e100;
+            double cur_2nd_best = 1e100;
+
+            const uint nLabels = param[k].size();
+            for (uint l=0; l < nLabels; l++) {
+              double cur = -param[k][l];
+
+              if (cur < cur_best) {
+                cur_2nd_best = cur_best;
+                cur_best = cur;
+              }
+              else if (cur < cur_2nd_best)
+                cur_2nd_best = cur;
+            }
+            const double  diff = cur_2nd_best - cur_best;
+            if (diff < best_change) {
+              best_change = diff;
+              best_add = cur_2nd_best;
+              arg_b2b = k;
+            }
+#endif
+          }
+        }
+
+        std_entry += best_add - mincost[arg_b2b];
+      }
+
+      message[l] = std::min(std_entry, exc_entry);
+    }
+  }
+
+
+  offs = message.min();
+
+  for (uint k=0; k < message.size(); k++)
+    message[k] -= offs;
+
+  return message;
+}
+
+/********************/
+
 OneOfNCumTRWSFactor::OneOfNCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars) :
   CumTRWSFactor(involved_vars)
 {
-
   for (uint v=0; v < involved_vars.size(); v++) {
     if (involved_vars[v]->nLabels() != 2) {
       INTERNAL_ERROR << "instantiation of a 1-of-N factor with non-binary variables. Exiting." << std::endl;
@@ -1199,9 +1364,8 @@ OneOfNCumTRWSFactor::OneOfNCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_
 
 /*virtual*/ OneOfNCumTRWSFactor::~OneOfNCumTRWSFactor() {}
 
-/*virtual*/ uint OneOfNCumTRWSFactor::best_of_n() const
+/*virtual*/ uint OneOfNCumTRWSFactor::best_of_n() const noexcept
 {
-
   const uint nVars = involved_var_.size();
 
   double best = 1e100;
@@ -1222,9 +1386,8 @@ OneOfNCumTRWSFactor::OneOfNCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_
 }
 
 /*virtual*/
-const Math1D::Vector<double>& OneOfNCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& OneOfNCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   const uint nVars = involved_var_.size();
 
   uint idx = MAX_UINT;
@@ -1273,7 +1436,6 @@ const Math1D::Vector<double>& OneOfNCumTRWSFactor::compute_reparameterization(co
 OneOfNCumTRWSFactorWithReuse::OneOfNCumTRWSFactorWithReuse(const Storage1D<CumTRWSVar*>& involved_vars) :
   CumTRWSFactor(involved_vars), to_update_(MAX_UINT)
 {
-
   for (uint v=0; v < involved_vars.size(); v++) {
     if (involved_vars[v]->nLabels() != 2) {
       INTERNAL_ERROR << "instantiation of a 1-of-N factor with non-binary variables. Exiting." << std::endl;
@@ -1285,15 +1447,14 @@ OneOfNCumTRWSFactorWithReuse::OneOfNCumTRWSFactorWithReuse(const Storage1D<CumTR
 /*virtual*/ OneOfNCumTRWSFactorWithReuse::~OneOfNCumTRWSFactorWithReuse() {}
 
 /*virtual*/
-void OneOfNCumTRWSFactorWithReuse::init()
+void OneOfNCumTRWSFactorWithReuse::init() noexcept
 {
   sort_by_rank();
   to_update_ = MAX_UINT;
 }
 
-/*virtual*/ uint OneOfNCumTRWSFactorWithReuse::best_of_n() const
+/*virtual*/ uint OneOfNCumTRWSFactorWithReuse::best_of_n() const noexcept
 {
-
   const uint nVars = involved_var_.size();
 
   double best = 1e100;
@@ -1315,9 +1476,8 @@ void OneOfNCumTRWSFactorWithReuse::init()
 
 
 /*virtual*/
-const Math1D::Vector<double>& OneOfNCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& OneOfNCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   uint idx = MAX_UINT;
 
   const uint nVars = involved_var_.size();
@@ -1592,7 +1752,6 @@ const Math1D::Vector<double>& OneOfNCumTRWSFactorWithReuse::compute_reparameteri
 CardinalityCumTRWSFactorBase::CardinalityCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars)
   : CumTRWSFactor(involved_vars)
 {
-
   for (uint v=0; v < involved_vars.size(); v++) {
     if (involved_vars[v]->nLabels() != 2) {
       INTERNAL_ERROR << "instantiation of a cardinality factor with non-binary variables. Exiting." << std::endl;
@@ -1602,9 +1761,8 @@ CardinalityCumTRWSFactorBase::CardinalityCumTRWSFactorBase(const Storage1D<CumTR
 }
 
 const Math1D::Vector<double>& CardinalityCumTRWSFactorBase::compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost,
-    double& msg_offs)
+    double& msg_offs) noexcept
 {
-
   assert(var->nLabels() == 2);
 
   const uint nVars = involved_var_.size();
@@ -1693,7 +1851,6 @@ const Math1D::Vector<double>& CardinalityCumTRWSFactorBase::compute_reparameteri
 CardinalityCumTRWSFactor::CardinalityCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Math1D::Vector<float>& cost) :
   CardinalityCumTRWSFactorBase(involved_vars), cost_(cost)
 {
-
   if (cost_.size() < involved_vars.size()+1) {
     INTERNAL_ERROR << "dimension mismatch. Exiting." << std::endl;
     exit(1);
@@ -1703,9 +1860,8 @@ CardinalityCumTRWSFactor::CardinalityCumTRWSFactor(const Storage1D<CumTRWSVar*>&
 /*virtual*/ CardinalityCumTRWSFactor::~CardinalityCumTRWSFactor() {}
 
 /*virtual*/
-const Math1D::Vector<double>& CardinalityCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& CardinalityCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   return CardinalityCumTRWSFactorBase::compute_reparameterization(var,cost_,offs);
 }
 
@@ -1720,9 +1876,8 @@ CardinalityCumTRWSRefFactor::CardinalityCumTRWSRefFactor(const Storage1D<CumTRWS
 /*virtual*/ CardinalityCumTRWSRefFactor::~CardinalityCumTRWSRefFactor() {}
 
 /*virtual*/
-const Math1D::Vector<double>& CardinalityCumTRWSRefFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& CardinalityCumTRWSRefFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   assert(cost_.size() >= involved_var_.size()+1);
 
   return CardinalityCumTRWSFactorBase::compute_reparameterization(var,cost_,offs);
@@ -1733,8 +1888,6 @@ const Math1D::Vector<double>& CardinalityCumTRWSRefFactor::compute_reparameteriz
 CardinalityCumTRWSFactorBaseWithReuse::CardinalityCumTRWSFactorBaseWithReuse(const Storage1D<CumTRWSVar*>& involved_vars)
   : CumTRWSFactor(involved_vars), order_(involved_var_.size(),MAX_UINT), value_(involved_var_.size())
 {
-
-
   for (uint v=0; v < involved_vars.size(); v++) {
     if (involved_vars[v]->nLabels() != 2) {
       INTERNAL_ERROR << "instantiation of a cardinality factor with non-binary variables. Exiting." << std::endl;
@@ -1748,15 +1901,14 @@ CardinalityCumTRWSFactorBaseWithReuse::CardinalityCumTRWSFactorBaseWithReuse(con
 /*virtual*/ CardinalityCumTRWSFactorBaseWithReuse::~CardinalityCumTRWSFactorBaseWithReuse() {}
 
 /*virtual*/
-void CardinalityCumTRWSFactorBaseWithReuse::init()
+void CardinalityCumTRWSFactorBaseWithReuse::init() noexcept
 {
-
   sort_by_rank();
   to_update_ = MAX_UINT;
 }
 
 const Math1D::Vector<double>& CardinalityCumTRWSFactorBaseWithReuse::compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost,
-    double& offs)
+    double& offs) noexcept
 {
   //std::cerr << "comp repar" << std::endl;
 
@@ -1929,9 +2081,8 @@ CardinalityCumTRWSFactorWithReuse::CardinalityCumTRWSFactorWithReuse(const Stora
   : CardinalityCumTRWSFactorBaseWithReuse(involved_vars), cost_(cost) {}
 
 /*virtual*/
-const Math1D::Vector<double>& CardinalityCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& CardinalityCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   return CardinalityCumTRWSFactorBaseWithReuse::compute_reparameterization(var,cost_,offs);
 }
 
@@ -1943,12 +2094,114 @@ CardinalityCumTRWSRefFactorWithReuse::CardinalityCumTRWSRefFactorWithReuse(const
   : CardinalityCumTRWSFactorBaseWithReuse(involved_vars), cost_(cost) {}
 
 /*virtual*/
-const Math1D::Vector<double>& CardinalityCumTRWSRefFactorWithReuse::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& CardinalityCumTRWSRefFactorWithReuse::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   return CardinalityCumTRWSFactorBaseWithReuse::compute_reparameterization(var,cost_,offs);
 }
 
+/********************/
+
+NonbinaryCardinalityCumTRWSFactorBase::NonbinaryCardinalityCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars)
+  : CumTRWSFactor(involved_vars) {}
+
+const Math1D::Vector<double>& NonbinaryCardinalityCumTRWSFactorBase::compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost,
+    const Math1D::Vector<uint>& level, double& msg_offs) noexcept
+{
+  const uint nVars = involved_var_.size();
+
+  assert(cost.size() >= nVars+1);
+
+  uint idx = MAX_UINT;
+
+  Storage1D<Math1D::Vector<double> > param = reparameterization_;
+  for (uint k=0; k < nVars; k++) {
+    if (involved_var_[k] != var)
+      param[k] -= involved_var_[k]->cost();
+    else {
+      idx = k;
+    }
+  }
+
+  Storage1D<Math1D::Vector<double> > bin_param(param.size());
+  for (uint k=0; k < nVars; k++) {
+
+    bin_param[k].resize(2,1e100);
+    for (uint l=0; l < param[k].size(); l++) {
+      double val = -param[k][l];
+      if (l == level[k])
+        bin_param[k][1] = val;
+      else if (bin_param[k][0] > val)
+        bin_param[k][0] = val;
+    }
+  }
+
+  assert(idx < nVars);
+
+  Math1D::Vector<double>& message = reparameterization_[idx];
+
+  Math1D::Vector<double> bin_msg(2,1e100);
+
+  Math1D::NamedVector<double> rel_param(nVars-1,MAKENAME(rel_param));
+
+  double offs = 0.0;
+
+  uint next = 0;
+  for (uint k=0; k < nVars; k++) {
+
+    if (k != idx) {
+      rel_param[next] =  -bin_param[k][0] + bin_param[k][1];
+      offs += bin_param[k][0];
+
+      next++;
+    }
+  }
+
+  std::sort(rel_param.direct_access(), rel_param.direct_access() + nVars-1);
+
+  //std::cerr << "OLD: rel_param: " << rel_param << std::endl;
+  //std::cerr << "OLD: offs: " << offs << std::endl;
+
+  double cum_sum = 0.0;
+
+  for (uint c=0; c < nVars; c++) {
+
+    const double hyp0 = cum_sum + cost[c];
+    bin_msg[0] = std::min(bin_msg[0],hyp0);
+
+    const double hyp1 = cum_sum + cost[c+1];
+    bin_msg[1] = std::min(bin_msg[1],hyp1);
+
+    if (c+1 < nVars)
+      cum_sum += rel_param[c];
+  }
+
+  for (uint l=0; l < 2; l++)
+    bin_msg[l] += offs;
+
+  message.set_constant(bin_msg[0]);
+  message[level[idx]] = bin_msg[1];
+
+  const double total_offs = message.min();
+
+  for (uint k=0; k < message.size(); k++)
+    message[k] -= total_offs;
+
+  //return total_offs;
+  msg_offs = total_offs;
+  return message;
+}
+
+/********/
+
+NonbinaryCardinalityCumTRWSFactor::NonbinaryCardinalityCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars,
+    const Math1D::Vector<float>& cost, const Math1D::Vector<uint>& level)
+  : NonbinaryCardinalityCumTRWSFactorBase(involved_vars), cost_(cost), level_(level) {}
+
+/*virtual*/
+const Math1D::Vector<double>& NonbinaryCardinalityCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
+{
+  return NonbinaryCardinalityCumTRWSFactorBase::compute_reparameterization(var,cost_,level_,offs);
+}
 
 /********************/
 
@@ -1976,9 +2229,8 @@ AllPosBILPCumTRWSFactor::AllPosBILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& i
 
 
 /*virtual*/
-const Math1D::Vector<double>& AllPosBILPCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& msg_offs)
+const Math1D::Vector<double>& AllPosBILPCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& msg_offs) noexcept
 {
-
   assert(var->nLabels() == 2);
 
   const uint nVars = involved_var_.size();
@@ -2051,7 +2303,6 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
                                      int rhs_lower, int rhs_upper) :
   CumTRWSFactor(involved_vars), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper)
 {
-
   assert(involved_vars.size() >= 2);
 
   for (uint v=0; v < involved_vars.size(); v++) {
@@ -2137,9 +2388,8 @@ BILPCumTRWSFactor::BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars
 /*virtual*/ BILPCumTRWSFactor::~BILPCumTRWSFactor() {}
 
 /*virtual*/
-const Math1D::Vector<double>& BILPCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& BILPCumTRWSFactor::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   const uint nVars = involved_var_.size();
 
   uint idx = MAX_UINT;
@@ -2166,129 +2416,269 @@ const Math1D::Vector<double>& BILPCumTRWSFactor::compute_reparameterization(cons
 
   assert(idx < nVars);
 
+  if (false) {
+    //NOTE: once we permanently switch to this version, we can get rid of the members zero_offset_ and range_
 
-  /*** solution based on forward ****/
+    double msg_offs = 0.0;
 
 
-  /**** forward ****/
-  assert(nVars >= 2);
+    int nPos = nPos_;
+    int nNeg = nVars-nPos;
 
-  Math1D::Vector<double> forward_vec[2];
-  forward_vec[0].resize(range_,1e100);
-  forward_vec[1].resize(range_,1e100);
+    if (idx < nPos_)
+      nPos--;
+    else
+      nNeg--;
 
-  Math1D::Vector<double>& start_forward_vec = forward_vec[0];
+    FlexibleStorage1D<double> pos(nPos);
+    FlexibleStorage1D<double> neg(nNeg);
 
-  const uint start_idx = (idx != 0) ? 0 : 1;
-
-  const Math1D::Vector<double>& start_param = param[start_idx];
-
-  start_forward_vec[zero_offset_] = -start_param[0];
-  const int init_val = zero_offset_ + ((start_idx < nPos_) ? 1 : -1);
-  if (init_val >= 0 && init_val < range_) {
-    start_forward_vec[init_val] = -start_param[1];
-  }
-
-  //std::cerr << "initial fwd vec: " << start_forward_vec << std::endl;
-
-  uint cur_idx = 0;
-
-  for (uint v = start_idx+1; v < nPos_; v++) {
-
-    if (v != idx) {
-
-      const Math1D::Vector<double>& cur_param = param[v];
-
-      const Math1D::Vector<double>& prev_forward_vec = forward_vec[cur_idx];
-
-      cur_idx = 1 - cur_idx;
-
-      Math1D::Vector<double>& cur_forward_vec = forward_vec[cur_idx];
-
-      for (int sum=zero_offset_; sum < std::min<int>(range_,zero_offset_+v+2); sum++) {
-        //for (int sum=zero_offset_; sum < range_; sum++) {
-
-        double best = 1e100;
-
-        for (int l=0; l < 2; l++) {
-
-          const int dest = sum - l;
-          if (dest >= 0) {
-
-            double hyp = prev_forward_vec[dest] - cur_param[l];
-
-            best = std::min(best,hyp);
-          }
+    for (uint v=0; v < nVars; v++) {
+      if (v != idx) {
+        if (v < nPos_) {
+          pos.append(-param[v][1]+param[v][0]);
         }
-        cur_forward_vec[sum] = best;
-      }
-
-      //std::cerr << "case a - new fwd vec: " << cur_forward_vec << std::endl;
-    }
-  }
-
-
-  for (uint v = std::max(start_idx+1,nPos_); v < nVars; v++) {
-
-    if (v != idx) {
-
-      const Math1D::Vector<double>& cur_param = param[v];
-
-      //std::cerr << "case b, input cost: " << cur_param << std::endl;
-
-      const Math1D::Vector<double>& prev_forward_vec = forward_vec[cur_idx];
-
-      cur_idx = 1 - cur_idx;
-
-      Math1D::Vector<double>& cur_forward_vec = forward_vec[cur_idx];
-
-      for (int sum=0; sum < range_; sum++) {
-
-        double best = 1e100;
-
-        for (int l=0; l < 2; l++) {
-
-          const int dest = sum + l;
-          if (dest < range_) {
-
-            double hyp = prev_forward_vec[dest] - cur_param[l];
-
-            best = std::min(best,hyp);
-          }
+        else {
+          neg.append(-param[v][1]+param[v][0]);
         }
-        cur_forward_vec[sum] = best;
+        msg_offs -= param[v][0];
+      }
+    }
+
+    std::sort(pos.direct_access(),pos.direct_access()+nPos);
+    std::sort(neg.direct_access(),neg.direct_access()+nNeg);
+
+    // std::vector<double> pos;
+    // pos.reserve(nPos);
+    // std::vector<double> neg;
+    // neg.reserve(nNeg);
+
+    // for (uint v=0; v < nVars; v++) {
+    //   if (v != idx) {
+    //     if (positive_[v]) {
+    //       pos.push_back(-param[v][1]+param[v][0]);
+    //     }
+    //     else {
+    //       neg.push_back(-param[v][1]+param[v][0]);
+    //     }
+    //     msg_offs -= param[v][0];
+    //   }
+    // }
+
+    // std::sort(pos.begin(),pos.end());
+    // std::sort(neg.begin(),neg.end());
+
+    for (uint k=1; k < pos.size(); k++)
+      pos[k] += pos[k-1];
+    for (uint k=1; k < neg.size(); k++)
+      neg[k] += neg[k-1];
+
+    message.set_constant(1e10);
+
+    message[0] = (0 >= rhs_lower_ && 0 <= rhs_upper_) ? 0.0 : 1e10;
+    int cmp = (idx < nPos_) ? 1 : -1;
+    message[1] = (cmp >= rhs_lower_ && cmp <= rhs_upper_) ? 0.0 : 1e10;
+
+    for (int rhs = rhs_lower_; rhs <= rhs_upper_; rhs++) {
+
+      //std::cerr << "rhs: " << rhs << std::endl;
+
+      /**** a) compute message[0] ****/
+
+      // if (rhs == 0) { //neither pos nor neg
+      //   if (message[0] > 0.0)
+      //     message[0] = 0.0;
+      // }
+      if ((-rhs) > 0 && (-rhs) <= nNeg ) { //only neg
+        double hyp = neg[-rhs-1];
+        message[0] = std::min(message[0],hyp);
+      }
+      if (rhs > 0 && rhs <= nPos ) { //only pos
+        double hyp = pos[rhs-1];
+        message[0] = std::min(message[0],hyp);
+      }
+      //both pos and neg
+      for (int k=std::max(0,rhs); k < std::min<int>(nPos,nNeg+rhs); k++) {
+        double hyp = pos[k]+neg[k-rhs];
+        message[0] = std::min(message[0],hyp);
       }
 
-      //std::cerr << "case b - new fwd vec: " << cur_forward_vec << std::endl;
+
+      /**** b) compute message[1] ****/
+
+      //std::cerr << "b), positive: " << positive_[idx] << std::endl;
+
+      if (idx < nPos_) {
+
+        // if (rhs == 1) { //neither pos nor neg
+        //   if (message[1] > 0.0)
+        //     message[1] = 0.0;
+        // }
+
+        if (1-rhs > 0 && nNeg >= (1-rhs)) { //only neg
+          double hyp = neg[-rhs]; //remember: offsets start at 0
+          message[1] = std::min(message[1],hyp);
+        }
+        if (rhs-1 > 0 && (rhs-1) <= nPos) { //only pos
+          double hyp = pos[rhs-2];
+          message[1] = std::min(message[1],hyp);
+        }
+
+        //both pos and neg
+        for (int k=std::max(0,rhs-1); k < std::min(nPos,nNeg-1+rhs); k++) {
+          double hyp = pos[k] + neg[k+1-rhs];
+          message[1] = std::min(message[1],hyp);
+        }
+      }
+      else {
+        // if (rhs == -1) { //neither pos nor neg
+        //   if (message[1] > 0.0)
+        //     message[1] = 0.0;
+        // }
+        if (rhs+1 > 0 && rhs < nPos) { //only pos
+          double hyp = pos[rhs];
+          message[1] = std::min(message[1],hyp);
+        }
+        if ((-rhs-1) > 0 && (-rhs-2) < nNeg) { // only neg
+          double hyp = neg[-rhs-2];
+          message[1] = std::min(message[1],hyp);
+        }
+
+        //both pos and neg
+        for (int k=std::max(0,-rhs-1); k < std::min(nPos-rhs-1,nNeg); k++) {
+          double hyp = pos[rhs+k+1] + neg[k];
+          message[1] = std::min(message[1],hyp);
+        }
+      }
     }
+    message[0] += msg_offs;
+    message[1] += msg_offs;
   }
+  else {
 
-  const Math1D::Vector<double>& last_forward_vec = forward_vec[cur_idx];
+    /*** solution based on forward ****/
 
-  //std::cerr << "last forward vec: " << last_forward_vec << std::endl;
 
-  //now derive the message
-  for (uint l=0; l < 2; l++) {
+    /**** forward ****/
+    assert(nVars >= 2);
 
-    //std::cerr << "l: " << l << std::endl;
+    Math1D::Vector<double> forward_vec[2];
+    forward_vec[0].resize(range_,1e100);
+    forward_vec[1].resize(range_,1e100);
 
-    double min_msg = 1e100;
+    Math1D::Vector<double>& start_forward_vec = forward_vec[0];
 
-    for (int s = rhs_lower_ + zero_offset_; s <= rhs_upper_ + zero_offset_; s++) {
+    const uint start_idx = (idx != 0) ? 0 : 1;
 
-      int move = l;
-      if (idx < nPos_)
-        move *= -1; //since we are tracing backward here
+    const Math1D::Vector<double>& start_param = param[start_idx];
 
-      const int dest = s + move;
-      if (dest >= 0 && dest < range_) {
+    start_forward_vec[zero_offset_] = -start_param[0];
+    const int init_val = zero_offset_ + ((start_idx < nPos_) ? 1 : -1);
+    if (init_val >= 0 && init_val < range_) {
+      start_forward_vec[init_val] = -start_param[1];
+    }
 
-        double hyp = last_forward_vec[dest];
+    //std::cerr << "initial fwd vec: " << start_forward_vec << std::endl;
 
-        min_msg = std::min(min_msg,hyp);
+    uint cur_idx = 0;
+
+    for (uint v = start_idx+1; v < nPos_; v++) {
+
+      if (v != idx) {
+
+        const Math1D::Vector<double>& cur_param = param[v];
+
+        const Math1D::Vector<double>& prev_forward_vec = forward_vec[cur_idx];
+
+        cur_idx = 1 - cur_idx;
+
+        Math1D::Vector<double>& cur_forward_vec = forward_vec[cur_idx];
+
+        for (int sum=zero_offset_; sum < std::min<int>(range_,zero_offset_+v+2); sum++) {
+          //for (int sum=zero_offset_; sum < range_; sum++) {
+
+          double best = 1e100;
+
+          for (int l=0; l < 2; l++) {
+
+            const int dest = sum - l;
+            if (dest >= 0) {
+
+              double hyp = prev_forward_vec[dest] - cur_param[l];
+
+              best = std::min(best,hyp);
+            }
+          }
+          cur_forward_vec[sum] = best;
+        }
+
+        //std::cerr << "case a - new fwd vec: " << cur_forward_vec << std::endl;
       }
     }
-    message[l] = min_msg;
+
+
+    for (uint v = std::max(start_idx+1,nPos_); v < nVars; v++) {
+
+      if (v != idx) {
+
+        const Math1D::Vector<double>& cur_param = param[v];
+
+        //std::cerr << "case b, input cost: " << cur_param << std::endl;
+
+        const Math1D::Vector<double>& prev_forward_vec = forward_vec[cur_idx];
+
+        cur_idx = 1 - cur_idx;
+
+        Math1D::Vector<double>& cur_forward_vec = forward_vec[cur_idx];
+
+        for (int sum=0; sum < range_; sum++) {
+
+          double best = 1e100;
+
+          for (int l=0; l < 2; l++) {
+
+            const int dest = sum + l;
+            if (dest < range_) {
+
+              double hyp = prev_forward_vec[dest] - cur_param[l];
+
+              best = std::min(best,hyp);
+            }
+          }
+          cur_forward_vec[sum] = best;
+        }
+
+        //std::cerr << "case b - new fwd vec: " << cur_forward_vec << std::endl;
+      }
+    }
+
+    const Math1D::Vector<double>& last_forward_vec = forward_vec[cur_idx];
+
+    //std::cerr << "last forward vec: " << last_forward_vec << std::endl;
+
+    //now derive the message
+    for (uint l=0; l < 2; l++) {
+
+      //std::cerr << "l: " << l << std::endl;
+
+      double min_msg = 1e100;
+
+      for (int s = rhs_lower_ + zero_offset_; s <= rhs_upper_ + zero_offset_; s++) {
+
+        int move = l;
+        if (idx < nPos_)
+          move *= -1; //since we are tracing backward here
+
+        const int dest = s + move;
+        if (dest >= 0 && dest < range_) {
+
+          double hyp = last_forward_vec[dest];
+
+          min_msg = std::min(min_msg,hyp);
+        }
+      }
+      message[l] = min_msg;
+    }
   }
 
   //std::cerr << "comp offs." << std::endl;
@@ -2334,7 +2724,6 @@ BILPCumTRWSFactorWithReuse::BILPCumTRWSFactorWithReuse(const Storage1D<CumTRWSVa
     int rhs_lower, int rhs_upper) :
   CumTRWSFactor(involved_vars), positive_(positive), rhs_lower_(rhs_lower), rhs_upper_(rhs_upper)
 {
-
   const uint nVars = involved_var_.size();
 
   for (uint v=0; v < nVars; v++)
@@ -2393,16 +2782,15 @@ BILPCumTRWSFactorWithReuse::BILPCumTRWSFactorWithReuse(const Storage1D<CumTRWSVa
 
 
 /*virtual*/
-void BILPCumTRWSFactorWithReuse::init()
+void BILPCumTRWSFactorWithReuse::init() noexcept
 {
   sort_by_rank();
 }
 
 
 /*virtual*/
-const Math1D::Vector<double>& BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* var, double& offs)
+const Math1D::Vector<double>& BILPCumTRWSFactorWithReuse::compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept
 {
-
   const uint nVars = involved_var_.size();
 
   uint idx = MAX_UINT;
@@ -2828,7 +3216,6 @@ CumFactorTRWS::CumFactorTRWS(uint nVars, uint nFactors) : var_(nVars), factor_(n
 
 CumFactorTRWS::~CumFactorTRWS()
 {
-
   for (uint v=0; v < nUsedVars_; v++)
     delete var_[v];
 
@@ -2838,7 +3225,6 @@ CumFactorTRWS::~CumFactorTRWS()
 
 void CumFactorTRWS::set_ranks(const Math1D::Vector<uint>& ranks)
 {
-
   if (ranks.size() != nUsedVars_) {
     std::cerr << "setting ranks is currently only possible for all variables at once." << std::endl;
     return;
@@ -2871,7 +3257,6 @@ void CumFactorTRWS::set_ranks(const Math1D::Vector<uint>& ranks)
 
 uint CumFactorTRWS::add_var(const Math1D::Vector<float>& cost)
 {
-
   assert(!optimize_called_);
 
   if (nUsedVars_ == var_.size()) {
@@ -2892,7 +3277,6 @@ uint CumFactorTRWS::add_var(const Math1D::Vector<float>& cost)
 
 CumTRWSVar* CumFactorTRWS::get_variable(uint v)
 {
-
   if (v >= nUsedVars_) {
     INTERNAL_ERROR << "variable index out of bounds. Exiting. " << std::endl;
     exit(1);
@@ -2903,7 +3287,6 @@ CumTRWSVar* CumFactorTRWS::get_variable(uint v)
 
 CumTRWSFactor* CumFactorTRWS::get_factor(uint f)
 {
-
   if (f >= nUsedFactors_) {
     INTERNAL_ERROR << "factor index out of bounds. Exiting. " << std::endl;
     exit(1);
@@ -2915,13 +3298,11 @@ CumTRWSFactor* CumFactorTRWS::get_factor(uint f)
 //CAUTION: the passed factor will be deleted together with all truly owned factors
 uint CumFactorTRWS::pass_in_factor(CumTRWSFactor* new_fac)
 {
-
   return add_factor(new_fac);
 }
 
 uint CumFactorTRWS::add_factor(CumTRWSFactor* fac)
 {
-
   assert(!optimize_called_);
 
   if (factor_.size() == nUsedFactors_)
@@ -2935,7 +3316,6 @@ uint CumFactorTRWS::add_factor(CumTRWSFactor* fac)
 
 uint CumFactorTRWS::add_generic_factor(const Math1D::Vector<uint>& var, const VarDimStorage<float>& cost)
 {
-
   Storage1D<CumTRWSVar*> vars(var.size());
 
   for (uint k=0; k < var.size(); k++) {
@@ -2952,7 +3332,6 @@ uint CumFactorTRWS::add_generic_factor(const Math1D::Vector<uint>& var, const Va
 
 uint CumFactorTRWS::add_binary_factor(uint var1, uint var2, const Math2D::Matrix<float>& cost, bool ref)
 {
-
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_) {
     INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
     exit(1);
@@ -2974,7 +3353,6 @@ uint CumFactorTRWS::add_binary_factor(uint var1, uint var2, const Math2D::Matrix
 
 uint CumFactorTRWS::add_ternary_factor(uint var1, uint var2, uint var3, const Math3D::Tensor<float>& cost, bool ref)
 {
-
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_ || var3 >= nUsedVars_) {
     INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
     exit(1);
@@ -2997,7 +3375,6 @@ uint CumFactorTRWS::add_ternary_factor(uint var1, uint var2, uint var3, const Ma
 
 uint CumFactorTRWS::add_second_diff_factor(uint var1, uint var2, uint var3, float lambda)
 {
-
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_ || var3 >= nUsedVars_) {
     INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
     exit(1);
@@ -3014,7 +3391,6 @@ uint CumFactorTRWS::add_second_diff_factor(uint var1, uint var2, uint var3, floa
 uint CumFactorTRWS::add_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
     const Storage1D<Math3D::Tensor<float> >& cost, bool ref)
 {
-
   if (var1 >= nUsedVars_ || var2 >= nUsedVars_ || var3 >= nUsedVars_ || var4 >= nUsedVars_) {
     INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
     exit(1);
@@ -3036,9 +3412,25 @@ uint CumFactorTRWS::add_fourth_order_factor(uint var1, uint var2, uint var3, uin
   return add_factor(newFac);
 }
 
+uint CumFactorTRWS::add_two_level_factor(const Math1D::Vector<uint>& var, const Math2D::Matrix<uint>& exceptions,
+                                         double exception_cost, double standard_cost)
+{
+  Storage1D<CumTRWSVar*> vars(var.size());
+
+  for (uint k=0; k < var.size(); k++) {
+    if (var[k] >= nUsedVars_) {
+      INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
+      exit(1);
+    }
+
+    vars[k] = var_[var[k]];
+  }
+
+  return add_factor(new TwoLevelCumTRWSFactor(vars,exceptions,exception_cost,standard_cost));
+}
+
 uint CumFactorTRWS::add_generalized_potts_factor(const Math1D::Vector<uint>& var, float lambda)
 {
-
   Storage1D<CumTRWSVar*> vars(var.size());
 
   for (uint k=0; k < var.size(); k++) {
@@ -3055,7 +3447,6 @@ uint CumFactorTRWS::add_generalized_potts_factor(const Math1D::Vector<uint>& var
 
 uint CumFactorTRWS::add_one_of_n_factor(const Math1D::Vector<uint>& var, bool reuse)
 {
-
   Storage1D<CumTRWSVar*> vars(var.size());
 
   for (uint k=0; k < var.size(); k++) {
@@ -3099,7 +3490,6 @@ uint CumFactorTRWS::add_one_of_n_factor(const Math1D::Vector<uint>& var, bool re
 
 uint CumFactorTRWS::add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost, bool ref, bool reuse)
 {
-
   if (var.size() == 0) {
     std::cerr << "WARNING: ignoring empty cardinality factor" << std::endl;
 
@@ -3152,10 +3542,56 @@ uint CumFactorTRWS::add_cardinality_factor(const Math1D::Vector<uint>& var, cons
   }
 }
 
+uint CumFactorTRWS::add_nonbinary_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost,
+    const Math1D::Vector<uint>& level)
+{
+  if (var.size() == 0) {
+    std::cerr << "WARNING: ignoring empty cardinality factor" << std::endl;
+
+    return MAX_UINT;
+  }
+  else if (var.size() == 1) {
+    if (var[0] >= nUsedVars_) {
+      INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
+      exit(1);
+    }
+    if (var_[var[0]]->nLabels() <= level[0]) {
+      INTERNAL_ERROR << " dimension mismatch. Exiting..." << std::endl;
+      exit(1);
+    }
+
+    Math1D::Vector<float> addon(var_[var[0]]->nLabels(),cost[0]);
+    addon[level[0]] = cost[1];
+
+    var_[var[0]]->add_cost(addon);
+
+    return MAX_UINT;
+  }
+  else {
+
+    Storage1D<CumTRWSVar*> vars(var.size());
+
+    for (uint k=0; k < var.size(); k++) {
+      if (var[k] >= nUsedVars_) {
+        INTERNAL_ERROR << "variable index out of range. Exiting." << std::endl;
+        exit(1);
+      }
+
+      vars[k] = var_[var[k]];
+
+      if (vars[k]->nLabels() <= level[k]) {
+        INTERNAL_ERROR << " dimension mismatch. Exiting..." << std::endl;
+        exit(1);
+      }
+    }
+
+    return add_factor(new NonbinaryCardinalityCumTRWSFactor(vars,cost,level));
+  }
+}
+
 uint CumFactorTRWS::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,
     int rhs_lower, int rhs_upper, bool reuse)
 {
-
   if (rhs_lower > rhs_upper) {
     INTERNAL_ERROR << " INFEASIBLE CONSTRAINT" << std::endl;
     exit(1);
@@ -3295,7 +3731,6 @@ uint CumFactorTRWS::add_binary_ilp_factor(const Math1D::Vector<uint>& var, const
 
 uint CumFactorTRWS::best_of_n(uint fac_num) const
 {
-
   if (fac_num >= nUsedFactors_) {
 
     INTERNAL_ERROR << "factor index out of bounds. Exiting..." << std::endl;
@@ -3307,7 +3742,6 @@ uint CumFactorTRWS::best_of_n(uint fac_num) const
 
 double CumFactorTRWS::optimize(uint nIter, bool quiet, bool terminate_when_no_progress)
 {
-
   if (!quiet)
     std::cerr << "efficient Cum-scheme" << std::endl;
 

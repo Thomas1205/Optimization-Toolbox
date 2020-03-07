@@ -20,27 +20,27 @@ public:
 
   CumTRWSVar(const Math1D::Vector<float>& cost, uint rank);
 
-  void add_cost(const Math1D::Vector<float>& add_cost);
+  void add_cost(const Math1D::Vector<float>& add_cost) noexcept;
 
-  void set_up_chains();
+  void set_up_chains() noexcept;
 
-  void add_factor(CumTRWSFactor* factor);
+  void add_factor(CumTRWSFactor* factor) noexcept;
 
-  double average_forward(uint& arg_min);
+  double average_forward(uint& arg_min) noexcept;
 
-  double average_backward(uint& arg_min);
+  double average_backward(uint& arg_min) noexcept;
 
-  uint rank() const;
+  uint rank() const noexcept;
 
-  void set_rank(uint rank);
+  void set_rank(uint rank) noexcept;
 
-  size_t nLabels() const;
+  size_t nLabels() const noexcept;
 
-  const Storage1D<CumTRWSFactor*>& adjacent_factor() const;
+  const Storage1D<CumTRWSFactor*>& adjacent_factor() const noexcept;
 
-  const Math1D::Vector<double>& cost() const;
+  const Math1D::Vector<double>& cost() const noexcept;
 
-  const Math1D::Vector<float>& input_cost() const;
+  const Math1D::Vector<float>& input_cost() const noexcept;
 
 protected:
 
@@ -64,24 +64,24 @@ public:
 
   virtual ~CumTRWSFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) = 0;
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept = 0;
 
-  uint min_rank() const;
+  uint min_rank() const noexcept;
 
-  uint max_rank() const;
+  uint max_rank() const noexcept;
 
-  void compute_rank_range();
+  void compute_rank_range() noexcept;
 
-  const Storage1D<CumTRWSVar*>& involved_vars() const;
+  const Storage1D<CumTRWSVar*>& involved_vars() const noexcept;
 
-  const Math1D::Vector<double>& reparameterization(const CumTRWSVar* var) const;
+  const Math1D::Vector<double>& reparameterization(const CumTRWSVar* var) const noexcept;
 
-  virtual void init();
+  virtual void init() noexcept;
 
-  void sort_by_rank();
+  void sort_by_rank() noexcept;
 
   //by default this fails
-  virtual uint best_of_n();
+  virtual uint best_of_n() const noexcept;
 
 protected:
 
@@ -102,7 +102,7 @@ public:
 
   virtual ~GenericCumTRWSFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   const VarDimStorage<float> cost_;
@@ -116,20 +116,18 @@ public:
 
   BinaryCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars);
 
-
-  const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, const Math2D::Matrix<float>& cost, double& offs);
+  const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, const Math2D::Matrix<float>& cost, double& offs) noexcept;
 };
 
 /*** binary factor with costs stored explicitly ***/
 class BinaryCumTRWSFactor : public BinaryCumTRWSFactorBase {
 public:
 
-  BinaryCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars,
-                      const Math2D::Matrix<float>& cost);
+  BinaryCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Math2D::Matrix<float>& cost);
 
   virtual ~BinaryCumTRWSFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   const Math2D::Matrix<float> cost_;
@@ -139,17 +137,15 @@ protected:
 class BinaryCumTRWSRefFactor : public BinaryCumTRWSFactorBase {
 public:
 
-  BinaryCumTRWSRefFactor(const Storage1D<CumTRWSVar*>& involved_vars,
-                         const Math2D::Matrix<float>& cost);
+  BinaryCumTRWSRefFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Math2D::Matrix<float>& cost);
 
   virtual ~BinaryCumTRWSRefFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   const Math2D::Matrix<float>& cost_;
 };
-
 
 /****************/
 
@@ -159,7 +155,7 @@ public:
 
   TernaryCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars);
 
-  const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, const Math3D::Tensor<float>& cost, double& offs);
+  const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, const Math3D::Tensor<float>& cost, double& offs) noexcept;
 };
 
 /****************/
@@ -172,7 +168,7 @@ public:
 
   virtual ~TernaryCumTRWSFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   const Math3D::Tensor<float> cost_;
@@ -188,7 +184,7 @@ public:
 
   virtual ~TernaryCumTRWSRefFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   const Math3D::Tensor<float>& cost_;
@@ -204,7 +200,7 @@ public:
 
   virtual ~SecondDiffCumTRWSFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   const float lambda_;
@@ -218,19 +214,18 @@ public:
 
   FourthOrderCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars);
 
-  const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, const Storage1D<Math3D::Tensor<float> >& cost, double& offs);
+  const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, const Storage1D<Math3D::Tensor<float> >& cost, double& offs) noexcept;
 };
 
 /*** 4th order factor with costs stored explicitly ***/
 class FourthOrderCumTRWSFactor : public FourthOrderCumTRWSFactorBase {
 public:
 
-  FourthOrderCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars,
-                           const Storage1D<Math3D::Tensor<float> >& cost);
+  FourthOrderCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Storage1D<Math3D::Tensor<float> >& cost);
 
   virtual ~FourthOrderCumTRWSFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   const Storage1D<Math3D::Tensor<float> > cost_;
@@ -241,12 +236,11 @@ protected:
 class FourthOrderCumTRWSRefFactor : public FourthOrderCumTRWSFactorBase {
 public:
 
-  FourthOrderCumTRWSRefFactor(const Storage1D<CumTRWSVar*>& involved_vars,
-                              const Storage1D<Math3D::Tensor<float> >& cost);
+  FourthOrderCumTRWSRefFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Storage1D<Math3D::Tensor<float> >& cost);
 
   virtual ~FourthOrderCumTRWSRefFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   const Storage1D<Math3D::Tensor<float> >& cost_;
@@ -259,10 +253,30 @@ public:
 
   GeneralizedPottsCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars,float lambda);
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   float lambda_;
+};
+
+/****************/
+
+class TwoLevelCumTRWSFactor : public CumTRWSFactor {
+public:
+
+  TwoLevelCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars,
+                        const Math2D::Matrix<uint>& exception, double exception_cost, double std_cost);
+
+  virtual ~TwoLevelCumTRWSFactor();
+
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
+
+protected:
+
+  const Math2D::Matrix<uint> exception_;
+
+  const double exception_cost_;
+  const double std_cost_;
 };
 
 /****************/
@@ -275,9 +289,9 @@ public:
 
   virtual ~OneOfNCumTRWSFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
-  virtual uint best_of_n() const;
+  virtual uint best_of_n() const noexcept override;
 };
 
 class OneOfNCumTRWSFactorWithReuse : public CumTRWSFactor {
@@ -287,11 +301,11 @@ public:
 
   virtual ~OneOfNCumTRWSFactorWithReuse();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
-  virtual void init();
+  virtual void init() noexcept override;
 
-  virtual uint best_of_n() const;
+  virtual uint best_of_n() const noexcept override;
 
 protected:
   double sum_;
@@ -310,7 +324,7 @@ public:
 
   CardinalityCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars);
 
-  const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost, double& offs);
+  const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost, double& offs) noexcept;
 };
 
 class CardinalityCumTRWSFactor : public CardinalityCumTRWSFactorBase {
@@ -320,7 +334,7 @@ public:
 
   virtual ~CardinalityCumTRWSFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   const Math1D::Vector<float> cost_;
@@ -334,7 +348,7 @@ public:
 
   virtual ~CardinalityCumTRWSRefFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   const Math1D::Vector<float>& cost_;
@@ -348,9 +362,9 @@ public:
 
   virtual ~CardinalityCumTRWSFactorBaseWithReuse();
 
-  const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost, double& offs);
+  const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost, double& offs) noexcept;
 
-  virtual void init();
+  virtual void init() noexcept override;
 
 protected:
 
@@ -367,7 +381,7 @@ public:
 
   CardinalityCumTRWSFactorWithReuse(const Storage1D<CumTRWSVar*>& involved_vars, const Math1D::Vector<float>& cost);
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   const Math1D::Vector<float> cost_;
@@ -380,10 +394,37 @@ public:
 
   CardinalityCumTRWSRefFactorWithReuse(const Storage1D<CumTRWSVar*>& involved_vars, const Math1D::Vector<float>& cost);
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
   const Math1D::Vector<float>& cost_;
+};
+
+/****************/
+
+class NonbinaryCardinalityCumTRWSFactorBase : public CumTRWSFactor {
+public:
+
+  NonbinaryCardinalityCumTRWSFactorBase(const Storage1D<CumTRWSVar*>& involved_vars);
+
+  const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, const Math1D::Vector<float>& cost,
+                                                           const Math1D::Vector<uint>& level, double& offs) noexcept;
+};
+
+/*****/
+
+class NonbinaryCardinalityCumTRWSFactor : public NonbinaryCardinalityCumTRWSFactorBase {
+public:
+
+  NonbinaryCardinalityCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Math1D::Vector<float>& cost,
+                                    const Math1D::Vector<uint>& level);
+
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
+
+protected:
+
+  const Math1D::Vector<float> cost_;
+  const Math1D::Vector<uint> level_;
 };
 
 /****************/
@@ -392,12 +433,11 @@ protected:
 class AllPosBILPCumTRWSFactor : public CumTRWSFactor {
 public:
 
-  AllPosBILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars,
-                          int rhs_lower = 0, int rhs_upper = 0);
+  AllPosBILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, int rhs_lower = 0, int rhs_upper = 0);
 
   virtual ~AllPosBILPCumTRWSFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
 
@@ -411,12 +451,11 @@ protected:
 class BILPCumTRWSFactor : public CumTRWSFactor {
 public:
 
-  BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Storage1D<bool>& positive,
-                    int rhs_lower = 0, int rhs_upper = 0);
+  BILPCumTRWSFactor(const Storage1D<CumTRWSVar*>& involved_vars, const Storage1D<bool>& positive, int rhs_lower = 0, int rhs_upper = 0);
 
   virtual ~BILPCumTRWSFactor();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
 protected:
 
@@ -438,9 +477,9 @@ public:
 
   virtual ~BILPCumTRWSFactorWithReuse();
 
-  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs);
+  virtual const Math1D::Vector<double>& compute_reparameterization(const CumTRWSVar* var, double& offs) noexcept override;
 
-  virtual void init();
+  virtual void init() noexcept override;
 
 protected:
 
@@ -454,8 +493,6 @@ protected:
 
   uint to_update_;
 };
-
-
 
 /******************************/
 
@@ -484,12 +521,18 @@ public:
   uint add_fourth_order_factor(uint var1, uint var2, uint var3, uint var4,
                                const Storage1D<Math3D::Tensor<float> >& cost, bool ref=false);
 
+  uint add_two_level_factor(const Math1D::Vector<uint>& var, const Math2D::Matrix<uint>& exceptions,
+                            double exception_cost, double standard_cost);
+
   uint add_generalized_potts_factor(const Math1D::Vector<uint>& var, float lambda);
 
   uint add_one_of_n_factor(const Math1D::Vector<uint>& var, bool reuse = false);
 
   //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
   uint add_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost, bool ref = false, bool reuse = false);
+
+  uint add_nonbinary_cardinality_factor(const Math1D::Vector<uint>& var, const Math1D::Vector<float>& cost,
+                                        const Math1D::Vector<uint>& level);
 
   //if you set ref=true, make sure that the cost object exists (unmodified) for as long as this object exists
   uint add_binary_ilp_factor(const Math1D::Vector<uint>& var, const Storage1D<bool>& positive,

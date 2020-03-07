@@ -6,10 +6,10 @@ indent:
 	 astyle --style=stroustrup --align-reference=type --align-pointer=type --attach-return-type --attach-return-type-decl --indent=spaces=2 --indent-namespaces --lineend=linux  *.hh *.cc
 
 clean:
-	-rm $(DEBUGDIR)/*.o $(DEBUGDIR)/*.cu_o
-	-rm $(OPTDIR)/*.o $(OPTDIR)/*.cu_o
-	-rm QPBO-v1.3.src/*.o
-	-rm thirdparty/*.o
+	rm -rf $(DEBUGDIR)/*.o $(DEBUGDIR)/*.cu_o
+	rm -rf $(OPTDIR)/*.o $(OPTDIR)/*.cu_o
+	rm -rf QPBO-v1.3.src/*.o
+	rm -rf thirdparty/*.o
 
 $(DEBUGDIR)/%.o : %.cc
 	$(COMPILER) $(INCLUDE) -c $< $(DEBUGFLAGS) -o $@

@@ -5,6 +5,8 @@
 
 #include "makros.hh"
 #include "storage1D.hh"
+#include "sorting.hh"
+#include "routines.hh"
 #include <numeric>
 
 namespace Math1D {
@@ -18,17 +20,30 @@ namespace Math1D {
   class Vector : public ::Storage1D<T,ST> {
   public:
 
-    typedef T ALIGNED16 T_A16;
+    using Base = Storage1D<T,ST>;
 
-    Vector();
+    //according to https://gcc.gnu.org/onlinedocs/gcc-7.2.0/gcc/Common-Type-Attributes.html#Common-Type-Attributes , alignment has to be expressed like this:
+    typedef T T_A16 ALIGNED16;
 
-    Vector(ST size);
+    explicit Vector();
 
-    Vector(ST size, const T default_value);
+    explicit Vector(ST size);
 
-    Vector(const Vector<T,ST>& toCopy);
+    explicit Vector(ST size, const T default_value);
+
+    Vector(const std::initializer_list<T>& init);
+
+    //copy constructor
+    Vector(const Vector<T,ST>& toCopy) = default;
+    
+    //move constructor
+    Vector(Vector<T,ST>&& toTake) = default;
 
     ~Vector();
+
+    Vector<T,ST>& operator=(const Vector<T,ST>& toCopy) = default;
+    
+    Vector<T,ST>& operator=(Vector<T,ST>&& toTake) = default;
 
     //redefining the operator[] methods because for basic types we can indicate 16-byte alignment
     inline const T& operator[](ST i) const;
@@ -36,9 +51,9 @@ namespace Math1D {
     inline T& operator[](ST i);
 
     //redefining the direct_access methods because for basic types we can indicate 16-byte alignment
-    inline T_A16* direct_access();
+    inline T* direct_access() FLAGALIGNED16;
 
-    inline const T_A16* direct_access() const;
+    inline const T* direct_access() const FLAGALIGNED16;
 
     inline T& direct_access(ST i);
 
@@ -49,7 +64,9 @@ namespace Math1D {
 
     inline T sum() const;
 
-    inline T range_sum(ST start, ST end) const;    
+    inline T sum_abs() const;
+
+    inline T range_sum(ST start, ST end) const;
 
     /*** maximal element ***/
     T max() const;
@@ -65,6 +82,8 @@ namespace Math1D {
     /*** L2-norm of the vector ***/
     inline double norm() const;
 
+    inline T norm_T() const;
+
     inline double sqr_norm() const;
 
     /*** L1-norm of the vector ***/
@@ -77,11 +96,17 @@ namespace Math1D {
 
     inline void add_vector_multiple(const Math1D::Vector<T,ST>& vec, const T alpha);
 
+    bool is_sorted() const;
+
     void operator+=(const Vector<T,ST>& v);
 
     void operator-=(const Vector<T,ST>& v);
 
     void operator*=(const T constant);
+
+    void elem_mul(const Vector<T,ST>& v);
+    
+    void elem_div(const Vector<T,ST>& v);
 
     virtual const std::string& name() const;
 
@@ -95,6 +120,9 @@ namespace Math1D {
   template<typename T,typename ST = size_t>
   class NamedVector : public Vector<T,ST> {
   public:
+
+    typedef Vector<T,ST> Base;
+
     NamedVector();
 
     NamedVector(std::string name);
@@ -118,6 +146,23 @@ namespace Math1D {
   protected:
     std::string name_;
   };
+
+  //NOTE: dest can be the same as src1 or src2
+  inline void go_in_neg_direction(Math1D::Vector<double>& dest, const Math1D::Vector<double>& src1, const Math1D::Vector<double>& src2, double alpha)
+  {
+    assert(dest.size() == src1.size());
+    assert(dest.size() == src2.size());
+    Routines::go_in_neg_direction(dest.direct_access(), dest.size(), src1.direct_access(), src2.direct_access(), alpha);
+  }
+
+  //NOTE: dest can be the same as src1 or src2
+  inline void assign_weighted_combination(Math1D::Vector<double>& dest, double w1, const Math1D::Vector<double>& src1,
+                                          double w2, const Math1D::Vector<double>& src2)
+  {
+    assert(dest.size() == src1.size());
+    assert(dest.size() == src2.size());
+    Routines::assign_weighted_combination(dest.direct_access(), dest.size(), w1, src1.direct_access(), w2, src2.direct_access());
+  }
 
   /***********************************************/
   /*************** operators *********************/
@@ -182,9 +227,7 @@ namespace Makros {
       return "Math1D::NamedVector<" + Makros::Typename<T>() + "> ";
     }
   };
-
 }
-
 
 /******************************************** implementation *****************************************************/
 
@@ -193,43 +236,65 @@ namespace Math1D {
   template<typename T,typename ST>
   /*static*/ const std::string Vector<T,ST>::vector_name_ = "unnamed vector";
 
-  template<typename T,typename ST> Vector<T,ST>::Vector() : Storage1D<T,ST>() {}
+  template<typename T,typename ST> 
+  Vector<T,ST>::Vector() : Storage1D<T,ST>() {}
 
-  template<typename T,typename ST> Vector<T,ST>::Vector(ST size) : Storage1D<T,ST>(size) {}
+  template<typename T,typename ST> 
+  Vector<T,ST>::Vector(ST size) : Storage1D<T,ST>(size) {}
 
-  template<typename T,typename ST> Vector<T,ST>::Vector(ST size, const T default_value) : Storage1D<T,ST>(size)
+  template<typename T,typename ST> 
+  Vector<T,ST>::Vector(ST size, const T default_value) : Storage1D<T,ST>(size)
   {
     set_constant(default_value);
   }
 
-  template<typename T,typename ST> Vector<T,ST>::Vector(const Vector<T,ST>& toCopy) : Storage1D<T,ST>(static_cast<const Storage1D<T,ST>&>(toCopy)) {}
+  template<typename T,typename ST> 
+  Vector<T,ST>::Vector(const std::initializer_list<T>& init) : Storage1D<T,ST>(init)
+  {
+  }
 
-  template<typename T,typename ST> Vector<T,ST>::~Vector() {}
+  template<typename T,typename ST> 
+  Vector<T,ST>::~Vector() {}
 
   template<typename T,typename ST>
   inline T Vector<T,ST>::sum() const
   {
-    const ST size = Storage1D<T,ST>::size_;
-    const T_A16* data = Storage1D<T,ST>::data_;
+    const ST size = Base::size_;
+    const T_A16* data = Base::data_;
 
     assertAligned16(data);
 
     //at least with g++ accumulate is faster
     return std::accumulate(data,data+size,(T)0);
 
-    // T result = 0.0;
+    // T result = (T) 0;
     // for (ST i=0; i < size; i++) {
     //   result += data[i];
     // }
 
     // return result;
   }
+  
+  template<typename T,typename ST>
+  inline T Vector<T,ST>::sum_abs() const
+  {
+    const ST size = Base::size_;
+    const T_A16* data = Base::data_;
+
+    assertAligned16(data);
+
+    T result = (T) 0;
+    for (ST i=0; i < size; i++) 
+       result += Makros::abs<T>(data[i]);
+
+    return result;
+  }
 
   template<typename T,typename ST>
   inline T Vector<T,ST>::range_sum(ST start, ST end) const
   {
-    const ST size = Storage1D<T,ST>::size_;
-    const T_A16* data = Storage1D<T,ST>::data_;
+    const ST size = Base::size_;
+    const T_A16* data = Base::data_;
 
     assertAligned16(data);
     assert(start <= end);
@@ -249,21 +314,21 @@ namespace Math1D {
   template<typename T,typename ST>
   void Vector<T,ST>::set_zeros()
   {
-    memset(Storage1D<T,ST>::data_,0,Storage1D<T,ST>::size_*sizeof(T));
+    memset(Base::data_,0,Base::size_*sizeof(T));
   }
 
   template<typename T,typename ST>
-  inline typename Vector<T,ST>::T_A16* Vector<T,ST>::direct_access()
+  inline T* Vector<T,ST>::direct_access() //not allowed to repeat FLAGALIGNED16 in definition
   {
-    T_A16* data = Storage1D<T,ST>::data_;
+    T_A16* data = Base::data_;
     assertAligned16(data);
     return data;
   }
 
   template<typename T,typename ST>
-  inline const typename Vector<T,ST>::T_A16* Vector<T,ST>::direct_access() const
+  inline const T* Vector<T,ST>::direct_access() const //not allowed to repeat FLAGALIGNED16 in definition
   {
-    const T_A16* data = Storage1D<T,ST>::data_;
+    const T_A16* data = Base::data_;
     assertAligned16(data);
     return data;
   }
@@ -271,7 +336,7 @@ namespace Math1D {
   template<typename T,typename ST>
   inline T& Vector<T,ST>::direct_access(ST i)
   {
-    T_A16* data = Storage1D<T,ST>::data_;
+    T_A16* data = Base::data_;
     assertAligned16(data);
 
     return data[i];
@@ -280,7 +345,7 @@ namespace Math1D {
   template<typename T,typename ST>
   inline T Vector<T,ST>::direct_access(ST i) const
   {
-    const T_A16* data = Storage1D<T,ST>::data_;
+    const T_A16* data = Base::data_;
     assertAligned16(data);
 
     return data[i];
@@ -290,8 +355,8 @@ namespace Math1D {
   template<typename T,typename ST>
   inline void Vector<T,ST>::set_constant(const T constant)
   {
-    T_A16* data = Storage1D<T,ST>::data_;
-    const ST size = Storage1D<T,ST>::size_;
+    T_A16* data = Base::data_;
+    const ST size = Base::size_;
     assertAligned16(data);
 
     std::fill_n(data,size,constant); //experimental result: fill_n is usually faster
@@ -301,12 +366,11 @@ namespace Math1D {
   template<typename T,typename ST>
   inline T Vector<T,ST>::max() const
   {
-
-    const ST size = Storage1D<T,ST>::size_;
+    const ST size = Base::size_;
 
     if (size > 0) {
       // g++ 4.8.5 uses avx instructions for this
-      const T_A16* data = Storage1D<T,ST>::data_;
+      const T_A16* data = Base::data_;
       assertAligned16(data);
 
       return *std::max_element(data, data + size);
@@ -321,11 +385,11 @@ namespace Math1D {
   template<typename T,typename ST>
   T Vector<T,ST>::min() const
   {
-    const ST size = Storage1D<T,ST>::size_;
+    const ST size = Base::size_;
 
     if (size > 0) {
       // g++ 4.8.5 uses avx instructions for this
-      const T_A16* data = Storage1D<T,ST>::data_;
+      const T_A16* data = Base::data_;
       assertAligned16(data);
 
       return *std::min_element(data, data + size);
@@ -341,11 +405,12 @@ namespace Math1D {
   template<typename T,typename ST>
   T Vector<T,ST>::max_abs() const
   {
-    const ST size = Storage1D<T,ST>::size_;
+    const ST size = Base::size_;
+    const T_A16* data = Base::data_;
 
     T maxel = (T) 0;
     for (ST i=0; i < size; i++) {
-      const T candidate = Makros::abs<T>(Storage1D<T,ST>::data_[i]);
+      const T candidate = Makros::abs<T>(data[i]);
       maxel = std::max(maxel,candidate);
     }
 
@@ -353,20 +418,22 @@ namespace Math1D {
   }
 
   template<typename T,typename ST>
-  inline void Vector<T,ST>::ensure_min(T lower_limit) 
-  {  
-    const ST size = Storage1D<T,ST>::size_;
-    for (ST i=0; i < size; i++) 
-      Storage1D<T,ST>::data_[i] = std::max(lower_limit,Storage1D<T,ST>::data_[i]);
+  inline void Vector<T,ST>::ensure_min(T lower_limit)
+  {
+    const ST size = Base::size_;
+    const T_A16* data = Base::data_;
+
+    for (ST i=0; i < size; i++)
+      data[i] = std::max(lower_limit,data[i]);
   }
 
   /*** L2-norm of the vector ***/
   template<typename T,typename ST>
   inline double Vector<T,ST>::norm() const
   {
-    const ST size = Storage1D<T,ST>::size_;
+    const ST size = Base::size_;
 
-    const T_A16* data = Storage1D<T,ST>::data_;
+    const T_A16* data = Base::data_;
     assertAligned16(data);
 
     double result = 0.0;
@@ -378,12 +445,30 @@ namespace Math1D {
     return sqrt(result);
   }
 
+  /*** L2-norm of the vector ***/
+  template<typename T,typename ST>
+  inline T Vector<T,ST>::norm_T() const
+  {
+    const ST size = Base::size_;
+
+    const T_A16* data = Base::data_;
+    assertAligned16(data);
+
+    T result = (T) 0;
+    for (ST i=0; i < size; i++) {
+      const T cur = data[i];
+      result += cur*cur;
+    }
+
+    return Makros::sqrt<T>(result);
+  }
+
   template<typename T,typename ST>
   inline double Vector<T,ST>::sqr_norm() const
   {
-    const ST size = Storage1D<T,ST>::size_;
+    const ST size = Base::size_;
 
-    const T_A16* data = Storage1D<T,ST>::data_;
+    const T_A16* data = Base::data_;
     assertAligned16(data);
 
     double result = 0.0;
@@ -399,9 +484,9 @@ namespace Math1D {
   template<typename T,typename ST>
   inline double Vector<T,ST>::norm_l1() const
   {
-    const ST size = Storage1D<T,ST>::size_;
+    const ST size = Base::size_;
 
-    const T_A16* data = Storage1D<T,ST>::data_;
+    const T_A16* data = Base::data_;
     assertAligned16(data);
 
     double result = 0.0;
@@ -415,18 +500,24 @@ namespace Math1D {
   template<typename T,typename ST>
   inline void Vector<T,ST>::add_constant(const T addon)
   {
-    T_A16* data = Storage1D<T,ST>::data_;
+    T_A16* data = Base::data_;
     assertAligned16(data);
 
-    const ST size = Storage1D<T,ST>::size_;
+    const ST size = Base::size_;
     for (ST i=0; i < size; i++)
       data[i] += addon;
   }
 
   template<typename T,typename ST>
+  bool Vector<T,ST>::is_sorted() const
+  {
+    return ::is_sorted(Base::data_, Base::size_);
+  }
+
+  template<typename T,typename ST>
   inline void Vector<T,ST>::add_vector_multiple(const Math1D::Vector<T,ST>& v, const T alpha)
   {
-    const ST size = Storage1D<T,ST>::size_;
+    const ST size = Base::size_;
 
 #ifndef DONT_CHECK_VECTOR_ARITHMETIC
     if (v.size() != size) {
@@ -441,9 +532,9 @@ namespace Math1D {
     ST i;
 
     // for (i=0; i < size; i++)
-    //   Storage1D<T,ST>::data_[i] += alpha * v.direct_access(i);
+    //   Base::data_[i] += alpha * v.direct_access(i);
 
-    T_A16* attr_restrict dptr = Storage1D<T,ST>::data_;
+    T_A16* attr_restrict dptr = Base::data_;
     const T_A16* attr_restrict vptr = v.direct_access();
 
     assertAligned16(dptr);
@@ -453,11 +544,28 @@ namespace Math1D {
       dptr[i] += alpha * vptr[i];
   }
 
+  template<>
+  inline void Vector<double>::add_vector_multiple(const Math1D::Vector<double>& v, const double alpha)
+  {
+    const size_t size = Base::size_;
+
+#ifndef DONT_CHECK_VECTOR_ARITHMETIC
+    if (v.size() != size) {
+      INTERNAL_ERROR << "   cannot add multiple of vector \"" << v.name() << "\" to vector \""
+                     << this->name() << "\":" << std::endl
+                     << "   sizes " << v.size() << " and " << this->size() << " mismatch. Exiting..."
+                     << std::endl;
+      exit(0);
+    }
+#endif
+
+    Routines::array_add_multiple(Base::data_, size, alpha, v.direct_access());
+  }
 
   template<typename T,typename ST>
   void Vector<T,ST>::operator+=(const Vector<T,ST>& v)
   {
-    const ST size = Storage1D<T,ST>::size_;
+    const ST size = Base::size_;
 
 #ifndef DONT_CHECK_VECTOR_ARITHMETIC
     if (v.size() != size) {
@@ -472,9 +580,9 @@ namespace Math1D {
     ST i;
 
     // for (i=0; i < size; i++)
-    //   Storage1D<T,ST>::data_[i] += v.direct_access(i);
+    //   Base::data_[i] += v.direct_access(i);
 
-    T_A16* attr_restrict dptr = Storage1D<T,ST>::data_;
+    T_A16* attr_restrict dptr = Base::data_;
     const T_A16* attr_restrict vptr = v.direct_access();
 
     assertAligned16(dptr);
@@ -487,7 +595,7 @@ namespace Math1D {
   template<typename T,typename ST>
   void Vector<T,ST>::operator-=(const Vector<T,ST>& v)
   {
-    const ST size = Storage1D<T,ST>::size_;
+    const ST size = Base::size_;
 
 #ifndef DONT_CHECK_VECTOR_ARITHMETIC
     if (v.size() != size) {
@@ -501,9 +609,9 @@ namespace Math1D {
 
     ST i;
     // for (i=0; i < size; i++)
-    //   Storage1D<T,ST>::data_[i] -= v.direct_access(i);
+    //   Base::data_[i] -= v.direct_access(i);
 
-    T_A16* attr_restrict dptr = Storage1D<T,ST>::data_;
+    T_A16* attr_restrict dptr = Base::data_;
     const T_A16* attr_restrict vptr = v.direct_access();
 
     for (i=0; i < size; i++)
@@ -513,8 +621,8 @@ namespace Math1D {
   template<typename T,typename ST>
   void Vector<T,ST>::operator*=(const T constant)
   {
-    const ST size = Storage1D<T,ST>::size_;
-    T_A16* data = Storage1D<T,ST>::data_;
+    const ST size = Base::size_;
+    T_A16* data = Base::data_;
 
     assertAligned16(data);
 
@@ -535,6 +643,29 @@ namespace Math1D {
     return Vector<T,ST>::vector_name_;
   }
 
+  template<typename T,typename ST>
+  void Vector<T,ST>::elem_mul(const Vector<T,ST>& v)
+  {
+    const ST size = Base::size_;
+    T_A16* data = Base::data_;
+    const T_A16* vdata = v.direct_access();
+    
+    assert(size == v.size());
+    for (ST i = 0; i < size; i++)
+      data[i] *= vdata[i];
+  }
+    
+  template<typename T,typename ST>
+  void Vector<T,ST>::elem_div(const Vector<T,ST>& v)
+  {
+    const ST size = Base::size_;
+    T_A16* data = Base::data_;
+    const T_A16* vdata = v.direct_access();
+
+    assert(size == v.size());
+    for (ST i = 0; i < size; i++)
+      data[i] /= vdata[i];
+  }
 
   /************** implementation of NamedVector **********/
 
@@ -564,14 +695,14 @@ namespace Math1D {
   template<typename T,typename ST>
   inline void NamedVector<T,ST>::operator=(const Vector<T,ST>& v)
   {
-    Storage1D<T,ST>::operator=(v);
+    Base::operator=(v);
   }
 
   //NOTE: the name is NOT copied
   template<typename T,typename ST>
   inline void NamedVector<T,ST>::operator=(const NamedVector<T,ST>& v)
   {
-    Storage1D<T,ST>::operator=(v);
+    Base::operator=(v);
   }
 
   /************** implementation of stand-alone routines **********************/
@@ -672,16 +803,10 @@ namespace Math1D {
     assertAligned16(data1);
     assertAligned16(data2);
 
-    return std::inner_product(data1,data1+size,data2, (T) 0);
-
-    // T result = (T) 0;
-    // ST i;
-    // for (i=0; i < size; i++)
-    //   result += data1[i] * data2[i]; //v1.direct_access(i)*v2.direct_access(i);
-
-    // return result;
+    //g++ uses packed fused multiply-add, but ignores the alignment information
+    return Routines::dotprod(data1,data2,size);
+    //return std::inner_product(data1,data1+size,data2, (T) 0);
   }
-
 
   template<typename T,typename ST>
   std::ostream& operator<<(std::ostream& s, const Vector<T,ST>& v)
@@ -695,7 +820,6 @@ namespace Math1D {
 
     return s;
   }
-
 
   template<typename T,typename ST>
   Vector<T,ST> cross(const Vector<T,ST>& v1, const Vector<T,ST>& v2)
@@ -726,18 +850,18 @@ template<typename T,typename ST>
 inline const T& Math1D::Vector<T,ST>::operator[](ST i) const
 {
 #ifdef SAFE_MODE
-  if (i >= Storage1D<T,ST>::size_) {
+  if (i >= Base::size_) {
 
     INTERNAL_ERROR << "    invalid const access on element " << i
                    << " for Math1D::Vector " <<  "\"" << this->name() << "\" of type "
                    << Makros::Typename<T>().name()
                    //<< typeid(T).name()
-                   << " with " << Storage1D<T,ST>::size_ << " elements. exiting." << std::endl;
+                   << " with " << Base::size_ << " elements. exiting." << std::endl;
     print_trace();
     exit(1);
   }
 #endif
-  const T_A16* data = Storage1D<T,ST>::data_;
+  const T_A16* data = Base::data_;
   return data[i];
 }
 
@@ -745,18 +869,18 @@ template<typename T,typename ST>
 inline T& Math1D::Vector<T,ST>::operator[](ST i)
 {
 #ifdef SAFE_MODE
-  if (i >= Storage1D<T,ST>::size_) {
+  if (i >= Base::size_) {
 
     INTERNAL_ERROR << "    invalid access on element " << i
                    << " for Math1D::Vector " <<  "\"" << this->name() << "\" of type "
                    << Makros::Typename<T>().name()
                    //<< typeid(T).name()
-                   << " with " << Storage1D<T,ST>::size_ << " elements. exiting." << std::endl;
+                   << " with " << Base::size_ << " elements. exiting." << std::endl;
     print_trace();
     exit(1);
   }
 #endif
-  T_A16* data = Storage1D<T,ST>::data_;
+  T_A16* data = Base::data_;
   return data[i];
 }
 
